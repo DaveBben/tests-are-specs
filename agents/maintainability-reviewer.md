@@ -12,7 +12,7 @@ tools:
   - Glob
   - Grep
   - Bash
-model: sonnet
+model: opus
 maxTurns: 10
 effort: high
 ---

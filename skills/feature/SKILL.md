@@ -4,24 +4,12 @@ effort: high
 model: opus
 disable-model-invocation: true
 argument-hint: "[feature description or change request]"
-allowed-tools:
-  - Agent
-  - Skill
-  - TodoWrite
-  - Read
-  - Write
-  - Edit
-  - Glob
-  - Grep
-  - Bash
-  - AskUserQuestion
-  - LSP
 description: >
   Standalone feature planning skill. Takes a free-form feature or change
   request, deeply researches the codebase, produces an impact map and
   implementation plan with real code snippets, then decomposes into tasks
   compatible with /execute. Human reviews via annotation cycle at each phase.
-  Do NOT use for bugs (use /bug + /triage).
+  Do NOT use for bugs (use /bug).
   Do NOT use for trivial one-line changes (just make the change).
 ---
 
@@ -37,7 +25,7 @@ User describes feature
     |
 /feature (this skill)
     |
-    |-- Phase 0: Deep research → research.md
+    |-- Phase 0: Clarify intent → deep research → research.md
     |-- Phase 1: Impact map → impact-map.md
     |-- Phase 2: Plan with code snippets → plan.md
     |-- Phase 3: Annotation cycle (1-6 rounds)
@@ -45,8 +33,6 @@ User describes feature
     |
     v
 /execute .claude/features/{slug}/
-    or
-User runs implementation command from tasks.md
 ```
 
 All artifacts are written to `.claude/features/{slug}/` in the project root.
@@ -56,16 +42,16 @@ Task JSON files live under `tasks/` within that directory.
 
 - [Templates](references/templates.md) — Markdown and JSON templates for all artifacts
 - [Implementation Guidance](references/implementation-guidance.md) — Reference for effective execution
+- [Common Failure Patterns](references/failure-patterns.md) — Known pitfalls and how to avoid them
 
 ### /execute Compatibility
 
 This skill writes task JSON files to `.claude/features/{slug}/tasks/` so
-`/execute` can pick them up. **Note:** `/execute` currently resolves tasks
-via story IDs from the global artifact store at
-`~/.claude/backlog-driven-development/artifacts/`. To use `/execute` with
-`/feature` output, `/execute` must be updated to accept a feature directory
-path as an alternative input. Until then, use the implementation command
-from the bottom of `tasks.md` instead.
+`/execute` can pick them up. Pass the feature directory path to `/execute`:
+
+```
+/execute .claude/features/{slug}/
+```
 
 ---
 
@@ -81,8 +67,8 @@ If `$ARGUMENTS` were provided, classify them:
    - Has `impact-map.md` but no `plan.md` → start at Phase 2
    - Has `plan.md` with `Status: Draft` → start at Phase 3 (annotation cycle)
    - Has `plan.md` with `Status: Approved` but no `tasks.md` → start at Phase 4
-   - Has `tasks.md` → tell the user: "This feature is fully planned. Use the
-     implementation command at the bottom of tasks.md to implement."
+   - Has `tasks.md` → tell the user: "This feature is fully planned. Run
+     `/execute .claude/features/{slug}/` to implement."
 
 2. **Free-form text description**: Use as the feature description. Generate a
    URL-safe slug from the first 3-5 significant words (e.g., "add webhook retry
@@ -103,6 +89,69 @@ is your review surface. If the research is wrong, the plan will be wrong, and
 the implementation will be wrong. Correcting a wrong assumption here costs
 nothing. Catching it in a pull request costs hours.
 
+### Step 0: Clarify Intent and Gather Context
+
+Before researching anything, confirm you understand what the user wants and
+why. Wrong assumptions about intent lead to research that answers the wrong
+questions.
+
+**Part A — Confirm What and Why**
+
+Evaluate `$ARGUMENTS` against two questions:
+
+1. **What changes does the user want?** (the concrete change)
+2. **Why is this change needed?** (the motivation, problem, or goal)
+
+If both are clearly answerable from `$ARGUMENTS`, state your understanding
+and ask the user to confirm or correct:
+
+> "Before I research the codebase, let me confirm I understand:
+> - **What**: [concrete change]
+> - **Why**: [motivation or problem]
+>
+> Is that right, or would you adjust anything?"
+
+If either is unclear or missing, ask specifically for the missing piece using
+`AskUserQuestion`. Do not guess at the "why" — a wrong assumption about
+motivation leads to a structurally correct but strategically wrong plan.
+
+This must not feel like a bureaucratic gate. If the user's input already
+answers both questions clearly, confirm and move on.
+
+**Part B — External Context Check**
+
+After confirming what and why, ask:
+
+> "Is there any context outside this codebase that should inform my research?
+> For example:
+> - Architecture documents, user stories, or specs hosted elsewhere
+> - Other repositories or services that will be affected
+> - Business context or constraints (e.g., 'this is a throwaway prototype',
+>   'this must ship by Friday', 'we're migrating off this soon')
+> - URLs or documents I should review
+>
+> If not, just say 'no' and I'll proceed with codebase research."
+
+Handle responses:
+- **"No" or equivalent**: Note "No external context provided" and proceed.
+- **URLs provided**: Use `WebFetch` to retrieve content. Summarize findings.
+- **Text context provided**: Record verbatim.
+- **File paths in other repos**: If accessible, read them directly. Otherwise
+  ask the user to paste relevant content. Record the repository path — it
+  will be used to tag tasks with their target repository in Phase 4.
+- **WebFetch fails**: Note the failure, ask the user to paste content directly.
+
+If the feature spans multiple repositories, record all repository paths.
+During Phase 4 task breakdown, set each task's `repository` field to the
+repo it targets. Set `repositories` in plan.json to the list of all repos.
+For single-repo features, use `"."` as the repository value.
+
+All gathered context (what, why, external context) feeds into `research.md`
+and must be referenced by the explore agents in Step 2.
+
+**Do not proceed to Step 1 until you have confirmed what, why, and whether
+external context exists.**
+
 ### Step 1: Read Project Context
 
 Read these files if they exist in the project root (or common locations).
@@ -118,7 +167,10 @@ These provide the architectural and domain context the feature must fit within.
 ### Step 2: Deep Codebase Exploration
 
 Launch Explore agents via the Agent tool to **deeply and in great detail**
-understand the codebase areas relevant to this feature. The agents must:
+understand the codebase areas relevant to this feature. Use the confirmed
+feature intent (what and why) and any external context from Step 0 to focus
+exploration — the "why" determines which existing patterns and alternatives
+are relevant. The agents must:
 
 1. Read the full content of every file identified as relevant — do not
    summarize from file names or directory structure alone
@@ -160,15 +212,36 @@ duplicate logic, or violate conventions.
 Write all findings to `.claude/features/{slug}/research.md` using the
 [research.md template](references/templates.md#researchmd).
 
-### Step 5: Present and Validate
+### Step 5: Challenge the Request (Devil's Advocate)
 
-Present the research findings to the user. Highlight:
+Before presenting findings, launch the `devils-advocate` agent via the Agent tool. 
+Pass it:
+- The original feature description
+- The path to the research file: `.claude/features/{slug}/research.md`
+
+The agent returns a structured challenge brief covering assumptions,
+ambiguities, edge cases, scope creep risks, and a pre-mortem. Append the
+challenge brief to the end of `research.md` under a `## Devil's Advocate
+Challenge` heading.
+
+### Step 6: Present and Validate
+
+Present the research findings **and** the devil's advocate challenges to
+the user together. Highlight:
 - Where the change belongs and why
 - Existing code to extend or patterns to follow
 - Any open questions that need answers before planning
+- The key challenges from the devil's advocate — especially assumptions
+  that need verification and ambiguities that need clarification
 
-Ask the user to confirm or correct the findings before proceeding.
-**Do not proceed to Phase 1 until the user acknowledges the research.**
+> "Review the research and devil's advocate challenges above. If anything
+> looks wrong or needs clarification, let me know now. Otherwise, I'll
+> continue to the impact map."
+
+If the user provides corrections or clarifications, update `research.md`
+with their responses. If the user says nothing or confirms, proceed to
+Phase 1. **Only block if there are unresolved open questions that would
+make the plan structurally wrong.**
 
 ---
 
@@ -195,12 +268,15 @@ Write to `.claude/features/{slug}/impact-map.md` using the
 
 ### Step 3: Present for Review
 
-Present the impact map to the user. Ask:
+Present the impact map to the user:
 
-> "Review the impact map above. Does it capture all the files and areas
-> that need to change? Is anything missing or incorrectly scoped?"
+> "Review the impact map above. If any files or areas are missing or
+> incorrectly scoped, let me know. Otherwise, I'll continue to the plan."
 
-**Do not proceed to Phase 2 until the user acknowledges the impact map.**
+If the user provides corrections, update the impact map. If the user
+confirms or does not object, proceed to Phase 2. **Only block if the
+impact map is clearly incomplete** (e.g., missing an entire module the
+feature depends on).
 
 ---
 
@@ -210,7 +286,25 @@ One plan file per feature. The plan holds the full intent, architectural
 decisions, code snippets showing **actual changes** (not pseudocode, not
 descriptions), file paths, and trade-offs.
 
-### Step 1: Write plan.md
+### Step 1: Determine Delivery Strategy
+
+Before writing the plan, estimate total change size from the impact map. Use
+line counts from similar existing files, or rough estimates based on the
+number of functions and types being created or modified.
+
+- **Under ~500 lines total**: Single slice (one PR). Note "Single PR" in the
+  Delivery Strategy section and proceed.
+- **Over ~500 lines total**: Design the plan around multiple **vertical
+  slices**. Each slice is one complete thin path through the system — database
+  change + service logic + API endpoint + test for *one specific capability*.
+  Never slice horizontally (all DB changes, then all service changes). Each
+  slice must leave the project in a working, testable state when merged
+  independently.
+
+Document the delivery strategy in the plan using the
+[Delivery Strategy template](references/templates.md#planmd).
+
+### Step 2: Write plan.md
 
 Write to `.claude/features/{slug}/plan.md` using the
 [plan.md template](references/templates.md#planmd).
@@ -225,14 +319,14 @@ against that reference instead of designing from scratch.
 yet." Without this, the AI will jump to code the moment it thinks the plan
 is good enough.
 
-### Step 2: Present the Plan
+### Step 3: Present the Plan
 
 Present the plan to the user and transition to the annotation cycle:
 
 > "The plan is at `.claude/features/{slug}/plan.md`. You can:
 >
 > 1. **Annotate in your editor** — open the file, add inline notes starting
->    with `> NOTE:`, `> FIX:`, or `> REMOVE:` at the exact location of each
+>    with `@NOTE:`, `@FIX:`, or `@REMOVE:` at the exact location of each
 >    issue, then tell me 'review'
 > 2. **Give feedback here** — describe corrections in chat and I'll update
 >    the plan
@@ -251,38 +345,52 @@ engineering trade-offs the AI cannot know.
 The user opens `plan.md` in their editor and adds notes directly into the
 document at the exact location of each issue:
 
-- `> NOTE: [correction or context]` — domain knowledge the AI lacks
-- `> FIX: [what's wrong and what it should be]` — correcting an assumption
-- `> REMOVE: [reason]` — rejecting a proposed approach
+- `@NOTE: [correction or context]` — domain knowledge the AI lacks
+- `@FIX: [what's wrong and what it should be]` — correcting an assumption
+- `@REMOVE: [reason]` — rejecting a proposed approach
+
+The `@` prefix avoids collisions with markdown blockquotes (`>`).
 
 Real annotation examples:
-- `> FIX: use drizzle:generate for migrations, not raw SQL`
-- `> FIX: this should be a PATCH not a PUT`
-- `> REMOVE: we don't need caching here`
-- `> NOTE: the queue consumer already handles retries, this retry logic is redundant`
-- `> FIX: the visibility field needs to be on the list, not individual items — restructure the schema section`
+- `@FIX: use drizzle:generate for migrations, not raw SQL`
+- `@FIX: this should be a PATCH not a PUT`
+- `@REMOVE: we don't need caching here`
+- `@NOTE: the queue consumer already handles retries, this retry logic is redundant`
+- `@FIX: the visibility field needs to be on the list, not individual items — restructure the schema section`
 
 ### Processing Annotations
 
 When the user says "review" (or provides chat feedback):
 
 1. Read the updated `.claude/features/{slug}/plan.md`
-2. Find all annotation markers — match `> NOTE:`, `> FIX:`, `> REMOVE:`
+2. Find all annotation markers — match `@NOTE:`, `@FIX:`, `@REMOVE:`
    case-insensitively with flexible whitespace
 3. Address **every** annotation — do not skip any
 4. Remove the annotation markers from the updated plan
 5. Write the updated plan back to `plan.md`
 6. Present what changed in response to each annotation
 
+### Cycle Counter
+
+Track the annotation cycle count with an HTML comment in `plan.md`:
+
+```
+<!-- annotation-cycle: 1/6 -->
+```
+
+Insert this comment after the `**Status**` line when entering Phase 3.
+Increment the counter each time annotations are processed. Read it on
+each cycle to determine the current count — do not rely on session memory.
+
 ### Cycle Repetition
 
-After addressing annotations, ask:
+After addressing annotations, increment the cycle counter and ask:
 
-> "I've addressed all your annotations. Review the updated plan — add more
-> notes or say 'approve' when satisfied."
+> "I've addressed all your annotations (cycle {N}/6). Review the updated
+> plan — add more notes or say 'approve' when satisfied."
 
-Repeat up to 6 annotation cycles. If the plan is still not approved after
-6 cycles, ask the user if the feature scope needs to be reconsidered.
+If the plan is still not approved after 6 cycles, ask the user if the
+feature scope needs to be reconsidered.
 
 ### On Approval
 
@@ -304,19 +412,48 @@ a bounded working set.
 
 - **Count decisions, not lines.** A task that touches 200 lines but makes
   one decision is better than a 30-line task requiring three design choices.
-- **Single-function scope.** Single-function tasks achieve ~87% AI accuracy.
-  Multi-file tasks achieve ~19%. Keep tasks within one file or one function.
+- **Single-concern scope.** Each task must target one logical concern,
+  typically touching 1-3 files. An endpoint task that touches route +
+  controller + types is one concern. A task that touches auth middleware +
+  database schema + frontend component is three concerns.
 - **The right size** is the smallest coherent unit that preserves
   architectural clarity — not so granular it fragments the mental model,
   not so broad it requires design choices during execution.
+- **PR size ceiling.** Larger PRs receive less thorough review — keep PRs
+  focused. Target under 200 lines per slice for genuine reviewer attention.
+  If the task list for a single slice implies >500 lines of changes, split
+  the slice further.
 - **Size warning.** If the task list exceeds ~50 tasks, the feature is
-  scoped too broadly. Break it into smaller independently-deliverable changes.
+  scoped too broadly. Split into multiple slices or reduce scope. If a single
+  slice exceeds ~15 tasks, it is likely too large for one PR.
+
+### Vertical Slices, Not Horizontal Layers
+
+If the plan's Delivery Strategy specifies multiple slices, assign every task
+to a slice. Tasks within a slice must form a complete vertical path — never
+group by layer (all schema tasks, then all service tasks, then all API tasks).
+
+Each slice must satisfy all four of these questions:
+1. **Can a reviewer review this slice in 15 minutes?** If not, it's too large.
+2. **Is there exactly one reason this slice would be reverted?** If it could
+   be reverted for unrelated reasons, it combines separate concerns.
+3. **Can you list every file it touches right now?** If not, the scope is
+   unclear.
+4. **Is the test for each task obvious before the code exists?** If not, the
+   task is underspecified.
+
+If any answer is "no," re-slice.
+
+**One-sentence test:** Describe each slice's diff in one sentence. The sentence
+must describe the *change* ("Add retry column to webhooks table and expose
+retry count in the status endpoint"), not the *goal* ("Implement webhook
+retries"). If you can't write that sentence, the slice is too big or too vague.
 
 ### Task Format
 
 Each task must contain:
 
-- **The single file** to touch (explicit path, not a guess)
+- **The file(s)** to touch (explicit paths, typically 1-3 files for one concern)
 - **The specific function or symbol** to create or modify
 - **A reference** to an existing pattern to follow (exact function name
   and `file:line`)
@@ -347,29 +484,12 @@ Present the task breakdown to the user:
 > "Task breakdown complete — {N} tasks in `.claude/features/{slug}/tasks.md`.
 >
 > Review the tasks. You can request changes or approve. When ready to
-> implement, use the implementation command at the bottom of tasks.md."
+> implement, run:
+>
+> `/execute .claude/features/{slug}/`"
 
 ---
 
 ## Common Failure Patterns
 
-- **Skimming instead of reading** — Phase 0 exists because the AI reads at
-  signature level and moves on. Force deep reading with specific instructions:
-  "read the full function body", "trace every caller", "understand the intricacies."
-- **Planning before researching** — The research artifact must be written and
-  reviewed BEFORE any plan. Without it, plans are structurally incorrect.
-- **Pseudocode in the plan** — The plan must contain actual code snippets.
-  Pseudocode leads to implementations that diverge from intent.
-- **Accepting vague annotations** — If the user annotates "make this better",
-  push back: "Better how? Faster? More readable? Different API shape?"
-- **Skipping the impact map review** — The impact map catches wrong-module
-  errors. Skipping it means discovering structural problems after tasks are
-  written.
-- **Tasks with multiple files** — Each task must target one file. Multi-file
-  tasks drop AI accuracy from ~87% to ~19%.
-- **"Should" instead of "must"** — "Should" reduces AI adherence. Use "must"
-  for all task constraints.
-- **Missing "Do NOT" boundaries** — Without explicit boundaries, tasks expand
-  into adjacent work. Every task needs a "Do NOT" field.
-- **Feature too large** — More than ~50 tasks means the feature needs to be
-  split. Plan at the right altitude.
+See [references/failure-patterns.md](references/failure-patterns.md) for the full list of known pitfalls.

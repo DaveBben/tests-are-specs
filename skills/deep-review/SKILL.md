@@ -1,11 +1,11 @@
 ---
 name: deep-review
 description: >
-  Use proactively when the user requests a review of their code and diff changes are large or touch multiple files. Use when reviewing code changes, pull requests, or merge requests for quality, correctness, security, performance, and maintainability. Dispatches 4 specialized review agents in parallel and consolidates their findings into a unified report with a verdict. Do NOT use for general
-  code writing guidance, refactoring advice, or spec/design reviews. For a faster single-agent review, use /check instead.
+  Use when the user explicitly requests a thorough, deep, or comprehensive review of large diffs or changes touching multiple files. Dispatches 4 specialized Opus review agents in parallel (security, reliability, maintainability, performance) and consolidates their findings into a unified report with a verdict. Do NOT use for general code writing guidance, refactoring advice, or spec/design reviews. For a faster single-agent review, use /light-review instead.
 argument-hint: "<base-branch-or-commit>"
 effort: high
 model: opus
+disable-model-invocation: true
 ---
 
 # Deep Code Review
@@ -47,11 +47,18 @@ Launch all 4 review agents simultaneously using the Agent tool. Each agent recei
 base reference so they all review the same diff. Send a single message with all 4 Agent tool
 calls to ensure parallel execution.
 
-**Prompt template for each agent:**
+**Prompt template for each agent** (substitute the agent's dimension focus):
+
+| Agent | Dimension focus for prompt |
+|-------|---------------------------|
+| `security-reviewer` | security concerns |
+| `reliability-reviewer` | reliability and correctness |
+| `maintainability-reviewer` | maintainability and readability |
+| `performance-reviewer` | performance and efficiency |
 
 ```
-Review the code changes against [base reference]. [Base reference] is the base branch or
-commit to diff against.
+Review the code changes against [base reference], focusing on [dimension focus].
+[Base reference] is the base branch or commit to diff against.
 ```
 
 ### Step 3: Consolidate findings

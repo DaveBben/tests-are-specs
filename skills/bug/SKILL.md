@@ -1,44 +1,39 @@
 ---
 name: bug
-effort: medium
+effort: high
 model: opus
-argument-hint: "[bug description, symptom, or existing bug ID to refine]"
-allowed-tools:
-  - Agent
-  - Skill
-  - TodoWrite
-  - Read
-  - Write
-  - Edit
-  - Glob
-  - Grep
-  - Bash
-  - AskUserQuestion
+disable-model-invocation: true
+argument-hint: "[bug description, symptom, or existing bug directory path]"
 description: >
-  Conversational bug report creator. Guides the user through creating a
-  well-formed bug card with reproduction steps, expected vs actual behavior,
-  severity, and evidence. Pushes back on diagnoses — titles describe symptoms,
-  not causes. Saves the bug as a JSON artifact in
-  ~/.claude/backlog-driven-development/artifacts/bugs/.
-  Do NOT use for proposing fixes (use /triage after the bug card is complete).
-  Do NOT use for feature requests (use /story).
+  Bug investigation and fix planning skill. Guides the user through capturing
+  a well-formed symptom report, deeply researches the codebase to trace the
+  bug's code path, attempts to reproduce the bug programmatically, then
+  produces an impact map and implementation plan with tasks compatible with
+  /execute. Human reviews via annotation cycle.
+  Do NOT use for feature requests (use /feature).
+  Do NOT use for trivial one-line fixes (just make the change).
 ---
 
-# Bug Report Creator
+# Bug Investigator
 
-> Interactive conversation that produces a single, well-formed bug card.
-> Expect 5-15 minutes of back-and-forth. The output is a bug card ready for
-> `/triage`.
+> Takes a bug symptom, captures it conversationally, deeply researches the
+> codebase, attempts programmatic reproduction, produces an impact map and
+> plan with actual code snippets, then decomposes into implementation tasks.
+> Human reviews at key phases. Expect 15-30 minutes.
 
-A good bug report answers one question: **what did you observe, and how can
-someone else observe it too?** It does NOT propose a fix — that's `/triage`'s
-job. The conversation focuses entirely on capturing the symptom, environment,
-reproduction steps, and evidence needed for effective debugging.
+### Supporting Files
 
-**Key discipline: symptom, not cause.** The title and description capture what
-the user *observed*, not what they *think* went wrong. "Stale transcription
-text displays after re-recording" is a symptom. "Cache invalidation bug" is
-a diagnosis. Diagnoses belong in `/triage`, not here.
+- [Templates](references/templates.md) — Markdown and JSON templates for all artifacts
+- [Anti-Patterns](references/anti-patterns.md) — Common mistakes to catch during symptom capture
+
+### /execute Compatibility
+
+This skill writes task JSON files to `.claude/bugs/{slug}/tasks/` so
+`/execute` can pick them up:
+
+```
+/execute .claude/bugs/{slug}/
+```
 
 ---
 
@@ -46,45 +41,41 @@ a diagnosis. Diagnoses belong in `/triage`, not here.
 
 If `$ARGUMENTS` were provided, classify them:
 
-1. **View request** — `$ARGUMENTS` contains a bug ID (`bug_NNN`)
-   AND the word "view" (in any order: `bug_001 view`, `view bug_001`).
-   Enter **View Mode**.
-2. **Delete request** — `$ARGUMENTS` contains a bug ID (`bug_NNN`)
-   AND the word "delete" (in any order: `bug_001 delete`,
-   `delete bug_001`). Enter **Delete Mode**.
-3. **Bug ID** (matches `bug_NNN`): Read from
-   `~/.claude/backlog-driven-development/artifacts/bugs/{id}.json`.
-   Enter **Refinement Mode** — evaluate the existing bug card and guide
-   the user through improving it rather than starting from scratch.
-4. **Existing bug file path** (points to an existing artifact JSON
-   file): Enter **Refinement Mode** — read the bug and strengthen it.
-5. **Plain description with epic context** (e.g., `"stale text after save"
-   epic:epic_001` or description provided while an epic ID is in the
-   conversation): Load the epic from
-   `~/.claude/backlog-driven-development/artifacts/epics/{epicId}.json`
-   for context. The bug's `parentEpic` will be set to this epic ID.
-   Proceed to Phase 1 with epic context.
-6. **Plain description** (no epic context): Use as the seed for a
-   bug card. Read `index.json` and check for existing epics. If epics
-   exist, try to infer which epic this bug relates to based on the
-   description and epic goals/scopes. Suggest the best match:
-   > "Based on your description, this bug sounds like it could relate to:
-   > 1. `{epic_id}`: [title] — [goal summary]
-   > 2. **Standalone** — no epic (you can link it later)
-   >
-   > Which one?"
-   Set `parentEpic` accordingly. Proceed to Phase 1.
-7. **No input**: Ask what bug they observed. Include the hint:
+1. **Existing bug directory** (path to a `.claude/bugs/{slug}/` directory):
+   Enter **Resumption Mode** — check which artifacts exist and resume from
+   the last incomplete phase:
+   - No `research.md` → start at Phase 0 (symptom capture)
+   - Has `research.md` but no `impact-map.md` → start at Phase 3
+   - Has `impact-map.md` but no `plan.md` → start at Phase 4
+   - Has `plan.md` with `Status: Draft` → start at Phase 5 (annotation cycle)
+   - Has `plan.md` with `Status: Approved` but no `tasks.md` → start at Phase 6
+   - Has `tasks.md` → tell the user: "This bug is fully planned. Use the
+     implementation command at the bottom of tasks.md to implement, or run
+     `/execute .claude/bugs/{slug}/`."
+
+2. **Free-form text description**: Use as the symptom seed. Generate a
+   URL-safe slug from the first 3-5 significant words of the symptom (e.g.,
+   "stale text displays after re-recording" becomes
+   `stale-text-after-rerecording`). If `.claude/bugs/{slug}/` already exists,
+   append a short numeric suffix (`-2`, `-3`). Create the directory and
+   proceed to Phase 0.
+
+3. **No input**: Ask the user what bug they observed. Include the hint:
    > "Describe what you saw — the symptom, not the cause. For example:
    > 'After saving a memo, the old text still shows' rather than
    > 'the cache doesn't invalidate.'"
 
 ---
 
-## Phase 1: Understand the Symptom
+## Phase 0: Symptom Capture
 
-**Goal: Capture what the user observed and ensure the title describes the
-symptom, not the cause.**
+**Goal: Capture what the user observed through conversation. The output is
+structured symptom data that feeds the research and reproduction phases.**
+
+A good bug report answers one question: **what did you observe, and how can
+someone else observe it too?**
+
+### Step 1: Understand the Symptom
 
 Start by listening. Ask the user to describe what happened in their own words.
 
@@ -105,8 +96,8 @@ describing a root cause instead of an observable symptom?
 > condition in the save handler,' what observable behavior happened? Did data
 > disappear? Did the page freeze? Did stale content display?"
 
-Help them reframe. The diagnosis may be correct, but it belongs in `/triage`'s
-investigation, not in the bug card.
+Help them reframe. The diagnosis may be correct, but it belongs in the
+research phase, not the symptom description.
 
 **Scope check:** If the description contains multiple distinct bugs ("and also,
 there's another issue where..."), push back:
@@ -114,9 +105,10 @@ there's another issue where..."), push back:
 > "That sounds like two separate bugs. Let's capture one at a time — which one
 > is more urgent? We'll create a card for the other one after."
 
----
+See [references/anti-patterns.md](references/anti-patterns.md) for the full
+list of patterns to watch for during this phase.
 
-## Phase 2: The Bug Conversation
+### Step 2: The Bug Conversation
 
 Work through these topics conversationally — do NOT present them as a
 checklist. Ask 1-2 questions at a time, build on answers, and push back on
@@ -125,9 +117,9 @@ vagueness.
 **These rounds organize YOUR thinking — they are not a script to follow
 literally.** The user's answers will naturally jump between rounds. Follow
 their thread, cover the gaps organically, and only use the round structure
-to check that nothing was missed before drafting.
+to check that nothing was missed before moving to research.
 
-### Round A: Environment
+#### Round A: Environment
 
 Establish where and when this bug was observed:
 
@@ -140,47 +132,34 @@ Establish where and when this bug was observed:
 Don't ask for every field if they're not relevant. A backend API bug doesn't
 need a browser version. Use judgment.
 
-### Round B: Steps to Reproduce
+#### Round B: Steps to Reproduce
 
 Walk through what the user did, step by step:
 
-- **Start state**: What was true before the bug appeared? Was the user logged
-  in? Had they just performed another action? Was the system in a specific mode?
+- **Start state**: What was true before the bug appeared?
 - **Actions**: What did they do, in what order?
 - **Observation**: At which step did the unexpected behavior appear?
 
 **Push back on vagueness:**
 
-- "It just breaks" → "What exactly do you see when it breaks? An error message?
-  A blank screen? Wrong data?"
-- "Sometimes it happens" → "Can you describe the last time it happened? What
-  were you doing? Can you make it happen right now?"
-- "It doesn't work" → "What specifically doesn't work? What did you expect to
-  see vs. what appeared?"
+- "It just breaks" → "What exactly do you see when it breaks?"
+- "Sometimes it happens" → "Can you describe the last time it happened?"
+- "It doesn't work" → "What specifically doesn't work? What did you expect
+  to see vs. what appeared?"
 
 The goal is **a sequence someone else can follow to trigger the bug
-consistently.** If the user can't reproduce it reliably, note that explicitly
-— intermittent bugs are valid, but the card should document what's known about
-the conditions.
+consistently.** If the user can't reproduce it reliably, note that explicitly.
 
-### Round C: Expected vs Actual Behavior
+#### Round C: Expected vs Actual Behavior
 
 Both must be concrete and specific:
 
-- **Expected**: What should have happened? Describe the correct behavior. If
-  the user doesn't know the expected behavior, help them reason about it from
-  the feature's intent.
+- **Expected**: What should have happened? If the user doesn't know the
+  expected behavior, help them reason about it from the feature's intent.
 - **Actual**: What did happen? Include specifics: error messages (exact text),
   visual state, data returned, HTTP status codes, timing.
 
-**Push back on vagueness:**
-
-- "It should work correctly" → "What does 'correctly' mean here? What specific
-  output, screen, or behavior should you see?"
-- "It shows the wrong thing" → "What exactly does it show? And what should it
-  show instead?"
-
-### Round D: Severity and Impact
+#### Round D: Severity and Impact
 
 Establish the business impact:
 
@@ -188,7 +167,6 @@ Establish the business impact:
 - **How often?** Every time? Intermittently? Only under specific conditions?
 - **Is there a workaround?** Can users accomplish their goal another way?
 - **What's the blast radius?** Data loss? Security exposure? Feature unusable?
-  Cosmetic only?
 
 **Severity levels:**
 
@@ -200,10 +178,9 @@ Establish the business impact:
 | Low | Cosmetic issue, minor inconvenience, edge case with easy workaround |
 
 Help the user calibrate — people tend to overrate severity of bugs they
-personally encountered. Ask: "If this happened to a new user who didn't know
-the workaround, how bad would it be?"
+personally encountered.
 
-### Round E: Evidence
+#### Round E: Evidence
 
 Ask what evidence exists:
 
@@ -211,386 +188,351 @@ Ask what evidence exists:
 - Error messages (exact text, not paraphrased)
 - Log output or stack traces
 - Network requests/responses (HTTP status, response body)
-- Database state or query results
 
 If the user has none: "Can you reproduce the bug now and capture the error
-message or a screenshot? Evidence makes the bug much easier to investigate."
+message or a screenshot?"
 
-Record whatever they provide. Note what evidence is missing but would be
-useful — `/triage` can gather it during investigation.
+### Step 3: Confirm Before Research
 
-### Round F: Relevant Repositories
+Before proceeding to automated phases, summarize the symptom back to the
+user:
 
-Same pattern as `/story`:
-
-- "Which repositories does this bug likely affect?"
-- If the user isn't sure, help them reason: "Where does the feature that's
-  broken live? Is it frontend, backend, or both?"
-- For each repo, note what area is likely affected (e.g., "API — auth
-  middleware," "UI — settings page")
-
----
-
-## Phase 3: Draft the Bug Card
-
-Once the conversation has covered all rounds, draft the bug card. The card
-does NOT contain a proposed solution or root cause analysis.
-
-**Draft format:**
-
-```markdown
-# BUG: [Title describing the symptom]
-
-**Status**: BACKLOG
-**Severity**: [Critical | High | Medium | Low]
-
-## Symptom
-
-[1-2 sentence description of what the user observes]
-
-## Environment
-
-- **OS**: [...]
-- **Version/Build**: [...]
-- [other relevant env details]
-
-## Steps to Reproduce
-
-1. [Prerequisite state]
-2. [Action]
-3. [Action]
-4. [Observe: actual behavior]
-
-## Expected Behavior
-
-[What should happen — concrete and specific]
-
-## Actual Behavior
-
-[What does happen — concrete and specific, with error messages if available]
-
-## Severity and Impact
-
-[Who is affected, how many, how often, workaround status]
-
-## Evidence
-
-- [Screenshot link, log excerpt, stack trace, error message]
-- [Additional evidence]
-
-## Target Repositories
-
-- `[repo-name-or-path]` — [what area is likely affected]
-
-## Resolution
-
-[Left blank — to be filled by /triage after the fix is verified]
-```
-
-**Drafting rules:**
-
-- Set `**Status**: BACKLOG` in the document header.
-- The title must describe the **symptom**, not the cause. Review it one more
-  time before presenting.
-- Steps to Reproduce must be a numbered list starting from a known state. If
-  the bug is intermittent, note the conditions and frequency.
-- Expected and Actual behavior must be specific enough that someone unfamiliar
-  with the feature can tell the difference.
-- Resolution is always blank at this stage. It gets filled by `/triage`.
-- Do NOT include a "Root Cause" or "Proposed Fix" section. That's `/triage`.
-
----
-
-## Phase 4: Bug Review
-
-Dispatch the **`story-reviewer`** agent via the Agent tool. Pass:
-- The full bug card text
-- Item type: "bug"
-
-The story-reviewer has a dedicated "Evaluation: Bugs" section that checks
-for reproducibility, environment specificity, expected/actual clarity, and
-severity calibration.
-
-**Processing results:**
-
-- **If NOT_READY**: Present missing items to the user as questions. For each:
-  - If it's about **missing reproduction steps or evidence**: Ask the user
-    for specifics.
-  - If it's about **structural issues** (format, missing sections): Fix
-    silently without bothering the user.
-  - If it's about **severity miscalibration**: Discuss with the user and
-    recalibrate.
-
-  After the user answers, update the draft and re-run the reviewer (max 1
-  re-run).
-
-- **If READY**: Present the final bug card to the user for approval. Once
-  approved, set `**Status**: TODO`.
-
-### Check for NEEDS_REFINEMENT Status
-
-If the bug was loaded from an existing file and has `**Status**: NEEDS_REFINEMENT`,
-present the `**Revision-Reason**` before starting:
-
-> "This bug was flagged for revision:
+> "Here's what I've captured:
 >
-> **Reason**: [Revision-Reason content]
+> **Symptom**: [title — must describe the symptom, not the cause]
+> **Environment**: [key details]
+> **Steps to Reproduce**: [numbered steps]
+> **Expected**: [what should happen]
+> **Actual**: [what does happen]
+> **Severity**: [level] — [impact summary]
 >
-> Let's address this before proceeding."
+> I'll now research the codebase and attempt to reproduce this
+> programmatically. Anything to correct before I proceed?"
 
-Focus the conversation on the revision reason.
-
----
-
-## Phase 5: Save the Bug
-
-Once the user approves, save the bug:
-
-### Step 1: Ensure Artifact Directory Exists
-
-```bash
-mkdir -p ~/.claude/backlog-driven-development/artifacts/{initiatives,epics,architectures,stories,bugs,tasks,plan-summaries}
-```
-
-If `index.json` does not exist, create it with the empty scaffold (including
-the `bugs` array).
-
-### Step 2: Generate ID
-
-Read `index.json`. Find the highest numeric suffix among existing bug IDs
-and increment. Zero-pad to 3 digits. First bug is `bug_001`.
-
-### Step 3: Write the Artifact
-
-Write the bug as JSON to:
-`~/.claude/backlog-driven-development/artifacts/bugs/{id}.json`
-
-**Bug JSON schema:**
-
-```json
-{
-  "id": "bug_001",
-  "type": "bug",
-  "title": "[Symptom-based title]",
-  "status": "TODO",
-  "severity": "high",
-  "reporter": "[You]",
-  "assignee": null,
-  "createdAt": "2026-04-11",
-  "parentEpic": "epic_001",
-
-  "symptom": "[1-2 sentence description]",
-
-  "environment": {
-    "os": "macOS 26.0",
-    "build": "v0.1.0",
-    "additional": "[other relevant details]"
-  },
-
-  "stepsToReproduce": [
-    "Step 1...",
-    "Step 2...",
-    "Step 3..."
-  ],
-
-  "expectedBehavior": "[What should happen]",
-  "actualBehavior": "[What does happen]",
-
-  "impact": "[Who is affected, how many, workaround status]",
-
-  "evidence": [
-    "[Screenshot, log excerpt, stack trace, error message]"
-  ],
-
-  "targetRepositories": [
-    { "name": "[repo]", "area": "[what area is affected]" }
-  ],
-
-  "resolution": null
-}
-```
-
-### Step 4: Update the Index
-
-Add an entry to the `bugs` array in `index.json`:
-
-```json
-{
-  "id": "bug_001",
-  "title": "...",
-  "status": "TODO",
-  "severity": "high",
-  "epicId": "epic_001",
-  "initiativeId": "init_001"
-}
-```
-
-If the bug has a parent epic, derive `initiativeId` from the epic.
-
-Update `lastModified`. Write `index.json` back.
-
-### Step 5: Report to User
-
-Tell the user the bug ID and: "Next step: `/triage {bug_id}` when you're
-ready to investigate and fix this bug."
+**Do not proceed to Phase 1 until the user acknowledges the summary.**
 
 ---
 
-## View Mode
+## Phase 1: Codebase Research
 
-When triggered (Input Handling case 1):
+**This phase must complete before any planning begins.** The research
+artifact is the review surface. If the research is wrong, the plan will be
+wrong, and the fix will be wrong.
 
-1. Read the bug from `~/.claude/backlog-driven-development/artifacts/bugs/{id}.json`
-2. Read `index.json` to resolve relationships
-3. Display in this format:
+### Step 1: Read Project Context
 
-```
-## Bug: {title}
-**ID:** {id}  |  **Severity:** {severity}  |  **Status:** {status}  |  **Created:** {createdAt}
+Read any project architecture or spec files not yet loaded in this session
+(e.g., `architecture.md`, `ARCHITECTURE.md`, `spec.md`, `SPEC.md`). These
+provide the domain context the bug exists within. Skip files already read.
 
-### Relationships
-- **Parent Epic:** {parentEpic} — "{epic title}" (or "None — standalone")
+### Step 2: Deep Codebase Exploration
 
-### Symptom
-{symptom}
+Launch Explore agents via the Agent tool to **deeply trace the code path
+involved in the reported symptom**. The agents must:
 
-### Environment
-{environment details}
+1. **Trace the reproduction steps through code** — starting from the entry
+   point (what handler/function receives the user action), follow the code
+   path step by step until reaching where the symptom manifests
+2. Read the full content of every file along the code path — do not
+   summarize from file names or directory structure alone
+3. **Understand the intended behavior** of each function in the path —
+   read function bodies, comments, tests, and related documentation
+4. Trace every caller and downstream consumer of code that will change
+5. Search for existing code that handles the same scenario correctly
+   elsewhere — note exact `file:line` references
+6. Check `git log --oneline -20 -- [affected files]` for recent changes
+   in affected areas
 
-### Steps to Reproduce
-1. {step 1}
-2. {step 2}
-...
+Each agent reports back structured findings with full file paths and
+`file:line` references. Do not accept vague findings like "there's a
+utility module" — demand specifics.
 
-### Expected Behavior
-{expectedBehavior}
+### Step 3: Answer Three Mandatory Questions
 
-### Actual Behavior
-{actualBehavior}
+Before any planning, answer these in writing based on the exploration:
 
-### Severity and Impact
-{impact}
+1. **Where does this symptom originate in the system?**
+   Name the specific module, file, and function. Explain why this location
+   and not adjacent alternatives. Distinguish between where the symptom
+   *appears* and where the bug *lives* — they may be different.
 
-### Evidence
-{evidence list}
+2. **What is the intended behavior of this code path?**
+   Describe what the code was designed to do. Reference tests, comments,
+   or specifications that document the expected behavior.
 
-### Target Repositories
-{targetRepositories}
-
-### Resolution
-{resolution or "Pending — run /triage {id} to investigate"}
-```
-
-4. **Stop.** Do not enter any other phase or mode.
+3. **What has changed recently in this area?**
+   Check `git log` for affected files. Note any recent commits that might
+   have introduced or relate to the bug.
 
 ---
 
-## Delete Mode
+## Phase 2: Bug Reproduction Attempt
 
-When triggered (Input Handling case 2):
+**This is the key differentiator from `/feature`.** Before planning a fix,
+attempt to reproduce the bug programmatically. This validates the symptom
+and provides concrete evidence for the research.
 
-### Step 1: Safety Check
+### Step 1: Check Existing Test Coverage
 
-1. Read the bug from `~/.claude/backlog-driven-development/artifacts/bugs/{id}.json`
-2. Check the bug's `status` field
-3. If status is `IN_PROGRESS` or `DONE`:
+Search for existing tests that exercise the affected code path:
 
-> "Cannot delete `{bug_id}`: bug is currently {status}.
+1. Grep for test files related to the affected module/function
+2. Run those tests. Note if any already fail — they may be testing the
+   same scenario
+3. If existing tests pass, note what scenarios they cover and what gap
+   the bug falls into
+
+### Step 2: Write a Draft Reproduction Test
+
+Write a test that reproduces the bug:
+
+1. Set up the preconditions from the reproduction steps (Phase 0)
+2. Perform the action that triggers the bug
+3. Assert the **expected** behavior (so the test fails if the bug exists)
+4. Follow the project's existing test conventions (detected during Phase 1)
+
+Name the test descriptively: `test_[slug]_[symptom_description]`
+
+### Step 3: Run the Reproduction Test
+
+Run the test and record the result:
+
+- **RED (test fails)**: Bug confirmed programmatically. Capture the exact
+  failure output — assertion message, stack trace, actual vs expected values.
+- **GREEN (test passes)**: Bug did not reproduce in the test environment.
+  Note possible reasons: environment-specific, intermittent, already fixed,
+  or test setup doesn't match real conditions closely enough.
+- **ERROR (infrastructure issue)**: Test couldn't run. Note what failed
+  (missing fixture, wrong framework, compilation error). Do not block on this.
+
+### Step 4: Save but Do NOT Commit
+
+The reproduction test is a **draft artifact**. Do not commit it. Save the
+test file to `.claude/bugs/{slug}/draft-reproduction-test.[ext]` so it can
+be referenced later. It will be:
+- Included in `research.md` as evidence
+- Added to the first task's `testContext` so the TDD test-writer can use
+  it as a starting point rather than writing from scratch
+
+---
+
+## Phase 3: Write research.md and impact-map.md
+
+### Step 1: Write research.md
+
+Write all findings to `.claude/bugs/{slug}/research.md` using the
+[research.md template](references/templates.md#researchmd).
+
+Include:
+- The symptom summary from Phase 0
+- The reproduction findings from Phase 2 (including the draft test code
+  and its output)
+- The codebase findings from Phase 1 (with file:line references)
+- The root cause hypothesis (clearly labeled as a hypothesis)
+- Existing patterns that inform what the fix should look like
+- Recent changes from git log
+- Open questions for the user
+
+### Step 2: Write impact-map.md
+
+Write to `.claude/bugs/{slug}/impact-map.md` using the
+[impact-map.md template](references/templates.md#impact-mapmd).
+
+Bug fixes typically touch fewer files than features. The map should include:
+- The file(s) containing the bug (action: modify)
+- The regression test file (action: create)
+- Edge case test files if applicable (action: create)
+- Any files with related code that might be similarly affected
+
+### Step 3: Present for Review
+
+Present the research findings and impact map to the user. Highlight:
+- Whether the bug was reproduced programmatically (and the test output)
+- The root cause hypothesis and supporting evidence
+- The code path trace from entry point to symptom
+- Any open questions
+
+> "Review the research and impact map above. Does the root cause hypothesis
+> match your understanding? Is anything missing from the impact map?"
+
+**Do not proceed to Phase 4 until the user acknowledges the research.**
+
+---
+
+## Phase 4: Plan Document
+
+### Step 1: Write plan.md
+
+Write to `.claude/bugs/{slug}/plan.md` using the
+[plan.md template](references/templates.md#planmd).
+
+**Include actual code snippets.** Not pseudocode, not descriptions — the
+actual proposed fix and test code. The draft reproduction test from Phase 2
+serves as the starting point for the regression test section.
+
+Bug fix plans should be focused:
+- 2-3 implementation sections (test, fix, edge cases)
+- Explicit "What NOT to Do" section preventing scope creep
+- "Do not implement yet" at the end
+
+### Step 2: Present the Plan
+
+Present the plan to the user and transition to the annotation cycle:
+
+> "The plan is at `.claude/bugs/{slug}/plan.md`. You can:
 >
-> A bug that is IN_PROGRESS has active investigation work. A DONE bug
-> has a fix associated with it. Reset the status to `TODO` first if
-> you want to delete it."
-
-**Stop.** Do not proceed with deletion.
-
-### Step 2: Confirmation
-
-If status allows deletion (`TODO`, `BACKLOG`, `NEEDS_REFINEMENT`):
-
-> "You are about to delete bug `{id}`: "{title}"
->
-> This will remove:
-> - The bug file
->
-> Type "confirm" to proceed."
-
-Use AskUserQuestion to get confirmation.
-
-### Step 3: Execute Deletion
-
-On "confirm":
-
-1. Delete the bug file: `bugs/{id}.json`
-2. Update `index.json`:
-   - Remove the bug entry from the `bugs` array
-   - Update `lastModified`
-3. Write `index.json`
-
-### Step 4: Confirm
-
-> "Deleted bug `{id}`: "{title}""
+> 1. **Annotate in your editor** — open the file, add inline notes starting
+>    with `@NOTE:`, `@FIX:`, or `@REMOVE:` at the exact location of each
+>    issue, then tell me 'review'
+> 2. **Give feedback here** — describe corrections in chat and I'll update
+>    the plan
+> 3. **Approve** — say 'approve' if the plan is ready for task breakdown"
 
 ---
 
-## Refinement Mode
+## Phase 5: Annotation Cycle
 
-When an existing bug is loaded (Input Handling case 3):
+Same mechanism as `/feature` but lighter — bug fixes are smaller scope and
+should need fewer rounds.
 
-1. Read the existing bug content
-2. Run the **`story-reviewer`** agent on it (item type: "bug")
-3. Present the reviewer's findings:
-   > "I reviewed the existing bug card and found these areas that could be
-   > strengthened: [findings]. Let's work through these together."
-4. Enter Phase 2 (The Bug Conversation) but only for the gaps identified
-   by the reviewer — do not re-interview for things already well-defined
-5. Update the bug card and proceed through Phase 4-5 as normal
+### How Inline Annotations Work
+
+The user opens `plan.md` in their editor and adds notes directly:
+
+- `@NOTE: [correction or context]` — domain knowledge
+- `@FIX: [what's wrong and what it should be]` — correcting an assumption
+- `@REMOVE: [reason]` — rejecting a proposed approach
+
+The `@` prefix avoids collisions with markdown blockquotes (`>`).
+
+### Processing Annotations
+
+When the user says "review" (or provides chat feedback):
+
+1. Read the updated `.claude/bugs/{slug}/plan.md`
+2. Find all annotation markers — match `@NOTE:`, `@FIX:`, `@REMOVE:`
+   case-insensitively with flexible whitespace
+3. Address **every** annotation — do not skip any
+4. Remove the annotation markers from the updated plan
+5. Write the updated plan back to `plan.md`
+6. Present what changed in response to each annotation
+
+### Cycle Counter
+
+Track the annotation cycle count with an HTML comment in `plan.md`:
+
+```
+<!-- annotation-cycle: 1/3 -->
+```
+
+Insert this comment after the `**Status**` line when entering Phase 5.
+Increment the counter each time annotations are processed.
+
+### Cycle Repetition
+
+After addressing annotations, increment the cycle counter and ask:
+
+> "I've addressed all your annotations (cycle {N}/3). Review the updated
+> plan — add more notes or say 'approve' when satisfied."
+
+If the plan is still not approved after 3 cycles, ask the user if the
+bug scope needs to be reconsidered.
+
+### On Approval
+
+When the user says "approve":
+
+1. Update the plan's `**Status**` to `Approved`
+2. Write the updated `plan.md`
+3. Proceed to Phase 6
 
 ---
 
-## Common Anti-Patterns to Catch
+## Phase 6: Task Breakdown
 
-When you notice any of these during the conversation, name the anti-pattern
-explicitly and help the user fix it:
+After the plan is approved, produce a granular task list. Bug fixes are
+naturally smaller than features — expect 2-4 tasks, not 10+.
 
-| Anti-Pattern | Signal | Response |
-|---|---|---|
-| Diagnosis as title | "Race condition in save handler" | Reframe as observable symptom |
-| Vague reproduction | "It just breaks sometimes" | Demand specific steps and conditions |
-| Missing environment | No OS/version/build info | Ask which environment they observed it in |
-| Expected = "it works" | "Expected: it should work correctly" | Ask what "correctly" looks like specifically |
-| Actual = "it's broken" | "Actual: it doesn't work" | Ask what specifically they see/experience |
-| Solution in bug card | "Fix: invalidate the cache after save" | Remove — solutions belong in /triage |
-| Multiple bugs in one | "Also, there's another issue..." | Split into separate bug cards |
-| Inflated severity | Cosmetic issue rated as Critical | Calibrate using the severity table |
-| No evidence | No screenshots, logs, or error messages | Ask if they can reproduce and capture evidence |
+### Task Granularity Rules
+
+- **Single-concern scope.** Each task targets one logical concern
+  (typically 1-3 files).
+- **Bug fixes have a natural structure**: regression test → fix → edge
+  case tests. Follow this unless the plan indicates otherwise.
+- **Feed the reproduction test to the first task.** If a draft reproduction
+  test was saved during Phase 2, add its path to the first task's
+  `testContext` with reason `"draft reproduction test — use as starting
+  point for the regression test"`. The TDD test-writer can adopt its
+  reproduction logic while applying proper structure and assertions.
+- **Size warning.** If the task list exceeds ~8 tasks, the bug may be
+  more complex than expected. Consider splitting into multiple bugs.
+- Use **"must"** throughout task language. "Should" reduces AI adherence.
+
+### Task Format
+
+Each task must contain:
+
+- **The file(s)** to touch (explicit paths, typically 1-3 files for one concern)
+- **The specific function or symbol** to create or modify
+- **A reference** to an existing pattern to follow (exact `file:line`)
+- **What NOT to do** — adjacent concerns or scope that must not change
+- **A "done when" condition** that can be checked mechanically
+
+### Step 1: Write tasks.md
+
+Write to `.claude/bugs/{slug}/tasks.md` using the
+[tasks.md template](references/templates.md#tasksmd).
+
+### Step 2: Write Task JSON Files
+
+Write each task as a JSON file to `.claude/bugs/{slug}/tasks/` using
+the [task JSON schemas](references/templates.md#task-json-schemas):
+
+- `tasks/plan.json` — plan-level information (includes `"type": "bugfix"`)
+- `tasks/task_{N}.json` — one per task (e.g. `task_0.json`, `task_1.json`)
+
+### Step 3: Present Tasks
+
+Present the task breakdown to the user:
+
+> "Task breakdown complete — {N} tasks in `.claude/bugs/{slug}/tasks.md`.
+>
+> Review the tasks. When ready to implement, run:
+>
+> `/execute .claude/bugs/{slug}/`"
 
 ---
 
 ## Conversation Rules
 
-- **One question at a time.** Do not dump a list of 10 questions.
+- **One question at a time.** Do not dump a list of 10 questions — multiple
+  questions overwhelm users and produce lower-quality answers as they rush
+  through items.
 - **Push back on vagueness.** Every vague statement gets restated in specific
   terms: "When you say 'it breaks,' I interpret that as [specific behavior].
   Is that right?"
 - **Name the anti-pattern.** When you see a common mistake, name it:
   "That's a diagnosis, not a symptom," or "That reproduction step assumes
-  too much — what state is the system in when you start?"
+  too much."
 - **Celebrate good input.** When the user provides a clear reproduction
-  sequence or exact error message, acknowledge it.
-- **Do not write the bug card silently.** The conversation IS the deliverable.
+  sequence or exact error message, acknowledge it — positive reinforcement
+  helps them know what detail level is useful.
+- **The conversation IS the Phase 0 deliverable.** Do not write the symptom
+  summary silently.
 
 ---
 
-## Pipeline
+## Common Failure Patterns
 
-```
-Bug symptom observed
-    |
-/bug  -->  Bug Card (this skill)
-    |
-story-reviewer gate (READY / NOT_READY — bug evaluation rules)
-    |
-/triage  -->  Full debugging lifecycle (reproduce → isolate → test → fix → verify → PR)
-    |
-Complete (bug resolved, PR merged)
-```
+- **Skimming instead of reading** — Phase 1 exists because the AI reads at
+  signature level and moves on. Force deep reading: "read the full function
+  body", "trace every caller."
+- **Planning before researching** — Research must complete BEFORE any plan.
+- **Pseudocode in the plan** — The plan must contain actual code snippets.
+- **Scope creep into refactoring** — Bug fixes must be minimal. The "What
+  NOT to Do" section prevents this.
+- **Reproduction test committed prematurely** — The Phase 2 test is a draft.
+  Do not commit it. The task breakdown assigns proper test writing to the
+  TDD agent.
+- **Diagnosis in the symptom title** — The title describes what the user
+  sees, not what the code does wrong.

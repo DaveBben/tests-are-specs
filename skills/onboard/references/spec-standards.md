@@ -1,16 +1,6 @@
----
-name: spec-standards
-description: >
-  Provides the standards, validation rules, anti-patterns, and template for project-level
-  specs (spec.md). Use when creating or reviewing spec.md files. Do NOT invoke directly —
-  this is a reference consumed by spec-authoring and spec-review workflows.
-user-invocable: false
-disable-model-invocation: true
----
-
 # Project Spec Standards Reference
 
-Last updated: 2026-04-11
+Last updated: 2026-04-12
 
 ---
 
@@ -23,8 +13,8 @@ Last updated: 2026-04-11
 
 ### Supporting Files
 
-- [Template](references/template.md) — Copy-paste starting point for spec.md
-- [Section Guidance](references/section-guidance.md) — Why each section exists, with bad/good examples
+- [spec-template.md](spec-template.md) — Copy-paste starting point for spec.md
+- [spec-section-guidance.md](spec-section-guidance.md) — Why each section exists, with bad/good examples
 
 ---
 
@@ -39,21 +29,6 @@ actually implemented right now, how it behaves at its edges, and what the AI mus
 **The core insight:** The spec answers three questions: "What is this project? What does it
 actually do right now? What are the rules?" Everything in the spec should serve one of these
 questions. If it doesn't, it belongs in CLAUDE.md, in a change plan, or nowhere.
-
-### What Belongs in spec.md vs CLAUDE.md
-
-| spec.md | CLAUDE.md |
-|---------|-----------|
-| Why the project exists | Tech stack |
-| Current state — what's actually implemented | Directory structure |
-| Architecture overview and external dependencies | Development commands |
-| Deployment & infrastructure | Build/test/lint commands |
-| Testing strategy (what exists and what's missing) | Package manager |
-| Boundaries & constraints | Environment setup |
-| Ownership, known issues, tech debt | |
-
-Do not duplicate content between the two. The spec covers context that goes deeper than what
-CLAUDE.md provides.
 
 ---
 
@@ -108,7 +83,7 @@ CLAUDE.md provides.
 ### Status Field
 
 The header includes a Status field (`Draft | Active | Needs Update`). See
-`references/section-guidance.md` for definitions of each value.
+`spec-section-guidance.md` for definitions of each value.
 
 ---
 

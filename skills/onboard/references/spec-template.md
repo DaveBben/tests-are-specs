@@ -1,7 +1,7 @@
 # Project Spec Template
 
 Copy-paste starting point for spec.md. Fill in each section following the guidance in
-`section-guidance.md`. Sections marked (optional) can be omitted if not applicable.
+`spec-section-guidance.md`. Sections marked (optional) can be omitted if not applicable.
 
 ---
 
@@ -9,7 +9,7 @@ Copy-paste starting point for spec.md. Fill in each section following the guidan
 # [Project Name] — Project Spec
 
 **Last updated**: [YYYY-MM-DD]
-**Status**: [Draft | Active | Needs Update] <!-- See section-guidance.md for status definitions -->
+**Status**: [Draft | Active | Needs Update] <!-- See spec-section-guidance.md for status definitions -->
 
 > This spec represents current state, not aspirational state. Update it whenever
 > implementation changes. The "Current State" section is the most important — keep it accurate.

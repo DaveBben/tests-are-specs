@@ -3,6 +3,14 @@
 Templates for the markdown artifacts produced by `/feature`. Each template
 shows the expected structure — replace bracketed placeholders with real content.
 
+## Contents
+
+- [research.md](#researchmd)
+- [impact-map.md](#impact-mapmd)
+- [plan.md](#planmd)
+- [tasks.md](#tasksmd)
+- [Task JSON Schemas](#task-json-schemas)
+
 ---
 
 ## research.md
@@ -13,6 +21,15 @@ shows the expected structure — replace bracketed placeholders with real conten
 ## Project Context
 [What was learned from architecture.md, spec.md, etc. — summarize the
 relevant parts, not everything]
+
+## Feature Intent
+**What**: [The concrete change the user wants — confirmed by user]
+**Why**: [The motivation, problem, or goal — confirmed by user]
+
+## External Context
+[Context provided by the user from outside the codebase. Include summaries
+of fetched URLs, verbatim user-provided context, or "No external context
+provided." Every entry must note its source.]
 
 ## Codebase Findings
 [Deep reading results — specific files, functions, patterns found.
@@ -32,6 +49,27 @@ Every claim must include a file:line reference.]
 
 ## Open Questions
 [Things discovered during research that need user input before planning]
+
+## Devil's Advocate Challenge
+[Appended by the devils-advocate agent — do not write manually]
+
+### Assumptions (verify before planning)
+- **[Assumption]**: [Why this might be wrong, grounded in codebase evidence]
+
+### Ambiguities (clarify before planning)
+- **[Term or behavior]**: Could mean [A] or [B]. This matters because [consequence].
+
+### Edge Cases (address in plan or explicitly defer)
+- **[Scenario]**: [What happens and why it's not covered]
+
+### Scope Creep Risks (draw the line now)
+- **[Adjacent concern]**: Tempting because [reason]. Dangerous because [consequence].
+
+### Pre-Mortem
+> [2-3 sentences, past tense, narrating the most likely failure]
+
+### User Responses
+[Filled in after user reviews the challenges]
 ```
 
 ---
@@ -123,6 +161,24 @@ scratch.]
 ## Trade-offs
 [What was considered, what was chosen, and what was given up]
 
+## Delivery Strategy
+
+**Estimated total change size**: [rough line count based on impact map]
+**PR strategy**: [Single PR / Stacked PRs]
+
+[If single PR, omit the slice sections below.]
+
+### Slice 1: [one-sentence description of the diff, not the goal]
+- **Capabilities delivered**: [what works after this merges]
+- **Files touched**: [list]
+
+### Slice 2: [one-sentence description of the diff]
+- **Capabilities delivered**: [what works after this merges]
+- **Files touched**: [list]
+- **Depends on**: Slice 1
+
+[Each slice must leave the project in a working state with all tests passing.]
+
 ## What NOT to Do
 [Explicit anti-patterns and boundaries for the implementer]
 
@@ -165,17 +221,6 @@ scratch.]
 ### 2.1 {Task Title}
 ...
 
----
-
-## Implementation Command
-
-When ready to implement, use this prompt:
-
-> Implement it all. When you're done with a task or phase, mark it as
-> completed in the plan document. Do not stop until all tasks and phases
-> are completed. Do not add unnecessary comments. Do not use any or unknown
-> types. Continuously run typecheck to make sure you're not introducing
-> new issues.
 ```
 
 ---
@@ -201,7 +246,16 @@ Plan-level information stored at `.claude/features/{slug}/tasks/plan.json`:
   },
   "risksAndRollback": "[from plan]",
   "criticalReminders": ["..."],
-  "totalTasks": "N"
+  "totalTasks": "N",
+  "repositories": ["."],
+  "totalSlices": 1,
+  "slices": [
+    {
+      "id": 1,
+      "description": "[one-sentence diff description]",
+      "files": ["src/path/a.ts", "src/path/b.ts"]
+    }
+  ]
 }
 ```
 
@@ -212,18 +266,23 @@ One file per task at `.claude/features/{slug}/tasks/task_{N}.json`:
 ```json
 {
   "id": "task_{N}",
+  "slice": 1,
+  "repository": ".",
   "title": "Task N: [Title]",
   "status": "PENDING",
   "implementer": "AI",
-  "file": "src/path/to/file.ts",
+  "files": ["src/path/to/file.ts"],
   "symbol": "functionName()",
   "reference": "src/existing/pattern.ts:42",
   "blockedBy": [],
   "relevantFiles": [
     {"path": "src/path/to/file.ts", "action": "create"}
   ],
-  "contextToReadFirst": [
-    {"path": "src/types/contracts.ts", "reason": "[why]"}
+  "testContext": [
+    {"path": "src/types/contracts.ts", "reason": "[interfaces, types, contracts needed to write tests]"}
+  ],
+  "implementationContext": [
+    {"path": "src/services/existing.ts", "reason": "[implementation details only the code writer needs]"}
   ],
   "steps": [
     "Read the reference implementation at src/existing/pattern.ts:42",

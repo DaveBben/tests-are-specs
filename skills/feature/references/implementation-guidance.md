@@ -41,3 +41,27 @@ The AI will change interfaces unless explicitly told not to.
 
 Pointing at a reference communicates all the implicit requirements without
 spelling them out.
+
+## Right-Sizing During Execution
+
+### One Change at a Time
+
+Each task is one code change. Each slice is one reviewable PR. If you find
+yourself needing to explain two unrelated things in a commit message, the
+task was too broad.
+
+### The Working State Rule
+
+After every task commit, run tests. If they fail because a future task hasn't
+been implemented yet, that's a planning error — report it immediately rather
+than pressing forward. Working software after every commit is non-negotiable.
+
+### When a Slice Is Growing Too Large
+
+If the cumulative diff for the current slice passes 500 lines, tell the user.
+They may want to:
+1. Continue (the remaining tasks are small)
+2. Draw a new slice boundary here and PR what's done
+3. Revisit the plan
+
+Don't silently produce a 1500-line PR.

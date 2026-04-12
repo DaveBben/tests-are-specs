@@ -1,0 +1,49 @@
+{
+  "id": "bug_001",
+  "type": "bug",
+  "title": "Stale transcription text displays after re-recording a voice memo",
+  "status": "TODO",
+  "severity": "high",
+  "reporter": "[You]",
+  "assignee": null,
+  "createdAt": "2026-04-11",
+  "parentEpic": "epic_001",
+
+  "symptom": "After deleting and re-recording a voice memo with the same name, the old transcription text appears instead of the new one.",
+
+  "environment": {
+    "os": "macOS 26.0",
+    "build": "Utterd v0.1.0-alpha",
+    "additional": "iCloud sync enabled, SQLite state DB present from prior session"
+  },
+
+  "stepsToReproduce": [
+    "Record a voice memo named 'Shopping List' on iPhone",
+    "Wait for Utterd to detect and transcribe it (memo status becomes 'transcribed')",
+    "Delete 'Shopping List' from Voice Memos on iPhone",
+    "Record a new voice memo also named 'Shopping List' with different spoken content",
+    "Wait for iCloud sync to deliver the new file to the Mac",
+    "Observe: Utterd shows the old transcription text, not the new one"
+  ],
+
+  "expectedBehavior": "Utterd detects the new file as a distinct memo (different content hash or modification timestamp) and transcribes it fresh, displaying the new transcription.",
+
+  "actualBehavior": "Utterd matches the file path to the existing state tracker record and serves the cached transcription from the first recording. The daemon log shows 'File already tracked, skipping: ~/Library/Mobile Documents/.../Shopping List.m4a'. The state tracker does not check content hash or modification timestamp on re-detection.",
+
+  "impact": "Any user who re-records a memo at the same file path will see stale transcription text. No workaround short of manually deleting the SQLite state database and restarting the daemon.",
+
+  "evidence": [
+    "SQLite query: SELECT * FROM memos WHERE file_path LIKE '%Shopping%' returns single row with original content_hash",
+    "Daemon log: 'File already tracked, skipping: ~/Library/Mobile Documents/com~apple~VoiceMemos/Recordings/Shopping List.m4a'",
+    "The .m4a file's modification timestamp is newer than the state tracker's recorded timestamp"
+  ],
+
+  "targetRepositories": [
+    {
+      "name": "utterd",
+      "area": "State tracker module — duplicate detection logic in the memo processing pipeline"
+    }
+  ],
+
+  "resolution": null
+}

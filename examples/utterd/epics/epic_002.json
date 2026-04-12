@@ -1,0 +1,24 @@
+{
+  "id": "epic_002",
+  "title": "Intelligent Folder Classification",
+  "status": "BACKLOG",
+  "creator": "[You]",
+  "parentInitiative": "init_001",
+  "order": 2,
+  "createdAt": "2026-04-10",
+  "dueDate": null,
+
+  "goal": "Given transcribed text from a voice memo, the system correctly identifies which Apple Notes folder it belongs in using the user's existing folder structure.",
+
+  "successMetric": "85%+ correct folder classification. Low-confidence classifications route to a designated inbox folder rather than guessing wrong.",
+
+  "whyThisOrder": "It depends on Epic 1 producing transcribed text. It also carries the second biggest risk — LLM classification quality is uncertain and may require prompt iteration. Better to isolate this risk in its own epic than discover it late.",
+
+  "roughScope": "Reading the user's Apple Notes folder structure, constructing a prompt that gives the LLM the transcribed text and available folders, parsing the LLM's response into a folder selection, implementing a confidence threshold with inbox fallback, supporting prompt tuning without code changes.",
+
+  "outOfScope": "Actually creating the note in Apple Notes — that's the next epic. This epic takes text in and produces a folder name out. Also out of scope: summarization, even though the LLM integration could support it.",
+
+  "definitionOfDone": "Given a transcribed memo, the system reliably returns the correct folder name, and falls back to an inbox folder when uncertain.",
+
+  "comments": []
+}

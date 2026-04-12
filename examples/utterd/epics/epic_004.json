@@ -1,0 +1,24 @@
+{
+  "id": "epic_004",
+  "title": "Menu Bar Daemon and Operational Reliability",
+  "status": "BACKLOG",
+  "creator": "[You]",
+  "parentInitiative": "init_001",
+  "order": 4,
+  "createdAt": "2026-04-10",
+  "dueDate": null,
+
+  "goal": "The system runs silently as a menu bar daemon, starts on login, surfaces status and errors unobtrusively, and is reliable enough to run unattended for weeks.",
+
+  "successMetric": "Zero manual intervention required during normal operation over a two-week period. Resource usage stays under 100MB RAM while idle. No noticeable battery impact.",
+
+  "whyThisOrder": "This is the polish and reliability layer. The core pipeline needs to work before it's worth investing in making it run unattended. This epic turns a working prototype into a tool you trust to run in the background permanently.",
+
+  "roughScope": "Menu bar status indicator (idle, processing, error), daemon auto-start on login, logging with rotation, retry logic for transient failures across all pipeline stages, error notifications for failures that need attention, graceful handling of system sleep, network loss, and iCloud sync delays, resource monitoring and optimization.",
+
+  "outOfScope": "Configuration UI beyond minimal menu bar controls. If settings need changing, editing a config file is acceptable for a single-user tool.",
+
+  "definitionOfDone": "Utterd runs as a background daemon from login, processes memos automatically, surfaces errors without interrupting the user, and operates reliably for weeks without intervention.",
+
+  "comments": []
+}

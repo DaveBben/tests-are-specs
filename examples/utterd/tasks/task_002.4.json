@@ -1,0 +1,50 @@
+{
+  "id": "task_002.4",
+  "title": "Filter out pre-existing files on startup",
+  "parentStory": "story_002",
+  "status": "PENDING",
+  "assignee": null,
+  "size": null,
+  "implementer": "AI",
+  "repository": "utterd",
+  "blockedBy": ["task_002.2"],
+  "covers": ["ac_2.5"],
+  "createdAt": "2026-04-11",
+
+  "relevantFiles": [
+    { "path": "Sources/Utterd/Watcher/FSEventsWatcher.swift" },
+    { "path": "Tests/UtterdTests/Watcher/FSEventsWatcherTests.swift" }
+  ],
+
+  "contextToReadFirst": [
+    {
+      "path": "Sources/Utterd/Watcher/FSEventsWatcher.swift",
+      "reason": "Current implementation — need to add baseline snapshot before stream creation"
+    }
+  ],
+
+  "changes": [
+    "In `startMonitoring()`, before creating the FSEvents stream, snapshot the current contents: `let existingFiles = Set(try FileManager.default.contentsOfDirectory(at: directory, ...).filter { $0.pathExtension == \"m4a\" })`",
+    "Store as `private var baselineFiles: Set<URL>`",
+    "In the FSEvents callback, before handing off to the sync checker, check `if baselineFiles.contains(fileURL) { return }` — skip files that existed at startup",
+    "Edge case: if a file is deleted and re-added after startup, it should be detected. Remove files from `baselineFiles` if a deletion event is observed."
+  ],
+
+  "tests": [
+    {
+      "name": "test_ignoresPreExistingFiles",
+      "description": "Place two .m4a files in the temp directory before starting the watcher. Start the watcher. Assert onFileDetected does not fire for either. Then add a third .m4a file. Assert onFileDetected fires for only the third file."
+    },
+    {
+      "name": "test_detectsReaddedFile",
+      "description": "Place a .m4a file, start the watcher, delete the file, then add it back. Assert onFileDetected fires for the re-added file."
+    }
+  ],
+
+  "doneWhen": "Starting the watcher in a directory with existing .m4a files does not emit those files. Only new arrivals trigger events. Tests pass.",
+  "verificationCommand": "swift test --filter FSEventsWatcherTests",
+
+  "doNot": [
+    "Remove the baseline filtering on restart — every fresh start of the watcher should re-snapshot. Persistence of 'seen files' is the state tracker's job (Story 3), not the watcher's."
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "id": "task_002.2",
+  "title": "Implement FSEvents-based directory monitoring",
+  "parentStory": "story_002",
+  "status": "PENDING",
+  "assignee": null,
+  "size": null,
+  "implementer": "AI",
+  "repository": "utterd",
+  "blockedBy": ["task_002.1"],
+  "covers": ["ac_2.1", "ac_2.2", "ac_2.6"],
+  "createdAt": "2026-04-11",
+
+  "relevantFiles": [
+    { "path": "Sources/Utterd/Watcher/FSEventsWatcher.swift" },
+    { "path": "Tests/UtterdTests/Watcher/FSEventsWatcherTests.swift", "status": "new" }
+  ],
+
+  "contextToReadFirst": [
+    {
+      "path": "Sources/Utterd/Watcher/FileSystemWatcher.swift",
+      "reason": "Protocol defined in Task 002.1"
+    },
+    {
+      "path": "Sources/Utterd/Watcher/WatcherEvent.swift",
+      "reason": "Event struct defined in Task 002.1"
+    }
+  ],
+
+  "changes": [
+    "In `startMonitoring()`, create an FSEventStream watching `self.directory` with `kFSEventStreamCreateFlagFileEvents` so we get per-file events, not just directory-level notifications",
+    "On each event, check: is the file extension `.m4a`? If not, ignore. Is the event a creation or rename-in (file appearing)? If not, ignore.",
+    "When a new .m4a file is detected, don't emit immediately — hand off to the sync completion check (Task 002.3). For now, call `onFileDetected` directly as a placeholder.",
+    "In `stopMonitoring()`, invalidate and release the FSEventStream",
+    "FSEvents requires a RunLoop or DispatchQueue — use a dedicated `DispatchQueue(label: \"com.utterd.watcher\")` to avoid blocking the main thread"
+  ],
+
+  "tests": [
+    {
+      "name": "test_detectsNewM4AFile",
+      "description": "Create a temp directory, start the watcher on it, copy a .m4a file in, assert onFileDetected fires within 5 seconds with the correct path"
+    },
+    {
+      "name": "test_ignoresNonM4AFiles",
+      "description": "Copy a .txt file into the watched directory, assert onFileDetected does not fire within 2 seconds"
+    },
+    {
+      "name": "test_detectsMultipleFiles",
+      "description": "Copy two .m4a files in rapid succession, assert onFileDetected fires twice with both paths"
+    }
+  ],
+
+  "doneWhen": "Watcher detects new .m4a files in a temp directory and emits their paths. Non-.m4a files are ignored. Tests pass.",
+  "verificationCommand": "swift test --filter FSEventsWatcherTests",
+
+  "doNot": [
+    "Implement sync completion detection yet — that's Task 002.3. For now, emit immediately on detection.",
+    "Filter out pre-existing files yet — that's Task 002.4",
+    "Handle sleep/wake — that's Task 002.5"
+  ]
+}

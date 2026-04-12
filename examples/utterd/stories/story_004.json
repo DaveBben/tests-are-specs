@@ -1,0 +1,76 @@
+{
+  "id": "story_004",
+  "type": "feature",
+  "title": "Transcribe a Voice Memo to Text Using On-Device Recognition",
+  "parentEpic": "epic_001",
+  "order": 3,
+  "status": "BACKLOG",
+  "creator": "[You]",
+  "assignee": null,
+  "storyPoints": null,
+  "createdAt": "2026-04-10",
+
+  "userStory": {
+    "persona": "a user who recorded a voice memo",
+    "want": "my memo to be accurately transcribed into readable text entirely on my Mac",
+    "soThat": "the content of what I said is captured in written form without relying on any cloud service"
+  },
+
+  "context": "Transcription uses macOS 26 SFSpeechRecognizer with on-device recognition. The spike confirmed that .m4a files are supported and established the expected performance profile. The transcription engine is stateless — it receives a file path and returns a result struct containing the text, confidence, duration, and any error.",
+
+  "acceptanceCriteria": [
+    {
+      "id": "ac_4.1",
+      "given": "a valid .m4a voice memo file",
+      "when": "the transcription engine processes it",
+      "then": "it returns the transcribed text, a confidence score between 0 and 1, and the audio duration in seconds"
+    },
+    {
+      "id": "ac_4.2",
+      "given": "a 1-minute voice memo recorded in a quiet environment with clear English speech",
+      "when": "the transcription engine processes it",
+      "then": "the transcribed text is at least 95% accurate when compared word-by-word to the spoken content"
+    },
+    {
+      "id": "ac_4.3",
+      "given": "a 5-minute voice memo",
+      "when": "the transcription engine processes it",
+      "then": "transcription completes within 2 minutes (adjust threshold based on spike findings)"
+    },
+    {
+      "id": "ac_4.4",
+      "given": "a voice memo that contains extended silence or only background noise",
+      "when": "the transcription engine processes it",
+      "then": "it returns empty or near-empty text with a low confidence score and does not fail or hang"
+    },
+    {
+      "id": "ac_4.5",
+      "given": "an audio file that exceeds the maximum duration supported by the API (if a limit was identified in the spike)",
+      "when": "the transcription engine attempts to process it",
+      "then": "it returns a clear error indicating the duration limit was exceeded, including the file's duration and the maximum allowed"
+    },
+    {
+      "id": "ac_4.6",
+      "given": "a corrupted .m4a file that cannot be decoded",
+      "when": "the transcription engine attempts to process it",
+      "then": "it returns a clear error indicating the file could not be read, and does not crash or hang"
+    },
+    {
+      "id": "ac_4.7",
+      "given": "a file path that no longer exists (the file was deleted after detection but before transcription)",
+      "when": "the transcription engine attempts to process it",
+      "then": "it returns a file-not-found error with the missing path included in the error message"
+    },
+    {
+      "id": "ac_4.8",
+      "given": "the transcription engine is invoked",
+      "when": "processing completes (success or failure)",
+      "then": "all system resources (file handles, audio sessions, recognition tasks) are released and not leaked"
+    }
+  ],
+
+  "outOfScope": "Deciding what to do with the transcribed text, updating state, retry logic. This story is a pure function: file path in, result out. Integration with the pipeline is Story 5.",
+
+  "dependencies": ["story_001"],
+  "comments": []
+}

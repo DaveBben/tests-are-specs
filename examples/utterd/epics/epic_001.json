@@ -1,0 +1,24 @@
+{
+  "id": "epic_001",
+  "title": "Voice Memo Detection and Transcription",
+  "status": "BACKLOG",
+  "creator": "[You]",
+  "parentInitiative": "init_001",
+  "order": 1,
+  "createdAt": "2026-04-10",
+  "dueDate": null,
+
+  "goal": "When a voice memo is recorded and synced to the Mac, it is automatically detected and transcribed into accurate text without any user action.",
+
+  "successMetric": "95%+ transcription accuracy on English speech in quiet environments, processing completes within 2 minutes of file appearing in the sync directory.",
+
+  "whyThisOrder": "Everything downstream depends on having accurate text. This is also where the biggest technical risk lives — the macOS 26 transcription API is new and the iCloud sync directory behavior needs to be understood. If this epic fails, the entire initiative is blocked.",
+
+  "roughScope": "File system monitoring for new audio files in the Voice Memos sync directory, deduplication to avoid reprocessing, invoking the on-device transcription API, producing a clean text output that downstream epics can consume, handling edge cases like partial syncs, corrupted files, and very long recordings.",
+
+  "outOfScope": "Anything related to classification, Apple Notes, or the menu bar. This epic produces transcribed text and nothing more.",
+
+  "definitionOfDone": "A voice memo recorded on iPhone appears as transcribed text in a local staging area on the Mac automatically, with no user intervention, reliably across multiple recordings.",
+
+  "comments": []
+}

@@ -1,0 +1,82 @@
+{
+  "id": "story_005",
+  "type": "feature",
+  "title": "Orchestrate the Detection-to-Transcription Pipeline",
+  "parentEpic": "epic_001",
+  "order": 4,
+  "status": "BACKLOG",
+  "creator": "[You]",
+  "assignee": null,
+  "storyPoints": null,
+  "createdAt": "2026-04-10",
+
+  "userStory": {
+    "persona": "a user who records voice memos throughout the day",
+    "want": "each new memo to be automatically detected, tracked, and transcribed end-to-end without any intervention",
+    "soThat": "by the end of the day every memo I recorded exists as transcribed text ready for classification"
+  },
+
+  "context": "This story wires together the watcher (Story 2), state tracker (Story 3), and transcription engine (Story 4) into a functioning pipeline. It is the integration and reliability layer for Epic 1. Processing is synchronous and sequential — one memo at a time, in detection order.",
+
+  "acceptanceCriteria": [
+    {
+      "id": "ac_5.1",
+      "given": "Utterd is running",
+      "when": "a new voice memo finishes syncing to the Mac",
+      "then": "the orchestrator creates a state record with status detected, passes the file to the transcription engine, and on success updates the record to transcribed with the text, confidence, duration, and timestamp stored"
+    },
+    {
+      "id": "ac_5.2",
+      "given": "a memo is being transcribed",
+      "when": "transcription fails with a transient error (API timeout, temporary resource unavailability)",
+      "then": "the orchestrator marks the memo as failed, waits using exponential backoff (first retry after 30 seconds, second after 2 minutes, third after 8 minutes), and retries up to 3 times"
+    },
+    {
+      "id": "ac_5.3",
+      "given": "a memo has failed 3 consecutive retry attempts",
+      "when": "the third retry also fails",
+      "then": "the memo is marked as permanently failed and is not retried again, with the final error message preserved in the state record"
+    },
+    {
+      "id": "ac_5.4",
+      "given": "a memo has failed twice",
+      "when": "the third retry succeeds",
+      "then": "the memo status is updated to transcribed with the full transcription results stored normally"
+    },
+    {
+      "id": "ac_5.5",
+      "given": "three memos arrive in quick succession",
+      "when": "the orchestrator processes them",
+      "then": "they are processed one at a time in the order they were detected, not concurrently"
+    },
+    {
+      "id": "ac_5.6",
+      "given": "the daemon is terminated while a memo is in transcribing status",
+      "when": "the daemon restarts",
+      "then": "the orchestrator finds that memo and any memos in detected status, and reprocesses them in order starting from the transcription step"
+    },
+    {
+      "id": "ac_5.7",
+      "given": "a memo fails with a permanent error (corrupted file, file not found)",
+      "when": "the orchestrator evaluates whether to retry",
+      "then": "it marks the memo as permanently failed immediately without retrying, preserving the error for later inspection"
+    },
+    {
+      "id": "ac_5.8",
+      "given": "five memos are processed over the course of a day — three succeed, one fails transiently then succeeds on retry, one fails permanently",
+      "when": "all processing is complete",
+      "then": "four memos have status transcribed with valid text, one has status failed with a clear error, and no resources have leaked"
+    },
+    {
+      "id": "ac_5.9",
+      "given": "Utterd has been running for several hours",
+      "when": "no new memos have arrived",
+      "then": "the daemon is idle, consuming minimal CPU and memory, and the watcher remains active for new files"
+    }
+  ],
+
+  "outOfScope": "Classification, note creation, and menu bar UI. The pipeline ends at transcribed status. The orchestrator will be extended in later epics to continue through classification and note writing, but this story only implements detection through transcription.",
+
+  "dependencies": ["story_002", "story_003", "story_004"],
+  "comments": []
+}

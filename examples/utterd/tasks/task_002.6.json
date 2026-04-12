@@ -1,0 +1,48 @@
+{
+  "id": "task_002.6",
+  "title": "Handle missing sync directory on startup",
+  "parentStory": "story_002",
+  "status": "PENDING",
+  "assignee": null,
+  "size": null,
+  "implementer": "AI",
+  "repository": "utterd",
+  "blockedBy": ["task_002.1"],
+  "covers": ["ac_2.7"],
+  "createdAt": "2026-04-11",
+
+  "relevantFiles": [
+    { "path": "Sources/Utterd/Watcher/FSEventsWatcher.swift" },
+    { "path": "Sources/Utterd/Watcher/WatcherError.swift", "status": "new" },
+    { "path": "Tests/UtterdTests/Watcher/FSEventsWatcherTests.swift" }
+  ],
+
+  "contextToReadFirst": [],
+
+  "changes": [
+    "Create `WatcherError` enum with case `directoryNotFound(expected: URL, message: String)`",
+    "In `startMonitoring()`, before snapshotting or creating the FSEvents stream, check `FileManager.default.fileExists(atPath: directory.path)`",
+    "If the directory does not exist, log an error at `.error` level: \"Voice Memos sync directory not found at \\(directory.path). Is iCloud configured and has Voice Memos been used at least once?\" and throw `WatcherError.directoryNotFound`",
+    "The caller (eventually the orchestrator) decides how to handle this — the watcher does not crash, retry, or poll for the directory to appear"
+  ],
+
+  "tests": [
+    {
+      "name": "test_throwsWhenDirectoryMissing",
+      "description": "Init the watcher with a non-existent directory path. Call startMonitoring(). Assert it throws WatcherError.directoryNotFound with the expected path in the error."
+    },
+    {
+      "name": "test_errorMessageIncludesExpectedPath",
+      "description": "Catch the error, assert the expected URL matches the path passed to init."
+    }
+  ],
+
+  "doneWhen": "Starting the watcher against a non-existent directory throws a descriptive error instead of crashing. The process remains alive. Tests pass.",
+  "verificationCommand": "swift test --filter FSEventsWatcherTests",
+
+  "doNot": [
+    "Automatically create the directory — it's managed by iCloud, not by Utterd",
+    "Implement retry or polling for the directory to appear — keep the watcher simple",
+    "Catch the error inside the watcher — let it propagate to the caller"
+  ]
+}

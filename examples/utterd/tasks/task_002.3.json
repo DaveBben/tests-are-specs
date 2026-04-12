@@ -1,0 +1,60 @@
+{
+  "id": "task_002.3",
+  "title": "Implement sync completion detection before emitting files",
+  "parentStory": "story_002",
+  "status": "PENDING",
+  "assignee": null,
+  "size": null,
+  "implementer": "AI",
+  "repository": "utterd",
+  "blockedBy": ["task_002.2"],
+  "covers": ["ac_2.3"],
+  "createdAt": "2026-04-11",
+
+  "relevantFiles": [
+    { "path": "Sources/Utterd/Watcher/FSEventsWatcher.swift" },
+    { "path": "Sources/Utterd/Watcher/SyncCompletionChecker.swift", "status": "new" },
+    { "path": "Tests/UtterdTests/Watcher/SyncCompletionCheckerTests.swift", "status": "new" }
+  ],
+
+  "contextToReadFirst": [
+    {
+      "path": "architecture.md Section 2.2",
+      "reason": "Sync detection method confirmed during the spike. Adapt if spike identified a better method than file-size-stability polling."
+    },
+    {
+      "path": "Sources/Utterd/Watcher/FSEventsWatcher.swift",
+      "reason": "Current implementation from Task 002.2 — replace the direct onFileDetected call with sync check"
+    }
+  ],
+
+  "changes": [
+    "Create `SyncCompletionChecker` with method `waitForSyncCompletion(file: URL, pollInterval: TimeInterval = 1.0, stableReadings: Int = 3, timeout: TimeInterval = 300) async throws -> Bool`",
+    "Implementation: poll the file size every `pollInterval` seconds. When the file size is unchanged for `stableReadings` consecutive checks, return true. If `timeout` is reached, throw `SyncError.timeout(path:duration:)`",
+    "In FSEventsWatcher, replace the direct `onFileDetected` call from Task 002.2 with: detect .m4a → call `SyncCompletionChecker.waitForSyncCompletion` → on success, call `onFileDetected`",
+    "While waiting for sync completion, the watcher should still detect other new files — don't block the FSEvents stream. Use a `Task {}` to handle each file's sync wait concurrently."
+  ],
+
+  "tests": [
+    {
+      "name": "test_waitsForFileToStabilize",
+      "description": "Create a temp file, append data to it every 0.5 seconds for 3 seconds then stop. Assert waitForSyncCompletion returns true only after the file stops growing (not before)."
+    },
+    {
+      "name": "test_returnsImmediatelyForStableFile",
+      "description": "Create a temp file, don't modify it. Assert waitForSyncCompletion returns true within pollInterval * stableReadings seconds."
+    },
+    {
+      "name": "test_timeoutWhenFileNeverStabilizes",
+      "description": "Create a temp file, continuously append data. Call with timeout: 3.0. Assert it throws SyncError.timeout."
+    }
+  ],
+
+  "doneWhen": "The watcher holds back files that are still growing and only emits them once stable. Timeout behavior is tested. Integration with the watcher from Task 002.2 is verified.",
+  "verificationCommand": "swift test --filter SyncCompletionCheckerTests",
+
+  "doNot": [
+    "Hardcode the poll interval or stability threshold — make them configurable via init parameters",
+    "Block the FSEvents callback while waiting for sync — each file's sync wait must be independent"
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "id": "story_001",
+  "type": "spike",
+  "title": "Spike — Validate iCloud Sync Behavior and Transcription API",
+  "parentEpic": "epic_001",
+  "order": 0,
+  "status": "BACKLOG",
+  "creator": "[You]",
+  "assignee": null,
+  "storyPoints": null,
+  "createdAt": "2026-04-10",
+
+  "userStory": {
+    "persona": "a developer setting up Utterd's audio pipeline",
+    "want": "confirm how iCloud Voice Memos sync works and whether the macOS 26 transcription API meets our needs in a daemon context",
+    "soThat": "the remaining stories are built on verified assumptions and we can identify blocking risks before investing in production code"
+  },
+
+  "questionsToAnswer": [
+    "How do new Voice Memo files appear in the sync directory? Are there placeholder files, partial downloads, or atomic writes?",
+    "What is the reliable method to detect that a file is fully synced and ready for processing?",
+    "What is the exact file path pattern for the Voice Memos sync directory on macOS 26?",
+    "Can SFSpeechRecognizer process .m4a files on-device without format conversion?",
+    "Is there a maximum audio duration limit for on-device recognition?",
+    "How long does transcription take for a 1-minute memo? A 5-minute memo?",
+    "Does on-device recognition function in a background daemon process with no foreground app?",
+    "Can speech recognition authorization be requested and persisted by a LaunchAgent daemon?"
+  ],
+
+  "definitionOfDone": [
+    "Every question above has a documented answer with evidence (sample code output, screenshots, or logs)",
+    "Any assumption from the architecture document that was invalidated is flagged and an alternative approach is proposed",
+    "Findings are written into Section 2 of the architecture document",
+    "If any finding is a blocker (transcription doesn't work in a daemon context, .m4a isn't supported), the team is notified immediately — don't wait for the timebox to end"
+  ],
+
+  "timebox": "2 days",
+  "note": "The output is knowledge, not production code. All code written during the spike is throwaway.",
+  "comments": []
+}

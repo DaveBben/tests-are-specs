@@ -1,0 +1,53 @@
+{
+  "id": "task_002.5",
+  "title": "Handle system sleep and wake",
+  "parentStory": "story_002",
+  "status": "PENDING",
+  "assignee": null,
+  "size": null,
+  "implementer": "AI",
+  "repository": "utterd",
+  "blockedBy": ["task_002.2", "task_002.4"],
+  "covers": ["ac_2.4"],
+  "createdAt": "2026-04-11",
+
+  "relevantFiles": [
+    { "path": "Sources/Utterd/Watcher/FSEventsWatcher.swift" },
+    { "path": "Tests/UtterdTests/Watcher/FSEventsWatcherTests.swift" }
+  ],
+
+  "contextToReadFirst": [
+    {
+      "path": "Apple docs on NSWorkspace.willSleepNotification and didWakeNotification",
+      "reason": "FSEvents may or may not deliver events that occurred during sleep — behavior varies by macOS version"
+    }
+  ],
+
+  "changes": [
+    "Subscribe to `NSWorkspace.shared.notificationCenter` for `didWakeNotification`",
+    "On wake, perform a directory scan: list all .m4a files in the watched directory, compare against `baselineFiles` plus all files already emitted (track emitted files in a `private var emittedFiles: Set<URL>`), emit any files that are new and not already processed",
+    "After the wake scan, the FSEvents stream should continue monitoring normally for subsequent files",
+    "Subscribe to `willSleepNotification` — log a debug message but no special action needed. The FSEvents stream survives sleep."
+  ],
+
+  "tests": [
+    {
+      "name": "test_wakeScanDetectsNewFiles",
+      "description": "Simulate a wake scan by calling the internal scan method directly. Add a .m4a file to the temp directory without going through FSEvents (simulating a file that synced during sleep). Call the wake scan. Assert onFileDetected fires for that file."
+    },
+    {
+      "name": "test_wakeScanDoesNotReemitPreviousFiles",
+      "description": "Emit a file normally through FSEvents, then trigger a wake scan. Assert the already-emitted file is not emitted again."
+    }
+  ],
+
+  "manualTestProcedure": "Start Utterd. Put Mac to sleep. Record a voice memo on iPhone. Wait 2 minutes for iCloud sync. Wake the Mac. Observe logs to confirm the new memo is detected after wake.",
+
+  "doneWhen": "After system wake, any .m4a files that synced during sleep are detected and emitted. Previously emitted files are not re-emitted. Manual test procedure documented.",
+  "verificationCommand": "swift test --filter FSEventsWatcherTests",
+
+  "doNot": [
+    "Stop and restart the FSEvents stream on wake — it should survive sleep. Only supplement it with a directory scan.",
+    "Rely solely on FSEvents to catch files that synced during sleep — the scan is the safety net"
+  ]
+}

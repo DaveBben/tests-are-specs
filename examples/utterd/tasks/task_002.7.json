@@ -1,0 +1,62 @@
+{
+  "id": "task_002.7",
+  "title": "Write integration test for the full watcher flow",
+  "parentStory": "story_002",
+  "status": "PENDING",
+  "assignee": null,
+  "size": null,
+  "implementer": "AI",
+  "repository": "utterd",
+  "blockedBy": ["task_002.2", "task_002.3", "task_002.4", "task_002.5", "task_002.6"],
+  "covers": ["ac_2.1", "ac_2.2", "ac_2.3", "ac_2.5", "ac_2.6", "ac_2.7"],
+  "createdAt": "2026-04-11",
+
+  "relevantFiles": [
+    { "path": "Tests/UtterdTests/Watcher/FSEventsWatcherIntegrationTests.swift", "status": "new" }
+  ],
+
+  "contextToReadFirst": [
+    {
+      "path": "Story 2 acceptance criteria",
+      "reason": "This task verifies every criterion is met end-to-end"
+    }
+  ],
+
+  "changes": [],
+
+  "tests": [
+    {
+      "name": "test_fullFlow_detectsNewFileAfterStartup",
+      "description": "Create temp dir with two existing .m4a files. Start watcher. Add a new .m4a file. Assert only the new file is emitted."
+    },
+    {
+      "name": "test_fullFlow_handlesRapidFiles",
+      "description": "Start watcher. Add three .m4a files within 1 second. Assert all three are emitted in order."
+    },
+    {
+      "name": "test_fullFlow_ignoresMixedFileTypes",
+      "description": "Start watcher. Add one .m4a, one .txt, one .wav, one .m4a. Assert exactly two events emitted, both for .m4a files."
+    },
+    {
+      "name": "test_fullFlow_waitsForSyncCompletion",
+      "description": "Start watcher. Create a .m4a file and append data to it every 0.5 seconds for 3 seconds, then stop. Assert onFileDetected fires only after the file stops growing."
+    },
+    {
+      "name": "test_fullFlow_missingDirectory",
+      "description": "Init watcher with non-existent path. Assert startMonitoring() throws. Assert the process is still alive and the error message includes the expected path."
+    },
+    {
+      "name": "test_fullFlow_wakeScanCatchesMissedFiles",
+      "description": "Start watcher. Add a .m4a file directly to the temp directory without going through FSEvents (bypass the stream). Trigger the wake scan method. Assert the file is emitted."
+    }
+  ],
+
+  "doneWhen": "All integration tests pass. Every acceptance criterion from Story 2 has at least one test covering it. No test depends on network, iCloud, or real sleep/wake — all use temp directories and simulated conditions.",
+  "verificationCommand": "swift test --filter FSEventsWatcherIntegrationTests",
+
+  "doNot": [
+    "Use real iCloud sync in these tests — they need to run in CI without network access",
+    "Skip the sync completion integration test — this is the most important edge case",
+    "Add tests for state tracking, transcription, or the orchestrator — those belong to their respective stories"
+  ]
+}

@@ -1,0 +1,110 @@
+{
+  "id": "init_001",
+  "title": "Frictionless Voice-to-Notes Capture for macOS",
+  "owner": "[You]",
+  "status": "proposed",
+  "timeframe": "Q3 2026 (estimated 4-6 weeks of solo effort)",
+  "createdAt": "2026-04-10",
+
+  "problemStatement": "Capturing thoughts by voice is fast, but the friction after recording kills the value. Voice memos pile up unprocessed because transcribing them, deciding where they belong, and filing them into a note-taking system requires manual effort. The result is dozens of untouched recordings that never become useful written notes. As a solo user who records 3-5 voice memos daily, roughly 80% of those memos are never reviewed or organized after recording.",
+
+  "strategicAlignment": {
+    "goal": "Reduce the gap between having a thought and that thought being searchable, organized, and actionable in Apple Notes to near zero.",
+    "whyNow": "macOS 26 introduces on-device transcription APIs that eliminate the need for bundling a model or relying on cloud services. The technical timing is right — this capability was not available before."
+  },
+
+  "proposedSolution": "A macOS menu bar daemon called Utterd that monitors the iCloud Voice Memos sync directory, transcribes audio on-device using macOS 26+ built-in transcription, and uses a local language model to classify each memo into the appropriate Apple Notes folder. No cloud services, no manual intervention after initial setup. The user records a voice memo as they normally would, and it appears as a transcribed note in the right folder automatically.",
+
+  "alternativesConsidered": [
+    {
+      "name": "Existing transcription apps (Otter, Whisper, etc.)",
+      "whyRejected": "Handle transcription but don't route to Apple Notes or organize by folder. Still requires manual copy-paste and filing."
+    },
+    {
+      "name": "Apple Shortcuts automation",
+      "whyRejected": "Can trigger on new files but lacks the intelligence to classify content into folders. Would require maintaining complex shortcut chains that break easily."
+    },
+    {
+      "name": "Obsidian + Whisper workflow",
+      "whyRejected": "Requires switching note-taking systems entirely. Doesn't integrate with Apple Notes ecosystem already in use."
+    },
+    {
+      "name": "Do nothing",
+      "whyRejected": "Continue ignoring 80% of voice memos. Cheapest option but the problem persists."
+    }
+  ],
+
+  "prioritizationRationale": "This is chosen over other personal tooling projects because voice capture is a daily workflow with a measurable failure rate (80% of memos unused). The technical timing is right — macOS 26 introduces on-device transcription APIs that eliminate the need for bundling a model or relying on cloud services. The scope is small enough to complete in weeks, not months.",
+
+  "successMetrics": [
+    "90%+ of voice memos are automatically transcribed and filed within 5 minutes of recording",
+    "Transcription accuracy above 95% for English speech in quiet environments",
+    "Folder classification accuracy above 85% (correct folder chosen by the LLM)",
+    "Zero manual intervention required after initial setup for the standard workflow"
+  ],
+
+  "guardrailMetrics": [
+    "No duplicate notes created from the same memo",
+    "No memos lost or deleted during processing",
+    "System resource usage stays under 100MB RAM while idle",
+    "No noticeable impact on battery life during monitoring"
+  ],
+
+  "scope": {
+    "inScope": [
+      "File system monitoring of Voice Memos directory",
+      "On-device transcription",
+      "LLM-based folder classification",
+      "Apple Notes integration",
+      "Menu bar status indicator",
+      "Basic error handling and retry logic",
+      "Logging"
+    ],
+    "outOfScope": [
+      "Summarization (supported by architecture but not yet enabled)",
+      "Multi-language support",
+      "iOS companion app",
+      "Sharing or collaboration features",
+      "Custom transcription models",
+      "Support for other note-taking apps"
+    ]
+  },
+
+  "risks": [
+    {
+      "name": "macOS 26 dependency",
+      "description": "The on-device transcription API is only available on macOS 26+. If the API changes during beta, implementation will need to adapt."
+    },
+    {
+      "name": "Apple Notes integration",
+      "description": "Apple Notes doesn't have a public API. Integration likely relies on AppleScript or the Notes framework, both of which are fragile and could break with OS updates."
+    },
+    {
+      "name": "LLM folder classification quality",
+      "description": "The accuracy of routing depends on the LLM understanding folder naming conventions and memo content well enough to match them. May require prompt tuning or a fallback inbox folder for low-confidence classifications."
+    },
+    {
+      "name": "Single user assumption",
+      "description": "This is built for one person's folder structure and speech patterns. It's not designed to generalize, which simplifies scope but means the architecture doesn't need to account for onboarding or configuration flexibility."
+    }
+  ],
+
+  "milestones": [
+    {
+      "name": "Audio pipeline works",
+      "description": "File system monitoring detects new memos and transcription produces accurate text. Testable independently."
+    },
+    {
+      "name": "Classification works",
+      "description": "LLM receives transcribed text and returns the correct folder name from the user's existing Apple Notes folders. Testable independently."
+    },
+    {
+      "name": "End-to-end flow",
+      "description": "A voice memo recorded on iPhone appears as a filed note in Apple Notes without intervention."
+    },
+    {
+      "name": "Polished and reliable",
+      "description": "Menu bar UI, error handling, retry logic, logging, and daemon auto-start on login."
+    }
+  ]
+}

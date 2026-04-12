@@ -1,0 +1,176 @@
+{
+  "id": "arch_001",
+  "title": "Utterd — Architecture Document",
+  "author": "[Name]",
+  "status": "ACTIVE",
+  "lastUpdated": "2026-04-10",
+  "parentInitiative": "init_001",
+  "epicIds": ["epic_001", "epic_002", "epic_003", "epic_004"],
+
+  "systemOverview": {
+    "purpose": "Utterd is a macOS menu bar daemon that automatically detects new voice memos synced via iCloud, transcribes them on-device, classifies them into the appropriate Apple Notes folder using a language model, and creates the note — all without user intervention.",
+
+    "systemContext": [
+      {
+        "name": "iCloud Voice Memos sync directory",
+        "relationship": "The source of new audio files, synced from iPhone recordings"
+      },
+      {
+        "name": "macOS Speech Recognition API (macOS 26+)",
+        "relationship": "On-device transcription, no cloud dependency"
+      },
+      {
+        "name": "Local language model",
+        "relationship": "Used for classifying transcribed text into the appropriate Notes folder"
+      },
+      {
+        "name": "Apple Notes",
+        "relationship": "The destination for transcribed and classified memos, accessed via AppleScript or the Notes framework"
+      }
+    ],
+
+    "components": [
+      {
+        "name": "File System Watcher",
+        "responsibility": "Monitors the iCloud Voice Memos sync directory for new audio files using FSEvents or DispatchSource. Responsible for detecting when a file is fully synced (not just partially downloaded).",
+        "stateful": false
+      },
+      {
+        "name": "Transcription Engine",
+        "responsibility": "Wraps the macOS 26 on-device speech recognition API. Audio file in, text out. Reports transcription confidence and errors.",
+        "stateful": false
+      },
+      {
+        "name": "Classifier",
+        "responsibility": "Takes transcribed text and the user's Apple Notes folder structure, sends them to a local LLM, returns a folder name. Implements a confidence threshold — low-confidence results route to a designated inbox folder.",
+        "stateful": false
+      },
+      {
+        "name": "Notes Writer",
+        "responsibility": "Creates a formatted note in Apple Notes in the specified folder. Uses AppleScript or the Notes framework. Handles formatting, timestamps, and source memo references.",
+        "stateful": false
+      },
+      {
+        "name": "Pipeline Orchestrator",
+        "responsibility": "Coordinates the end-to-end flow from detection through note creation. Manages sequencing, error handling, and retry logic. Owns the lifecycle of each memo as it moves through the pipeline.",
+        "stateful": true
+      },
+      {
+        "name": "State Tracker",
+        "responsibility": "Persists processing state for each memo: detected, transcribing, transcribed, classifying, classified, writing, complete, or failed. Prevents reprocessing and enables retry of failed steps.",
+        "stateful": true
+      },
+      {
+        "name": "Menu Bar UI",
+        "responsibility": "Displays daemon status (idle, processing, error), surfaces recent activity and errors, provides minimal controls (pause, resume, open log).",
+        "stateful": false
+      },
+      {
+        "name": "Configuration",
+        "responsibility": "Watched directory path, LLM settings, confidence threshold, inbox fallback folder name, logging preferences. Stored as a config file.",
+        "stateful": false
+      }
+    ],
+
+    "dataFlow": [
+      "Watcher detects a new, fully synced audio file",
+      "Orchestrator picks it up and creates a state record (status: detected)",
+      "Transcription Engine processes the audio and returns text (status: transcribed)",
+      "Classifier receives text + folder list and returns a folder name (status: classified)",
+      "Notes Writer creates the note in Apple Notes (status: complete)",
+      "State Tracker records the final status"
+    ],
+    "dataFlowFailure": "If any step fails, the orchestrator marks the memo as failed with the failure stage and reason, and queues it for retry on the next processing cycle.",
+
+    "keyDecisions": [
+      {
+        "title": "Language and runtime: Swift",
+        "rationale": "macOS-specific APIs (Speech framework, FSEvents, AppleScript bridging, menu bar UI) are all native to Swift. There is no practical benefit to using another language for this project.",
+        "alternativesRejected": []
+      },
+      {
+        "title": "Processing model: Synchronous, single-threaded pipeline",
+        "rationale": "The expected volume is 3-5 memos per day. A synchronous pipeline processing one memo at a time is simpler to build, debug, and reason about. Async/concurrent processing adds complexity that is not justified at this scale.",
+        "alternativesRejected": ["Async/concurrent processing"]
+      },
+      {
+        "title": "State persistence: SQLite",
+        "rationale": "A single-file SQLite database provides reliable persistence, queryability for the menu bar UI (recent activity, error history), and safe behavior if the daemon restarts mid-processing.",
+        "alternativesRejected": ["Flat file", "UserDefaults", "Core Data"]
+      },
+      {
+        "title": "Single process architecture",
+        "rationale": "All components run within a single macOS daemon process with well-separated modules. No IPC, no multi-process coordination. This keeps deployment trivial (one binary) and lifecycle management simple (launchd manages one process).",
+        "alternativesRejected": ["Multi-process with XPC"]
+      },
+      {
+        "title": "No cloud dependencies",
+        "rationale": "All processing is on-device. The LLM runs locally. Transcription uses the on-device API. The only network activity is iCloud sync, which is managed by the OS and not by Utterd.",
+        "alternativesRejected": ["Cloud transcription APIs", "Cloud-hosted LLM"]
+      }
+    ],
+
+    "nonFunctionalRequirements": [
+      { "category": "Resource usage", "requirement": "Under 100MB RAM while idle, minimal CPU when not actively processing" },
+      { "category": "Battery impact", "requirement": "No noticeable impact during monitoring; transcription will use CPU but is infrequent" },
+      { "category": "Reliability", "requirement": "Must handle system sleep/wake, iCloud sync delays, and unexpected restarts without losing memos or creating duplicates" },
+      { "category": "Startup", "requirement": "Launches automatically on login via launchd" },
+      { "category": "Logging", "requirement": "Structured logging with rotation, sufficient for debugging pipeline failures without filling disk" }
+    ]
+  },
+
+  "epicDetails": [
+    {
+      "epicId": "epic_001",
+      "title": "Voice Memo Detection and Transcription",
+
+      "componentsInvolved": [
+        "File System Watcher",
+        "Transcription Engine",
+        "State Tracker",
+        "Pipeline Orchestrator (minimal form)"
+      ],
+
+      "componentDetails": [
+        {
+          "name": "File System Watcher",
+          "monitors": "~/Library/Group Containers/group.com.apple.VoiceMemos.shared/Recordings/",
+          "syncChallenge": "iCloud does not download files atomically. A file may appear as a placeholder or partial download before the audio data is fully available. Possible approaches: monitor for file size stability, check iCloud extended attributes, use NSFileCoordinator.",
+          "deduplication": "Checks the State Tracker before submitting a file. File identity is based on file path and content hash.",
+          "fileTypes": "Voice Memos are stored as .m4a files. The watcher filters for this extension."
+        },
+        {
+          "name": "Transcription Engine",
+          "api": "macOS 26 SFSpeechRecognizer with on-device recognition",
+          "input": "A file URL pointing to a .m4a audio file",
+          "output": "A struct containing transcribed text, confidence score, audio duration, and any errors"
+        }
+      ],
+
+      "unknowns": [
+        "Does SFSpeechRecognizer have a maximum audio duration for on-device processing?",
+        "What is the performance profile — how long does a 5-minute memo take to transcribe?",
+        "Does on-device recognition work reliably in a daemon context (no foreground app)?",
+        "What audio formats are supported? Voice Memos uses .m4a (AAC) — is this supported directly or does it need conversion?"
+      ],
+
+      "stateModel": {
+        "statuses": ["detected", "transcribing", "transcribed", "failed"],
+        "schema": "CREATE TABLE memos (\n    id TEXT PRIMARY KEY,\n    file_path TEXT NOT NULL,\n    file_hash TEXT NOT NULL,\n    status TEXT NOT NULL,\n    detected_at TIMESTAMP NOT NULL,\n    transcribed_at TIMESTAMP,\n    transcription_text TEXT,\n    transcription_confidence REAL,\n    audio_duration_seconds REAL,\n    error_message TEXT,\n    retry_count INTEGER DEFAULT 0\n);"
+      },
+
+      "errorHandling": {
+        "transient": "Retry up to 3 times with exponential backoff. State stays at the pre-failure status.",
+        "permanent": "Mark as failed, log the error, do not retry. Surface in the menu bar UI (Epic 4).",
+        "daemonRestart": "On startup, the orchestrator queries for memos in detected or transcribing status and reprocesses them. Safe because transcription is idempotent."
+      },
+
+      "deferredToLaterEpics": [
+        "Classifier component and LLM integration (Epic 2)",
+        "Apple Notes integration (Epic 3)",
+        "Menu bar UI, daemon lifecycle, launchd configuration (Epic 4)",
+        "Additional state tracker columns for classification and note-writing status (Epics 2 and 3)"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "id": "task_002.1",
+  "title": "Set up the watcher module with its public interface",
+  "parentStory": "story_002",
+  "status": "PENDING",
+  "assignee": null,
+  "size": null,
+  "implementer": "AI",
+  "repository": "utterd",
+  "blockedBy": ["story_001"],
+  "covers": ["foundational"],
+  "createdAt": "2026-04-11",
+
+  "relevantFiles": [
+    { "path": "Sources/Utterd/Watcher/FileSystemWatcher.swift", "status": "new" },
+    { "path": "Sources/Utterd/Watcher/WatcherEvent.swift", "status": "new" }
+  ],
+
+  "contextToReadFirst": [
+    {
+      "path": "architecture.md Section 2.2",
+      "reason": "File System Watcher design decisions and interface expectations"
+    }
+  ],
+
+  "changes": [
+    "Create `WatcherEvent` struct with `filePath: URL`, `detectedAt: Date`, and `fileSize: Int64`",
+    "Create `FileSystemWatcher` protocol with `func startMonitoring() throws`, `func stopMonitoring()`, `var onFileDetected: ((WatcherEvent) -> Void)? { get set }`",
+    "Create `FSEventsWatcher: FileSystemWatcher` — stub implementation, all methods `fatalError(\"not implemented\")`",
+    "The watched directory path should be injected via `init(directory: URL)` — don't hardcode the Voice Memos path. This allows testing with a temp directory."
+  ],
+
+  "tests": [],
+
+  "doneWhen": "Module compiles. Protocol and event struct are importable from other modules. No runtime behavior.",
+  "verificationCommand": "swift build",
+
+  "doNot": [
+    "Implement actual monitoring — that's Task 002.2",
+    "Hardcode the iCloud Voice Memos path — inject it so tests can use a temp directory",
+    "Add dependencies on the state tracker or transcription modules"
+  ]
+}

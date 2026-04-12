@@ -1,0 +1,24 @@
+{
+  "id": "epic_003",
+  "title": "Apple Notes Integration",
+  "status": "BACKLOG",
+  "creator": "[You]",
+  "parentInitiative": "init_001",
+  "order": 3,
+  "createdAt": "2026-04-10",
+  "dueDate": null,
+
+  "goal": "The system creates a properly formatted note in the correct Apple Notes folder automatically, completing the end-to-end pipeline from voice memo to filed note.",
+
+  "successMetric": "100% of classified memos result in a note created in the correct folder. No duplicates, no lost memos.",
+
+  "whyThisOrder": "It depends on both previous epics. It also carries meaningful technical risk since Apple Notes lacks a proper public API — the integration approach (AppleScript, Notes framework, or something else) needs to be proven out.",
+
+  "roughScope": "Creating notes in Apple Notes programmatically, placing them in the specified folder, formatting the transcribed text appropriately (timestamp, source memo reference, clean paragraphs), handling failures gracefully (what happens if the folder doesn't exist, if Notes isn't running, if permissions are denied), idempotency to prevent duplicate notes if the pipeline retries.",
+
+  "outOfScope": "Menu bar UI, daemon lifecycle, user configuration.",
+
+  "definitionOfDone": "A voice memo recorded on iPhone results in a correctly formatted, properly filed note in Apple Notes with no user intervention. The full pipeline from Epic 1 through Epic 3 works end-to-end.",
+
+  "comments": []
+}

@@ -1,0 +1,70 @@
+{
+  "id": "story_002",
+  "type": "feature",
+  "title": "Detect Fully Synced Voice Memos in the iCloud Directory",
+  "parentEpic": "epic_001",
+  "order": 1,
+  "status": "BACKLOG",
+  "creator": "[You]",
+  "assignee": null,
+  "storyPoints": null,
+  "createdAt": "2026-04-10",
+
+  "userStory": {
+    "persona": "a user who just recorded a voice memo on my iPhone",
+    "want": "Utterd to detect the new audio file once it has fully synced to my Mac",
+    "soThat": "processing begins automatically without me taking any action"
+  },
+
+  "context": "The iCloud Voice Memos sync directory is located at the path confirmed during the spike. Files arrive as .m4a audio. iCloud may sync files progressively, meaning a file could appear before its audio data is fully available. The detection method for sync completion was determined during the spike.",
+
+  "acceptanceCriteria": [
+    {
+      "id": "ac_2.1",
+      "given": "Utterd is running and monitoring the Voice Memos sync directory",
+      "when": "a new .m4a file is added to the directory and fully synced",
+      "then": "the watcher emits the complete file path for downstream processing"
+    },
+    {
+      "id": "ac_2.2",
+      "given": "Utterd is running and monitoring the Voice Memos sync directory",
+      "when": "a new file appears that is not .m4a (such as .txt, .jpg, or .plist)",
+      "then": "the watcher ignores the file and does not emit it for processing"
+    },
+    {
+      "id": "ac_2.3",
+      "given": "Utterd is running and monitoring the Voice Memos sync directory",
+      "when": "a .m4a file appears but has not finished syncing",
+      "then": "the watcher waits until the file is fully synced before emitting it"
+    },
+    {
+      "id": "ac_2.4",
+      "given": "the Mac has been asleep and wakes up",
+      "when": "new .m4a files synced to the directory during sleep",
+      "then": "the watcher detects and emits each new file after wake"
+    },
+    {
+      "id": "ac_2.5",
+      "given": "Utterd starts for the first time",
+      "when": "the sync directory already contains previously recorded .m4a files",
+      "then": "the watcher does not emit those existing files — only files arriving after startup are processed"
+    },
+    {
+      "id": "ac_2.6",
+      "given": "Utterd is running",
+      "when": "two voice memos are recorded in quick succession and both sync within seconds of each other",
+      "then": "both files are detected and emitted in the order they completed syncing"
+    },
+    {
+      "id": "ac_2.7",
+      "given": "Utterd starts up",
+      "when": "the sync directory does not exist (iCloud is not configured or Voice Memos has never been used)",
+      "then": "the watcher logs a descriptive error including the expected directory path and does not crash"
+    }
+  ],
+
+  "outOfScope": "Persisting which files have been seen (that's the state tracker in Story 3), transcribing audio, any UI feedback. This story produces file path events and nothing more.",
+
+  "dependencies": ["story_001"],
+  "comments": []
+}

@@ -1,0 +1,168 @@
+{
+  "version": 1,
+  "lastModified": "2026-04-11T00:00:00Z",
+  "initiatives": [
+    {
+      "id": "init_001",
+      "title": "Frictionless Voice-to-Notes Capture for macOS",
+      "status": "proposed",
+      "epicIds": ["epic_001", "epic_002", "epic_003", "epic_004"]
+    }
+  ],
+  "epics": [
+    {
+      "id": "epic_001",
+      "title": "Voice Memo Detection and Transcription",
+      "status": "BACKLOG",
+      "initiativeId": "init_001",
+      "order": 1,
+      "storyIds": ["story_001", "story_002", "story_003", "story_004", "story_005"]
+    },
+    {
+      "id": "epic_002",
+      "title": "Intelligent Folder Classification",
+      "status": "BACKLOG",
+      "initiativeId": "init_001",
+      "order": 2,
+      "storyIds": []
+    },
+    {
+      "id": "epic_003",
+      "title": "Apple Notes Integration",
+      "status": "BACKLOG",
+      "initiativeId": "init_001",
+      "order": 3,
+      "storyIds": []
+    },
+    {
+      "id": "epic_004",
+      "title": "Menu Bar Daemon and Operational Reliability",
+      "status": "BACKLOG",
+      "initiativeId": "init_001",
+      "order": 4,
+      "storyIds": []
+    }
+  ],
+  "architectures": [
+    {
+      "id": "arch_001",
+      "title": "Utterd — Architecture Document",
+      "status": "ACTIVE",
+      "initiativeId": "init_001",
+      "epicIds": ["epic_001", "epic_002", "epic_003", "epic_004"]
+    }
+  ],
+  "stories": [
+    {
+      "id": "story_001",
+      "title": "Spike — Validate iCloud Sync Behavior and Transcription API",
+      "status": "BACKLOG",
+      "type": "spike",
+      "epicId": "epic_001",
+      "initiativeId": "init_001",
+      "order": 0,
+      "taskCount": 0
+    },
+    {
+      "id": "story_002",
+      "title": "Detect Fully Synced Voice Memos in the iCloud Directory",
+      "status": "BACKLOG",
+      "type": "feature",
+      "epicId": "epic_001",
+      "initiativeId": "init_001",
+      "order": 1,
+      "taskCount": 7
+    },
+    {
+      "id": "story_003",
+      "title": "Track Memo Processing State Across the Pipeline",
+      "status": "BACKLOG",
+      "type": "feature",
+      "epicId": "epic_001",
+      "initiativeId": "init_001",
+      "order": 2,
+      "taskCount": 0
+    },
+    {
+      "id": "story_004",
+      "title": "Transcribe a Voice Memo to Text Using On-Device Recognition",
+      "status": "BACKLOG",
+      "type": "feature",
+      "epicId": "epic_001",
+      "initiativeId": "init_001",
+      "order": 3,
+      "taskCount": 0
+    },
+    {
+      "id": "story_005",
+      "title": "Orchestrate the Detection-to-Transcription Pipeline",
+      "status": "BACKLOG",
+      "type": "feature",
+      "epicId": "epic_001",
+      "initiativeId": "init_001",
+      "order": 4,
+      "taskCount": 0
+    }
+  ],
+  "bugs": [
+    {
+      "id": "bug_001",
+      "title": "Stale transcription text displays after re-recording a voice memo",
+      "status": "TODO",
+      "severity": "high",
+      "epicId": "epic_001",
+      "initiativeId": "init_001"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "task_002.1",
+      "title": "Set up the watcher module with its public interface",
+      "status": "PENDING",
+      "storyId": "story_002",
+      "implementer": "AI"
+    },
+    {
+      "id": "task_002.2",
+      "title": "Implement FSEvents-based directory monitoring",
+      "status": "PENDING",
+      "storyId": "story_002",
+      "implementer": "AI"
+    },
+    {
+      "id": "task_002.3",
+      "title": "Implement sync completion detection before emitting files",
+      "status": "PENDING",
+      "storyId": "story_002",
+      "implementer": "AI"
+    },
+    {
+      "id": "task_002.4",
+      "title": "Filter out pre-existing files on startup",
+      "status": "PENDING",
+      "storyId": "story_002",
+      "implementer": "AI"
+    },
+    {
+      "id": "task_002.5",
+      "title": "Handle system sleep and wake",
+      "status": "PENDING",
+      "storyId": "story_002",
+      "implementer": "AI"
+    },
+    {
+      "id": "task_002.6",
+      "title": "Handle missing sync directory on startup",
+      "status": "PENDING",
+      "storyId": "story_002",
+      "implementer": "AI"
+    },
+    {
+      "id": "task_002.7",
+      "title": "Write integration test for the full watcher flow",
+      "status": "PENDING",
+      "storyId": "story_002",
+      "implementer": "AI"
+    }
+  ]
+}

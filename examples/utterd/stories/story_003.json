@@ -1,0 +1,82 @@
+{
+  "id": "story_003",
+  "type": "feature",
+  "title": "Track Memo Processing State Across the Pipeline",
+  "parentEpic": "epic_001",
+  "order": 2,
+  "status": "BACKLOG",
+  "creator": "[You]",
+  "assignee": null,
+  "storyPoints": null,
+  "createdAt": "2026-04-10",
+
+  "userStory": {
+    "persona": "a developer building the Utterd pipeline",
+    "want": "a persistent record of each memo's processing status",
+    "soThat": "memos are never processed twice, failed memos can be retried, and no memo is silently lost"
+  },
+
+  "context": "State is stored in a local SQLite database. The schema supports the statuses needed for Epic 1: detected, transcribing, transcribed, failed. Later epics will extend this schema with additional columns for classification and note-writing status.",
+
+  "acceptanceCriteria": [
+    {
+      "id": "ac_3.1",
+      "given": "the watcher has emitted a new file path",
+      "when": "the state tracker receives that file path for the first time",
+      "then": "a new record is created with status detected, the file path, a SHA-256 content hash, the current timestamp, and a retry count of 0"
+    },
+    {
+      "id": "ac_3.2",
+      "given": "a memo record already exists with a matching file path and content hash",
+      "when": "the state tracker receives the same file path again",
+      "then": "no duplicate record is created and the existing record is unchanged"
+    },
+    {
+      "id": "ac_3.3",
+      "given": "a memo has been previously processed and deleted from Voice Memos, then re-recorded with different content",
+      "when": "the new file appears at the same path but with different audio content",
+      "then": "the different content hash causes it to be treated as a new memo with its own record"
+    },
+    {
+      "id": "ac_3.4",
+      "given": "a memo has status detected",
+      "when": "transcription begins",
+      "then": "the status updates to transcribing"
+    },
+    {
+      "id": "ac_3.5",
+      "given": "a memo has status transcribing",
+      "when": "transcription completes successfully",
+      "then": "the status updates to transcribed and the record stores the transcription text, confidence score, audio duration in seconds, and a transcription timestamp"
+    },
+    {
+      "id": "ac_3.6",
+      "given": "a memo has status transcribing",
+      "when": "transcription fails",
+      "then": "the status updates to failed, the error message and failure stage are stored, and the retry count increments by 1"
+    },
+    {
+      "id": "ac_3.7",
+      "given": "the daemon was terminated while a memo was in transcribing status",
+      "when": "the daemon starts up",
+      "then": "that memo is identifiable by querying for records in detected or transcribing status so the orchestrator can requeue them"
+    },
+    {
+      "id": "ac_3.8",
+      "given": "the SQLite database file does not exist",
+      "when": "the daemon starts for the first time",
+      "then": "the database and schema are created automatically at the defined local path"
+    },
+    {
+      "id": "ac_3.9",
+      "given": "the SQLite database already exists from a previous session",
+      "when": "the daemon starts",
+      "then": "the existing data is preserved and accessible"
+    }
+  ],
+
+  "outOfScope": "Classification or note-writing columns — those are added when Epics 2 and 3 begin. No UI for viewing state — that's Epic 4. The state tracker does not decide what to do with failed memos — retry policy belongs to the orchestrator in Story 5.",
+
+  "dependencies": [],
+  "comments": []
+}

@@ -1,0 +1,9 @@
+{
+  "name": "spec-monkey",
+  "version": "1.0.0",
+  "description": "Spec-driven development in four skills: creating-specs writes a human-approved spec that states WHAT to build and WHEN, reviewing-specs stress-tests it, implementing-specs builds it, and auditing-specs verifies the build truly satisfies the spec. The spec never prescribes HOW; that is left to the harness.",
+  "license": "MIT",
+  "author": {
+    "name": "DaveBben"
+  }
+}

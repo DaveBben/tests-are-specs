@@ -1,0 +1,26 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "spec-monkey",
+  "owner": {
+    "name": "DaveBben"
+  },
+  "description": "A set of portable skills for spec-driven development.",
+  "plugins": [
+    {
+      "name": "spec-monkey",
+      "source": "./plugins/spec-monkey",
+      "description": "Four skills for spec-driven development: creating-specs, reviewing-specs, implementing-specs, and auditing-specs.",
+      "version": "1.0.0",
+      "license": "MIT",
+      "skills": [
+        "./skills/creating-specs",
+        "./skills/reviewing-specs",
+        "./skills/implementing-specs",
+        "./skills/auditing-specs"
+      ],
+      "author": {
+        "name": "DaveBben"
+      }
+    }
+  ]
+}

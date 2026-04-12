@@ -197,6 +197,8 @@ claude-kiss/
 
 **TDD by default.** RED (failing test) then GREEN (implement) then REFACTOR. Tests and implementation live in the same task.
 
+**Context isolation between TDD phases — best-effort, not enforced.** The test-writer agent receives `testContext` (interfaces, types, contracts) but not `implementationContext` (implementation details). This is enforced by prompt instructions and by splitting context into separate fields in the task JSON. However, the test-writer agent has Read/Glob/Grep tools and *could* read implementation files or plan.md if it chose to — there is no filesystem-level enforcement available in the current agent framework. The isolation is designed to remove the *incentive* for the test-writer to look at implementation details, not to make it *impossible*. In practice this produces meaningfully better tests than a single-agent approach, but it is not a guarantee.
+
 **Two-tier review.** `/light-review` after each task (fast, focused). `/deep-review` after all tasks per repo (thorough, cross-cutting). Both are automatic during `/execute`.
 
 **One branch, one PR per repo.** All tasks for a repo commit to a single branch. Deep review covers the full change set.

@@ -157,6 +157,13 @@ more mocks.
 
 ---
 
+## Environment Check
+
+If the task JSON has a non-empty `environmentCheck` field, run that command
+before writing or running any tests. If it fails (non-zero exit, connection
+refused, timeout), STOP with reason `"environment not ready: [error output]"`.
+Do not attempt to fix infrastructure — this is the user's responsibility.
+
 ## Verification (RED State)
 
 After writing tests, run the verification command from the task JSON.

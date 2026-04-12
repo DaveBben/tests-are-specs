@@ -466,7 +466,9 @@ naturally smaller than features — expect 2-4 tasks, not 10+.
   reproduction logic while applying proper structure and assertions.
 - **Size warning.** If the task list exceeds ~8 tasks, the bug may be
   more complex than expected. Consider splitting into multiple bugs.
-- Use **"must"** throughout task language. "Should" reduces AI adherence.
+- Use **RFC 2119 keywords**: MUST for hard constraints, SHOULD for strong
+  preferences, MAY for discretion. Uppercase keywords signal constraint level
+  clearly to the executing agents.
 
 ### Task Format
 

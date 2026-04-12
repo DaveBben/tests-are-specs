@@ -51,25 +51,29 @@ Every claim must include a file:line reference.]
 [Things discovered during research that need user input before planning]
 
 ## Devil's Advocate Challenge
-[Appended by the devils-advocate agent — do not write manually]
+[Appended by the devils-advocate agent — do not write manually.
+Each item is numbered and has a `> Response:` field the user must fill in.]
 
 ### Assumptions (verify before planning)
-- **[Assumption]**: [Why this might be wrong, grounded in codebase evidence]
+1. **[Assumption]**: [Why this might be wrong] — see `file:line`
+   > Response:
 
 ### Ambiguities (clarify before planning)
-- **[Term or behavior]**: Could mean [A] or [B]. This matters because [consequence].
+2. **[Term or behavior]**: Could mean [A] or [B]. This matters because
+   [consequence] — see `file:line`
+   > Response:
 
 ### Edge Cases (address in plan or explicitly defer)
-- **[Scenario]**: [What happens and why it's not covered]
+3. **[Scenario]**: [What happens and why] — see `file:line`
+   > Response:
 
 ### Scope Creep Risks (draw the line now)
-- **[Adjacent concern]**: Tempting because [reason]. Dangerous because [consequence].
+4. **[Adjacent concern]**: Tempting because [reason]. Dangerous because
+   [consequence] — see `file:line`
+   > Response:
 
 ### Pre-Mortem
 > [2-3 sentences, past tense, narrating the most likely failure]
-
-### User Responses
-[Filled in after user reviews the challenges]
 ```
 
 ---
@@ -158,6 +162,16 @@ scratch.]
 ### {Logical Section 2}
 ...
 
+## Assumptions
+
+[Falsifiable claims the plan depends on. Each must be specific enough that
+a reviewer can say "that's wrong." The plan-verifier agent checks these
+against the codebase before the user sees the plan.]
+
+- **[Assumption]**: [Specific claim — e.g., "WebhookService is a singleton,"
+  "this endpoint is called at most once per request," "the retry column
+  does not exist yet"]
+
 ## Trade-offs
 [What was considered, what was chosen, and what was given up]
 
@@ -245,9 +259,11 @@ Plan-level information stored at `.claude/features/{slug}/tasks/plan.json`:
     "constraints": ["..."]
   },
   "risksAndRollback": "[from plan]",
+  "knownRisks": ["[domain-specific risks or unwritten rules that apply to this feature area]"],
   "criticalReminders": ["..."],
   "totalTasks": "N",
   "repositories": ["."],
+  "contracts": [],
   "totalSlices": 1,
   "slices": [
     {
@@ -294,6 +310,7 @@ One file per task at `.claude/features/{slug}/tasks/task_{N}.json`:
   "acceptanceCriteria": [
     "GIVEN [precondition], WHEN [action], THEN [expected outcome]"
   ],
+  "environmentCheck": "[command to validate prerequisites, e.g. pg_isready -h localhost -p 5432, or empty string if none]",
   "verificationCommand": "[single runnable command]",
   "scopeBoundaries": "[what this task owns] / [what others own]",
   "doNot": ["[explicit anti-scope]"],

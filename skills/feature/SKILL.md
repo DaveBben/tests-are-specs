@@ -146,11 +146,23 @@ During Phase 4 task breakdown, set each task's `repository` field to the
 repo it targets. Set `repositories` in plan.json to the list of all repos.
 For single-repo features, use `"."` as the repository value.
 
-All gathered context (what, why, external context) feeds into `research.md`
-and must be referenced by the explore agents in Step 2.
+**Part C — Domain Risks Check**
 
-**Do not proceed to Step 1 until you have confirmed what, why, and whether
-external context exists.**
+If the project has a `spec.md` with a `## Domain Gotchas` section, read it
+and incorporate those constraints. If not, ask:
+
+> "Are there any domain-specific risks or unwritten rules that apply to
+> this feature area? For example, special libraries that must be used,
+> production-only behaviors, or data invariants. If not, say 'no'."
+
+Record any risks provided. These will be stored in plan.json's `knownRisks`
+field and passed to every TDD agent as constraints.
+
+All gathered context (what, why, external context, domain risks) feeds into
+`research.md` and must be referenced by the explore agents in Step 2.
+
+**Do not proceed to Step 1 until you have confirmed what, why, external
+context, and domain risks.**
 
 ### Step 1: Read Project Context
 
@@ -234,14 +246,20 @@ the user together. Highlight:
 - The key challenges from the devil's advocate — especially assumptions
   that need verification and ambiguities that need clarification
 
-> "Review the research and devil's advocate challenges above. If anything
-> looks wrong or needs clarification, let me know now. Otherwise, I'll
-> continue to the impact map."
+> "Review the research and devil's advocate challenges above. Each challenge
+> has a `> Response:` field — please respond to each one:
+> - **Acknowledged** — will address in the plan
+> - **Out of scope** — with reason
+> - **Disagree** — with explanation
+>
+> You can respond in chat or edit the `> Response:` lines directly in
+> `research.md`. Once all challenges have responses, I'll continue to
+> the impact map."
 
-If the user provides corrections or clarifications, update `research.md`
-with their responses. If the user says nothing or confirms, proceed to
-Phase 1. **Only block if there are unresolved open questions that would
-make the plan structurally wrong.**
+Update `research.md` with the user's responses next to each numbered item.
+**Only block if challenges remain without responses.** If the user provides
+blanket acknowledgment ("all look fine"), fill in "Acknowledged" for each
+item and proceed.
 
 ---
 
@@ -319,7 +337,26 @@ against that reference instead of designing from scratch.
 yet." Without this, the AI will jump to code the moment it thinks the plan
 is good enough.
 
-### Step 3: Present the Plan
+### Step 3: Verify the Plan Against the Codebase
+
+Before presenting the plan to the user, launch the `plan-verifier` agent
+via the Agent tool. Pass it the path to `.claude/features/{slug}/plan.md`.
+
+The agent checks that:
+- Every `file:line` reference in the plan still matches the codebase
+- Types, interfaces, and function signatures referenced actually exist
+- Assumptions listed in the `## Assumptions` section are true
+- Pattern references haven't been recently changed
+
+If the verifier returns discrepancies:
+1. Apply the `@FIX:` annotations it provides to the plan
+2. Address each fix (update references, correct assumptions)
+3. Write the corrected plan back to `plan.md`
+
+This catches "looks right but is subtly wrong" errors before the user
+sees the plan — the most expensive class of mistakes in brownfield work.
+
+### Step 4: Present the Plan
 
 Present the plan to the user and transition to the annotation cycle:
 
@@ -460,9 +497,14 @@ Each task must contain:
 - **What NOT to do** — adjacent files or scope that must not change
 - **A "done when" condition** that can be checked mechanically
 
-Use **"must"** throughout task language. "Should" significantly reduces AI
-adherence. "Must" aligns with technical standards language and the AI treats
-it as a hard constraint.
+Use **RFC 2119 keywords** to communicate constraint levels clearly:
+- **MUST** (uppercase) = absolute requirement, pair with a verification step
+- **SHOULD** = strong preference, deviation acceptable with justification
+- **MAY** = full discretion
+
+LLMs have learned these semantic distinctions from RLHF training data that
+includes RFC-style documents. Using them consistently establishes a clear
+contract between the plan and the executing agents.
 
 ### Step 1: Write tasks.md
 

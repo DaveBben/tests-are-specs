@@ -312,6 +312,7 @@ One file per task at `.claude/bugs/{slug}/tasks/task_{N}.json`:
   "acceptanceCriteria": [
     "GIVEN [precondition], WHEN [action], THEN [expected outcome]"
   ],
+  "environmentCheck": "[command to validate prerequisites, e.g. pg_isready -h localhost -p 5432, or empty string if none]",
   "verificationCommand": "[single runnable command]",
   "scopeBoundaries": "[what this task owns] / [what others own]",
   "doNot": ["[explicit anti-scope]"],

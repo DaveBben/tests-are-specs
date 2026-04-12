@@ -123,6 +123,13 @@ State what you found, what you expected, and what needs to change.
 
 ---
 
+## Environment Check
+
+If the task JSON has a non-empty `environmentCheck` field, run that command
+before running any tests. If it fails (non-zero exit, connection refused,
+timeout), STOP with reason `"environment not ready: [error output]"`.
+Do not attempt to fix infrastructure — this is the user's responsibility.
+
 ## Verification (GREEN State)
 
 After implementing, first run the task's test file(s) directly to get fast

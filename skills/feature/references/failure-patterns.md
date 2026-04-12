@@ -19,8 +19,9 @@ Known failure modes in the `/feature` workflow and how to avoid them.
 - **Tasks with multiple concerns** — Each task must target one logical
   concern (typically 1-3 files). Tasks that mix unrelated concerns produce
   significantly worse AI results.
-- **"Should" instead of "must"** — "Should" reduces AI adherence. Use "must"
-  for all task constraints.
+- **Vague constraint language** — Use RFC 2119 keywords (MUST, SHOULD, MAY)
+  to clearly signal constraint levels. MUST = hard requirement with
+  verification. SHOULD = strong preference. Avoid ambiguous phrasing.
 - **Missing "Do NOT" boundaries** — Without explicit boundaries, tasks expand
   into adjacent work. Every task needs a "Do NOT" field.
 - **Feature too large** — More than ~50 tasks means the feature needs to be

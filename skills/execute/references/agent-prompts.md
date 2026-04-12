@@ -16,6 +16,9 @@ PLAN CONSTRAINTS — do NOT violate these:
 Read the task at: [path to task_N.json]
 Read the plan context at: [path to plan.json]
 
+If the task has an `environmentCheck` command, run it first. If it fails,
+return STOPPED with reason "environment not ready: [error]".
+
 Write failing tests for this task's acceptance criteria.
 Verify all tests fail before returning.
 
@@ -34,6 +37,9 @@ PLAN CONSTRAINTS — do NOT violate these:
 
 Failing test file(s): [paths from RED phase output]
 Task file: [path to task_N.json]
+
+If the task has an `environmentCheck` command, run it first. If it fails,
+return STOPPED with reason "environment not ready: [error]".
 
 Write the minimum code to make all tests pass.
 

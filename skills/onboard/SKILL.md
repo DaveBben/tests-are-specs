@@ -65,6 +65,25 @@ and first-level subdirectories. Do not recurse deeply into source directories.
 
 Follow up based on gaps — external services, failure behavior, testing, CI/CD, ownership, known issues, tech debt, things an AI should never touch, non-obvious gotchas.
 
+**For mature/brownfield codebases** (>50k lines or >2 years of git history),
+add a domain risks interview after initial discovery:
+
+> "This is a mature codebase. Before I write the spec, I want to capture the
+> unwritten rules — things an AI can't discover by reading code. For example:
+>
+> - Special internal libraries that MUST be used for specific operations
+>   (e.g., idempotency, auth, logging)
+> - Services that behave differently in production vs development
+> - Data patterns that look wrong but are intentional
+> - Areas of the codebase with non-obvious coupling or gotchas
+> - Deployment ordering constraints between services
+>
+> What comes to mind?"
+
+Capture these in a `## Domain Gotchas` section in spec.md. These are the
+highest-value items in the spec — they represent institutional knowledge
+that prevents the most expensive AI mistakes.
+
 ### Phase 2: Check for Existing Files
 
 If the exploration found existing files, ask about each in a single interaction:
@@ -206,6 +225,23 @@ After writing both files, suggest a lightweight drift detection approach:
 
 This is a suggestion, not an automated installation — the user decides
 whether to implement it.
+
+### Automatic Spec Updates via Claude Code Rules
+
+After writing both files, also suggest adding a rule file:
+
+> "To keep spec.md current automatically, you can add a Claude Code rule
+> at `.claude/rules/spec-update.md` with:
+>
+> ```
+> After completing a feature implementation that changes the project's
+> capabilities, check spec.md and update the Current State section if
+> it no longer matches reality.
+> ```
+>
+> This activates in every Claude session (not just /execute), catching
+> drift from manual changes too. `/execute` also updates spec.md
+> automatically after completing all tasks."
 
 ---
 

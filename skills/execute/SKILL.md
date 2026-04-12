@@ -188,10 +188,11 @@ they are tripwires that trigger a check with the user:
   and verify with the user. The task may have expanded beyond its declared
   concern. Check that all file changes are necessary for this one task's
   acceptance criteria.
-- **Working state**: After every task commit, all tests must pass. If
-  implementing the current task requires other uncommitted work to be present
-  before anything can be tested, the task is not right-sized — STOP and
-  report as a planning error.
+- **Working state**: After every task commit, the project MUST build and all
+  existing tests MUST pass. The feature may be incomplete — that's expected
+  on a branch. But if the current task breaks the build or existing tests
+  and cannot be fixed without future tasks, the task ordering or boundaries
+  are wrong — STOP and report as a planning error.
 
 If all gates pass, proceed to Phase 1.
 
@@ -219,9 +220,26 @@ their `repository` field. Process each repository sequentially:
 3. Execute all tasks for this repository (following the per-task loop below)
 4. Run post-implementation (Phase 2) for this repository
 5. Create PR (Phase 3) for this repository
-6. Return to next repository
+6. **Pause before next repository** — present the PR URL and ask:
+   > "Repo A's PR is ready. Repo B's tasks depend on these changes.
+   > Recommended: merge repo A's PR first, then continue. Or say
+   > 'continue' to proceed against the unmerged branch."
+7. Return to next repository
 
 For single-repo features (repository is `"."`), skip this grouping.
+
+#### Contract Validation (multi-repo only)
+
+If plan.json has a `contracts` field with entries (OpenAPI specs, protobuf
+definitions, TypeScript interface files), verify them before executing
+tasks in dependent repositories:
+
+1. Read each contract file
+2. Verify that types/endpoints referenced by the dependent repo's tasks
+   match the contract
+3. If a contract file was created/modified by the previous repo's tasks,
+   verify it exists on the branch (not just in an unmerged PR)
+4. If contract validation fails, STOP and report the mismatch
 
 **For each slice** (or once if single-slice):
 
@@ -328,32 +346,33 @@ Run `/light-review` against the latest commit.
 2. Mark TodoWrite entry as `completed`
 3. Proceed to next task
 
-#### Step 8: Context Pause Gate (every 5 tasks)
+#### Step 8: Context Pause Gate (dispatch-count based)
 
-After every 5th completed task (task 5, 10, 15, ...), pause and check
-context health. Each task dispatches 3-4 agents whose results accumulate
-in the orchestrator's context, and quality degrades as context fills up.
+Track the total number of agent dispatches in this session. Each
+RED/GREEN/REFACTOR phase is 1 dispatch. Each /light-review is 1 dispatch.
+Review fix iterations add additional dispatches. A simple task with no
+review fixes = 4 dispatches. A complex task with review fixes = 6+.
 
-Present to the user:
+**After 20 dispatches**, pause and check context health:
 
-> "**Context checkpoint** — {N} tasks completed, {M} remaining.
+> "**Context checkpoint** — {N} tasks completed ({D} agent dispatches so
+> far), {M} tasks remaining.
 >
-> Check your context usage indicator. If your context is **less than 40%
-> full**, we can continue with the next batch of tasks.
->
-> If your context is **40% or more full**, start a fresh session for best
-> results. Run:
+> Check your context usage (run `/context` or check the context indicator).
+> Use your judgment:
+> - If context is **well under 50%** and quality feels good, say 'continue'
+> - If context is **approaching 50%** or you notice quality degrading,
+>   start a fresh session for best results:
 >
 > `/execute {feature-or-bug-directory-path}`
 >
-> The workflow will pick up exactly where it left off — all {N} completed
+> The workflow picks up exactly where it left off — all {N} completed
 > tasks are recorded in the task JSON files. Deep review and PR creation
-> will happen after all remaining tasks are done."
+> happen after all remaining tasks are done."
 
-Wait for the user's response before continuing. If the user says to
-continue, proceed with the next task. If the user says to restart, end
-the current session gracefully — all progress is already persisted in
-the task JSON files.
+Wait for the user's response. If they say continue, proceed and trigger
+the next gate after another 20 dispatches. If they restart, end gracefully
+— all progress is persisted.
 
 ### For Tasks That STOP
 
@@ -388,18 +407,36 @@ Run the project's full test suite and linting/type checking.
 
 1. Run `/deep-review` against the full branch diff (diff from base branch)
 2. Review the consolidated findings:
-   - **BLOCKING**: must fix
-   - **SHOULD_FIX**: must fix
+   - **BLOCKING**: MUST fix
+   - **SHOULD_FIX**: MUST fix
    - **SUGGESTIONS**: fix high-value ones that clearly improve code quality
 3. Fix findings, commit: `"Deep review fixes"`
 4. If the first pass had BLOCKING findings: run `/deep-review` one more time
    (single retry, not a loop)
-5. If the second pass still has BLOCKING findings: proceed to Step 3
+5. If the second pass still has BLOCKING findings: **do NOT create a PR.**
+   Proceed to Step 3.
 
-### Step 3: Record Tech Debt
+### Step 3: Handle Unresolved Findings
 
-If any BLOCKING or SHOULD_FIX findings remain unfixed after 2 deep-review
-iterations:
+**If BLOCKING findings remain after 2 iterations:**
+
+Do NOT create the PR. Present the unresolved findings to the user:
+
+> "Deep review found BLOCKING issues that could not be auto-fixed after
+> 2 attempts. A PR will NOT be created until these are resolved:
+>
+> [list of BLOCKING findings with file:line]
+>
+> Options:
+> 1. Fix these manually, then run `/execute {path}` to resume (it will
+>    re-run deep review and create the PR)
+> 2. If you've reviewed and determined these are false positives, say
+>    'override' to create the PR anyway"
+
+Record the findings in the plan.json `executionNotes` field so they
+survive across sessions.
+
+**If only SHOULD_FIX findings remain (no BLOCKING):**
 
 1. Check if the project has a `spec.md` (or `SPEC.md`) with a tech debt
    section
@@ -407,6 +444,23 @@ iterations:
    unfixed)
 3. If no: include the unfixed items in the PR description under a "Known
    Issues" section
+4. Proceed to Phase 3 (Create PR)
+
+---
+
+### Step 4: Update spec.md Current State
+
+If the project has a `spec.md` (or `SPEC.md`), read its `## Current State`
+section. If the feature changes capabilities described there (new endpoints,
+changed behavior, new dependencies, removed functionality), update the
+section to reflect what was actually built. Keep the same style and level
+of detail as the existing content.
+
+Commit: `"Update spec.md current state"`
+
+This makes spec maintenance automatic rather than aspirational. Skip this
+step if spec.md doesn't exist or if the feature doesn't affect anything
+described in Current State.
 
 ---
 
@@ -463,8 +517,12 @@ Commits: X (N tasks + Y review fixes)
 - **Two-tier review.** `/light-review` per task (fast). `/deep-review` for the
   whole branch (thorough).
 - **Always in a working state.** Every commit, every task completion, every
-  slice — tests pass, the project builds, nothing is half-done. If you can't
-  get to a working state without future tasks, the plan needs revision.
+  slice — the project builds, all existing tests pass, and no runtime errors
+  are introduced. "Working state" does NOT mean the feature is complete —
+  intermediate tasks may leave the feature partially implemented behind the
+  branch. The feature becomes complete only when all tasks are done and the
+  branch is ready for PR. If a task cannot build or pass existing tests
+  without future tasks, the plan needs revision.
 - **If stuck, ask — don't guess.** Ambiguous instructions mean stop and
   report.
 

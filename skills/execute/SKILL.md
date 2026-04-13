@@ -3,6 +3,7 @@ name: execute
 disable-model-invocation: true
 effort: high
 argument-hint: "[feature or bug directory path or slug, e.g. .claude/features/add-webhook-retry/ or .claude/bugs/stale-text-after-save/]"
+molel: opus
 description: >
   Use when the user asks to "execute", "implement", "start building", "run
   the tasks", or "build this feature/fix" — any request to implement approved
@@ -10,7 +11,7 @@ description: >
   (.claude/features/{slug}/ or .claude/bugs/{slug}/) or a slug name. Reads
   task JSON files, executes each through a 3-agent TDD cycle (test-writer →
   implementor → refactor), runs /cks:light-review after each task, runs /cks:deep-review
-  after all tasks, and creates a PR.
+  after all tasks. Does not push or create PRs — user handles that manually.
   Not applicable for plan creation (use /cks:feature or /cks:bug).
 ---
 
@@ -44,8 +45,7 @@ Main session:
   ├── Full test suite + lint → fix issues
   ├── /cks:deep-review (max 2 iterations) → fix findings
   ├── Record unfixed items in spec.md tech debt
-  ├── Push + create PR
-  └── Complete
+  └── Complete (user handles push + PR)
 ```
 
 **Why 3 separate agents per task:** The test writer reads `testContext`
@@ -163,8 +163,7 @@ Never execute tasks on `main` or `master`. This is a hard stop.
 2. **Spot-check verification commands** — read 2-3 task JSONs and confirm
    their `verificationCommand` is syntactically valid.
 3. **Check git state** — `git status`. Warn about uncommitted changes.
-4. **Verify gh CLI** — run `gh --version`. If not found, warn the user that
-   PR creation will fail at the end.
+4. **Skip** — gh CLI is not needed (push and PR creation are manual).
 5. **Verify review skills** — invoke `/cks:light-review` and `/cks:deep-review`
    with a dry-run or confirm they are available. If either skill is not found,
    stop and report before any tasks are executed.
@@ -265,7 +264,7 @@ their `repository` field. Process each repository sequentially:
 2. Create branch (`feature/{slug}` or `bugfix/{slug}`)
 3. Execute all tasks for this repository (following the per-task loop below)
 4. Run post-implementation (Phase 2) for this repository
-5. Create PR (Phase 3) for this repository
+5. Finalize (Phase 3) for this repository
 6. Return to next repository
 
 For single-repo features (repository is `"."`), skip this grouping.
@@ -300,7 +299,7 @@ contract, implement independently, and validate on merge.
 2. **Filter tasks** to the current slice (`task.slice === currentSlice`)
 3. **Execute all tasks** in the slice per the task loop below
 4. **Post-implementation** (Phase 2) for this slice only
-5. **Create PR** (Phase 3) for this slice, then return to next slice
+5. **Finalize** (Phase 3) for this slice, then return to next slice
 
 Process tasks within each slice sequentially by ID (task_0, task_1, ...).
 
@@ -522,18 +521,18 @@ Run the project's full test suite and linting/type checking.
 
 **If BLOCKING findings remain after 2 iterations:**
 
-Do NOT create the PR. Present the unresolved findings to the user:
+Do NOT finalize. Present the unresolved findings to the user:
 
 > "Deep review found BLOCKING issues that could not be auto-fixed after
-> 2 attempts. A PR will NOT be created until these are resolved:
+> 2 attempts. The feature will NOT be marked complete until these are resolved:
 >
 > [list of BLOCKING findings with file:line]
 >
 > Options:
 > 1. Fix these manually, then run `/cks:execute {path}` to resume (it will
->    re-run deep review and create the PR)
+>    re-run deep review and finalize)
 > 2. If you've reviewed and determined these are false positives, say
->    'override' to create the PR anyway"
+>    'override' to finalize anyway"
 
 Record the findings in the plan.json `executionNotes` field so they
 survive across sessions.
@@ -546,7 +545,7 @@ survive across sessions.
    unfixed)
 3. If no: include the unfixed items in the PR description under a "Known
    Issues" section
-4. Proceed to Phase 3 (Create PR)
+4. Proceed to Phase 3 (Finalize)
 
 ---
 
@@ -566,27 +565,29 @@ described in Current State.
 
 ---
 
-## Phase 3: Create PR
+## Phase 3: Finalize
 
-After post-implementation is complete, use the templates in
-[references/pr-templates.md](references/pr-templates.md). Choose the template
-matching the source type (feature or bugfix).
+After post-implementation is complete:
 
-After creating the PR:
-1. Update plan.json: set status to `COMPLETE`, add PR URL
-2. Present the PR URL to the user
+1. Update plan.json: set status to `COMPLETE`
+2. Present the execution summary to the user
+3. Remind the user that push and PR creation are manual:
+   > "All tasks are complete and committed on `{branch}`. When you're ready,
+   > push the branch and create a PR. The PR template is in
+   > [references/pr-templates.md](references/pr-templates.md)."
+
+**Do NOT push to remote or create a PR.** The user handles this manually.
 
 ---
 
 ## Execution Summary
 
-After the PR is created, present:
+After finalization, present:
 
 ```
 ## Execution Summary
 
 Branch: feature/{slug} or bugfix/{slug}
-PR: #{number} — [URL]
 Tasks: N completed, M failed
 Commits: X (N tasks + Y review fixes)
 
@@ -600,7 +601,9 @@ Commits: X (N tasks + Y review fixes)
 - /cks:deep-review: N issues found, N fixed, N recorded as tech debt
 
 ### Next Steps
-[Any unfixed items, human review items, or "Ready for review"]
+- Push branch and create PR when ready
+- PR template: references/pr-templates.md
+[Any unfixed items or human review items]
 ```
 
 ---

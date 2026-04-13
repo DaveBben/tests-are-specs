@@ -1,13 +1,17 @@
-# PR Templates
+# PR Body Templates
 
-Templates for creating pull requests via `gh pr create`. Choose based on source type.
+Markdown body templates for pull requests. Choose based on source type.
+The user creates the PR manually — these are the body content only.
 
 ---
 
 ## Feature PR
 
-```
-gh pr create --title "[feature description]" --body "$(cat <<'EOF'
+**Title format:** `[feature description]`
+
+**Body:**
+
+```markdown
 ## Summary
 [From plan.json — whatWeAreBuilding and whyThisExists]
 
@@ -22,14 +26,15 @@ gh pr create --title "[feature description]" --body "$(cat <<'EOF'
 [Any unfixed BLOCKING/SHOULD_FIX from deep review, or "None"]
 
 Generated with [Claude Code](https://claude.com/claude-code)
-EOF
-)"
 ```
 
 ## Bugfix PR
 
-```
-gh pr create --title "Fix: [symptom title]" --body "$(cat <<'EOF'
+**Title format:** `Fix: [symptom title]`
+
+**Body:**
+
+```markdown
 ## Bug
 
 **Severity:** [from plan.json]
@@ -54,8 +59,6 @@ gh pr create --title "Fix: [symptom title]" --body "$(cat <<'EOF'
 [Any unfixed BLOCKING/SHOULD_FIX from deep review, or "None"]
 
 Generated with [Claude Code](https://claude.com/claude-code)
-EOF
-)"
 ```
 
 ## Multi-Slice PR Strategy

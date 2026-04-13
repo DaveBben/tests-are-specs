@@ -3,7 +3,7 @@ name: execute
 disable-model-invocation: true
 effort: high
 argument-hint: "[feature or bug directory path or slug, e.g. .claude/features/add-webhook-retry/ or .claude/bugs/stale-text-after-save/]"
-molel: opus
+model: opus
 description: >
   Use when the user asks to "execute", "implement", "start building", "run
   the tasks", or "build this feature/fix" — any request to implement approved
@@ -26,6 +26,10 @@ lint, run `/cks:deep-review`, fix findings, record tech debt, and create a PR.
 
 - [Agent Prompts](references/agent-prompts.md) — Exact prompts for tdd-test-writer, tdd-code-implementor, tdd-code-refactor
 - [PR Templates](references/pr-templates.md) — Feature and bugfix PR body templates, multi-slice strategy
+- [Resumption](references/resumption.md) — Checkpoint format and session resumption logic
+- [Multi-Repo](references/multi-repo.md) — Multi-repository execution and contract stubs
+- [Error Handling](references/error-handling.md) — Plan deviation responses and upstream flagging
+- [Implementation Guidance](references/implementation-guidance.md) — Patterns for effective human-AI collaboration during execution
 
 ## Execution Model
 
@@ -65,7 +69,7 @@ architectural problems.
 
 ## Input Resolution
 
-If `$ARGUMENTS` were provided, classify and resolve:
+Resolve `$ARGUMENTS` — classify and find the plan directory:
 
 1. **Feature directory path** (contains `.claude/features/`): Verify the
    directory exists. Verify `tasks/plan.json` exists inside it.
@@ -89,52 +93,10 @@ The source type determines branch naming and PR template (see below).
 - **All task_N.json files** — glob `tasks/task_*.json`, sort by numeric ID
   (task_0, task_1, task_2, ...)
 
-### Execution State Checkpoint
-
-After each task completes, write (or update) a checkpoint file at
-`.claude/{features|bugs}/{slug}/execution-state.json`:
-
-```json
-{
-  "lastCompletedTask": "task_3",
-  "branch": "feature/{slug}",
-  "baseBranch": "main",
-  "dispatchCount": 16,
-  "testBaseline": {
-    "totalPassing": 142,
-    "knownFailures": ["test_flaky_timeout"]
-  },
-  "consecutiveReviewFailures": 0,
-  "timestamp": "2026-04-12T14:30:00Z"
-}
-```
-
-This file is the single source of truth for resumption — no git log
-parsing or commit message matching needed.
-
-### Resumption
-
-If `execution-state.json` exists:
-
-1. Read it to determine the last completed task, branch, dispatch count,
-   and test baseline
-2. Verify the branch exists and check it out
-3. Check `git status` — if there are uncommitted changes from a previous
-   session, stash them: `git stash push -m "recovered-uncommitted-work"`.
-   Warn the user about the stash.
-4. **Run the full test suite** to verify the branch is in a consistent
-   state. If tests fail unexpectedly (beyond the known baseline), warn
-   the user before resuming.
-5. Re-read plan.json constraints (the new session has no memory of them)
-6. Present: "Tasks 0-N complete. Tasks N+1 through M remaining. Resuming
-   from task N+1."
-7. Skip completed tasks and begin from the first incomplete one
-8. Restore the dispatch count from the checkpoint (for context gate tracking)
-
-If `execution-state.json` does not exist but task JSONs have `status: "DONE"`:
-fall back to verifying against `git log` — search for commits matching
-`"Task N:"`. If a task is marked DONE but has no matching commit, reset
-its status to `PENDING`.
+After each task completes, write/update a checkpoint file for resumption.
+See [references/resumption.md](references/resumption.md) for format and
+resumption logic. If `execution-state.json` exists at startup, follow
+the resumption procedure before continuing.
 
 ---
 
@@ -251,44 +213,9 @@ Read `totalSlices` from plan.json (defaults to 1 if absent).
 If `totalSlices > 1`, process slices sequentially. Each slice is a complete
 cycle: branch → tasks → post-implementation → PR.
 
-### Multi-Repository Execution
-
-Multi-repo support works best with monorepos (multiple packages in one
-repo) or co-located repos. For truly separate repositories with
-independent CI/CD, consider running `/cks:execute` independently per repo.
-
-If plan.json has `repositories` with more than one entry, group tasks by
-their `repository` field. Process each repository sequentially:
-
-1. `cd` to the repository path
-2. Create branch (`feature/{slug}` or `bugfix/{slug}`)
-3. Execute all tasks for this repository (following the per-task loop below)
-4. Run post-implementation (Phase 2) for this repository
-5. Finalize (Phase 3) for this repository
-6. Return to next repository
-
-For single-repo features (repository is `"."`), skip this grouping.
-
-#### Contract Stubs (multi-repo only)
-
-When repo B depends on changes from repo A (e.g., new API endpoints,
-shared types), repo B's tests can't hit repo A's unmerged changes. Use
-contract stubs to decouple execution:
-
-1. After completing repo A's tasks, extract the contract surface: type
-   definitions, API schemas, or interface files that repo B depends on
-2. Place these as stub files in repo B's test fixtures directory (e.g.,
-   `tests/fixtures/contracts/repo-a-types.ts`)
-3. Repo B's tests run against the stubs, not the live endpoints
-4. Include a `TODO: replace stub with real import after repo A merges`
-   comment in each stub file
-
-If plan.json has a `contracts` field listing shared specs (OpenAPI,
-protobuf, TypeScript interfaces), use those directly as the stubs rather
-than extracting them.
-
-This mirrors consumer-driven contract testing: both repos agree on the
-contract, implement independently, and validate on merge.
+If plan.json has `repositories` with more than one entry, see
+[references/multi-repo.md](references/multi-repo.md) for multi-repo
+execution and contract stub patterns.
 
 **For each slice** (or once if single-slice):
 
@@ -449,31 +376,14 @@ problems before they compound across more tasks.
 
 #### Step 9: Context Pause Gate (dispatch-count based)
 
-Track the total number of agent dispatches in this session. Each
-RED/GREEN/REFACTOR phase is 1 dispatch. Each /cks:light-review is 1 dispatch.
-Review fix iterations add additional dispatches. A simple task with no
-review fixes = 4 dispatches. A complex task with review fixes = 6+.
+Track total agent dispatches (each RED/GREEN/REFACTOR/light-review = 1).
+A simple task = 4 dispatches; complex with review fixes = 6+.
 
-**After 20 dispatches**, pause and check context health:
-
-> "**Context checkpoint** — {N} tasks completed ({D} agent dispatches so
-> far), {M} tasks remaining.
->
-> Check your context usage (run `/context` or check the context indicator).
-> Use your judgment:
-> - If context is **well under 50%** and quality feels good, say 'continue'
-> - If context is **approaching 50%** or you notice quality degrading,
->   start a fresh session for best results:
->
-> `/cks:execute {feature-or-bug-directory-path}`
->
-> The workflow picks up exactly where it left off — all {N} completed
-> tasks are recorded in the task JSON files. Deep review and PR creation
-> happen after all remaining tasks are done."
-
-Wait for the user's response. If they say continue, proceed and trigger
-the next gate after another 20 dispatches. If they restart, end gracefully
-— all progress is persisted.
+**After 20 dispatches**, pause: report tasks completed, dispatches used,
+tasks remaining. Ask the user to check context usage (`/context`) and
+either continue or start a fresh session with
+`/cks:execute {feature-or-bug-directory-path}` (resumption picks up
+automatically). Wait for user response. Next gate at another 20 dispatches.
 
 ### For Tasks That STOP
 
@@ -570,91 +480,14 @@ described in Current State.
 After post-implementation is complete:
 
 1. Update plan.json: set status to `COMPLETE`
-2. Present the execution summary to the user
-3. Remind the user that push and PR creation are manual:
-   > "All tasks are complete and committed on `{branch}`. When you're ready,
-   > push the branch and create a PR. The PR template is in
-   > [references/pr-templates.md](references/pr-templates.md)."
+2. Present a summary: branch name, task results (DONE/BLOCKED per task),
+   review findings fixed/remaining, and any unfixed items or tech debt
+3. Remind the user that push and PR creation are manual — point to
+   [references/pr-templates.md](references/pr-templates.md) for body templates
 
 **Do NOT push to remote or create a PR.** The user handles this manually.
 
----
-
-## Execution Summary
-
-After finalization, present:
-
-```
-## Execution Summary
-
-Branch: feature/{slug} or bugfix/{slug}
-Tasks: N completed, M failed
-Commits: X (N tasks + Y review fixes)
-
-### Task Results
-- Task 0: [title] — DONE
-- Task 1: [title] — DONE
-- Task 2: [title] — BLOCKED (reason)
-
-### Review
-- /cks:light-review: N issues found, N fixed
-- /cks:deep-review: N issues found, N fixed, N recorded as tech debt
-
-### Next Steps
-- Push branch and create PR when ready
-- PR template: references/pr-templates.md
-[Any unfixed items or human review items]
-```
-
----
-
-## Key Principles
-
-- **Tests first, always.** RED before GREEN. No exceptions.
-- **Context isolation between TDD phases.** Test writer reads `testContext`
-  (interfaces, types, contracts) but not `implementationContext`. Implementor
-  reads both. This prevents tests from being designed around the implementation.
-- **Minimum viable code.** The GREEN phase writes the least code possible.
-  The REFACTOR phase improves only what needs improving.
-- **Stay within declared scope.** Each agent touches only files declared
-  in the task.
-- **Never execute on main.** Branch safety is a hard stop.
-- **Two-tier review.** `/cks:light-review` per task (fast). `/cks:deep-review` for the
-  whole branch (thorough).
-- **Always in a working state.** Every commit, every task completion, every
-  slice — the project builds, all existing tests pass, and no runtime errors
-  are introduced. "Working state" does NOT mean the feature is complete —
-  intermediate tasks may leave the feature partially implemented behind the
-  branch. The feature becomes complete only when all tasks are done and the
-  branch is ready for PR. If a task cannot build or pass existing tests
-  without future tasks, the plan needs revision.
-- **If stuck, ask — don't guess.** Ambiguous instructions mean stop and
-  report.
-
-### When the Plan Is Wrong
-
-- **File doesn't exist**: STOP. Report to user.
-- **Interface changed**: STOP. Task context may need updating.
-- **Test infrastructure missing**: Report. User decides how to proceed.
-- **Task too large** (>200 lines changed): Report with line count. Recommend
-  splitting. User decides.
-- **Slice too large** (>500 lines cumulative): Warn. Recommend creating a
-  new slice boundary at the current task. User decides.
-- **Task touches files beyond what it declares**: Pause. Verify all changes
-  are necessary for this task's acceptance criteria. If any changes serve a
-  different concern, the task should have been split during planning.
-- **Tests require unmerged work**: If the current task's tests cannot pass
-  without uncommitted changes from a future task, the task ordering or
-  boundaries are wrong. STOP and report — this indicates a planning error.
-- **Task contradiction**: STOP. Back to `/cks:feature` or `/cks:bug` for revision.
-
-For minor deviations (slightly different import path), adapt and note. For
-scope or acceptance criteria changes, stop.
-
-### Flagging Upstream Artifacts for Revision
-
-During execution, if you discover that the plan is inadequate:
-
-1. Note the specific issue and impact
-2. Inform the user with a recommendation
-3. Continue execution if possible, noting the deviation
+When the plan is wrong (missing files, changed interfaces, oversized tasks),
+see [references/error-handling.md](references/error-handling.md) for
+response procedures. For minor deviations, adapt and note. For scope or
+acceptance criteria changes, stop and report.

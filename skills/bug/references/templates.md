@@ -39,6 +39,33 @@ code — it becomes a reference for the task breakdown.]
 environment-specific, intermittent, already fixed, test setup incomplete.]
 [ERROR — infrastructure issue prevented running the test. Note what failed.]
 
+## Exploration Questions
+[10 codebase-answerable questions generated from the symptom data. These
+force Explore agents to trace the downstream ripple of the bug and its fix.
+Every answer MUST include file:line evidence or an explicit "not applicable"
+with justification.]
+
+1. **[Question]**
+   > Answer: [finding with `file:line` reference]
+2. **[Question]**
+   > Answer: [finding with `file:line` reference]
+3. **[Question]**
+   > Answer: [finding with `file:line` reference]
+4. **[Question]**
+   > Answer: [finding with `file:line` reference]
+5. **[Question]**
+   > Answer: [finding with `file:line` reference]
+6. **[Question]**
+   > Answer: [finding with `file:line` reference]
+7. **[Question]**
+   > Answer: [finding with `file:line` reference]
+8. **[Question]**
+   > Answer: [finding with `file:line` reference]
+9. **[Question]**
+   > Answer: [finding with `file:line` reference]
+10. **[Question]**
+    > Answer: [finding with `file:line` reference]
+
 ## Codebase Findings
 [Deep reading results from Phase 1 — specific files, functions, patterns
 found along the bug's code path. Every claim must include a file:line

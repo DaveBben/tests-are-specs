@@ -211,6 +211,48 @@ user:
 
 **Do not proceed to Phase 1 until the user acknowledges the summary.**
 
+### Step 4: Generate Exploration Questions
+
+After the user confirms the symptom summary, generate **10 Exploration
+Questions** — specific, codebase-answerable questions that the Explore
+agents in Phase 1 **MUST answer with `file:line` evidence**. These
+questions force agents to trace the **downstream ripple** of the bug and
+its fix, not just the immediate code path where the symptom appears.
+
+Generate the questions from the confirmed symptom data (environment,
+reproduction steps, expected vs actual behavior, severity). Each question
+should connect the bug to parts of the codebase the agents might otherwise
+overlook.
+
+Good exploration questions for bugs target:
+- **Code path callers**: "What other code paths call the function where
+  the symptom manifests? Could they exhibit the same bug?"
+- **Shared state**: "Does the affected code path share state (caches,
+  singletons, globals) with other features that might mask or amplify
+  the bug?"
+- **Test coverage gaps**: "Which tests exercise this code path, and what
+  scenarios do they miss?"
+- **Error handling**: "How does the code path handle failures at each
+  step? Could a swallowed error explain the symptom?"
+- **Recent changes**: "What commits touched these files in the last 2
+  weeks? Could a recent change have introduced a regression?"
+- **Configuration sensitivity**: "Are there config values, feature flags,
+  or environment variables that could change this code path's behavior?"
+- **Similar patterns**: "Does the same pattern (e.g., cache invalidation,
+  state update, event dispatch) exist elsewhere? Are those instances
+  affected too?"
+- **Data flow boundaries**: "Where does data cross module or service
+  boundaries in this path? Could serialization, type coercion, or
+  validation at a boundary explain the symptom?"
+- **Documentation & contracts**: "Are there API contracts, type
+  definitions, or documented invariants that the buggy behavior violates?"
+- **Rollback impact**: "If we fix this, what downstream consumers of the
+  current (buggy) behavior might break because they adapted to it?"
+
+Not all categories will apply to every bug. Generate the 10 questions
+most relevant to *this specific symptom*. Record the questions in
+research.md (see template).
+
 ---
 
 ## Phase 1: Codebase Research
@@ -228,7 +270,11 @@ provide the domain context the bug exists within. Skip files already read.
 ### Step 2: Deep Codebase Exploration
 
 Launch Explore agents via the Agent tool to **deeply trace the code path
-involved in the reported symptom**. The agents must:
+involved in the reported symptom**.
+
+**Pass the 10 Exploration Questions** from Phase 0 Step 4 to every Explore
+agent. These questions are the agent's primary research mandate alongside
+tracing the bug's code path. The agents must:
 
 1. **Trace the reproduction steps through code** — starting from the entry
    point (what handler/function receives the user action), follow the code
@@ -242,10 +288,20 @@ involved in the reported symptom**. The agents must:
    elsewhere — note exact `file:line` references
 6. Check `git log --oneline -20 -- [affected files]` for recent changes
    in affected areas
+7. **Answer every one of the 10 Exploration Questions** with specific
+   `file:line` evidence. If an agent cannot answer a question, it must
+   explain what it searched and why no answer was found — "not applicable"
+   is acceptable only with justification
 
 Each agent reports back structured findings with full file paths and
 `file:line` references. Do not accept vague findings like "there's a
 utility module" — demand specifics.
+
+**After all agents return**, review their answers to the 10 Exploration
+Questions. If any question lacks a `file:line` answer and was not
+explicitly marked "not applicable with justification," launch a targeted
+follow-up agent to answer that specific question. Do not proceed to
+Step 3 with unanswered questions.
 
 ### Step 3: Answer Three Mandatory Questions
 
@@ -543,6 +599,11 @@ Present the task breakdown to the user:
 
 ## Common Failure Patterns
 
+- **Confident divergence** — The AI traces the obvious code path, infers the
+  rest, and misses downstream consumers, shared state, or callers in
+  unexpected locations that are also affected by the bug or its fix. The 10
+  Exploration Questions exist specifically to force outward exploration beyond
+  the immediate symptom site.
 - **Skimming instead of reading** — Phase 1 exists because the AI reads at
   signature level and moves on. Force deep reading: "read the full function
   body", "trace every caller."

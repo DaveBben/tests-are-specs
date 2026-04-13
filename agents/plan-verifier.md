@@ -64,6 +64,23 @@ For every "Reference: See `file:line`" in implementation sections:
 - Verify the referenced pattern still exists and matches what the plan describes
 - Check if the pattern has been recently modified (`git log -5 -- <file>`)
 
+### 5. Impact Table
+
+For every entry in the `## Impact` table:
+- Files with action `modify`: verify the file exists at that path
+- Files with action `create`: verify the file does NOT already exist
+- Files with action `delete`: verify the file currently exists
+- Symbols listed: verify they exist in the referenced file (for modify)
+
+### 6. At-Risk Tests
+
+If the plan identifies at-risk tests (existing tests that could regress):
+- Verify each test file exists
+- Verify the test file actually imports or exercises code in the files
+  being modified (grep for imports of the affected modules)
+- If a listed test doesn't actually depend on the changed code, flag it
+  as a false positive — wasted at-risk entries dilute the signal
+
 ## Output
 
 Return a structured report:

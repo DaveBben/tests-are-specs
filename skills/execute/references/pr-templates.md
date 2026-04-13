@@ -1,15 +1,10 @@
 # PR Body Templates
 
-Markdown body templates for pull requests. Choose based on source type.
-The user creates the PR manually — these are the body content only.
-
----
+The user creates PRs manually — these are body content only.
 
 ## Feature PR
 
-**Title format:** `[feature description]`
-
-**Body:**
+**Title**: `[feature description]`
 
 ```markdown
 ## Summary
@@ -20,58 +15,42 @@ The user creates the PR manually — these are the body content only.
 
 ## Test plan
 - [ ] All automated tests pass
-- [ ] [Manual verification items if any from task acceptance criteria]
+- [ ] [Manual verification items from acceptance criteria]
 
 ## Known Issues
-[Any unfixed BLOCKING/SHOULD_FIX from deep review, or "None"]
+[Unfixed findings from deep review, or "None"]
 
 Generated with [Claude Code](https://claude.com/claude-code)
 ```
 
 ## Bugfix PR
 
-**Title format:** `Fix: [symptom title]`
-
-**Body:**
+**Title**: `Fix: [symptom title]`
 
 ```markdown
 ## Bug
-
-**Severity:** [from plan.json]
-**Symptom:** [from plan.json — symptomTitle]
+**Symptom:** [from plan.json]
 
 ## Root Cause
-
-[From plan.json — rootCause]
+[From plan.json]
 
 ## Fix
-
 [From plan.json — whatThisDelivers]
 
 ## Test Plan
-
-- [ ] Regression test reproduces the bug (RED before fix)
-- [ ] Fix makes the regression test pass (GREEN after fix)
+- [ ] Regression test passes
 - [ ] Full test suite passes
-- [ ] [Edge case tests if applicable]
 
 ## Known Issues
-[Any unfixed BLOCKING/SHOULD_FIX from deep review, or "None"]
+[Unfixed findings, or "None"]
 
 Generated with [Claude Code](https://claude.com/claude-code)
 ```
 
-## Multi-Slice PR Strategy
+## Multi-Slice Strategy
 
-For features with `totalSlices > 1`:
-
+For `totalSlices > 1`:
 1. Each slice gets its own PR
-2. Slice 1 PR targets the base branch (main)
-3. Slice 2+ PRs target the previous slice's branch
-4. Mark slice 2+ PRs as **draft** until their parent slice is merged
-5. PR title format: `[feature description] (slice N/M)`
-6. PR body includes which slice this is, what it delivers independently,
-   and its dependency on prior slices
-
-This implements stacked PRs — reviews can happen in parallel with
-implementation of subsequent slices.
+2. Slice 1 targets base branch; slice 2+ targets previous slice's branch
+3. Mark slice 2+ as **draft** until parent merges
+4. Title: `[feature] (slice N/M)`

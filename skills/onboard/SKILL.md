@@ -37,7 +37,10 @@ Do not duplicate content between the two files.
 ### Phase 1: Unified Discovery
 
 One exploration pass gathers everything needed for both documents. Focus on the project root
-and first-level subdirectories. Do not recurse deeply into source directories.
+and first-level subdirectories. Do not recurse deeply into source directories. **Stop
+exploring once you have concrete answers for each category below** — do not continue
+reading files for additional supporting evidence. Over-retrieval wastes context and
+delays the user.
 
 **Gather for CLAUDE.md:**
 - Primary language(s), frameworks, and their versions
@@ -66,30 +69,39 @@ and first-level subdirectories. Do not recurse deeply into source directories.
 Follow up based on gaps — external services, failure behavior, testing, CI/CD, ownership, known issues, tech debt, things an AI should never touch, non-obvious gotchas.
 
 **For mature/brownfield codebases** (>50k lines or >2 years of git history),
-add a domain risks interview after initial discovery:
+add a domain risks interview after initial discovery. Generate **3-5 targeted
+questions based on what you actually found** during exploration — not generic
+examples. Each question should reference a specific discovery:
 
-> "This is a mature codebase. Before I write the spec, I want to capture the
-> unwritten rules — things an AI can't discover by reading code. For example:
->
-> - Special internal libraries that MUST be used for specific operations
->   (e.g., idempotency, auth, logging)
-> - Services that behave differently in production vs development
-> - Data patterns that look wrong but are intentional
-> - Areas of the codebase with non-obvious coupling or gotchas
-> - Deployment ordering constraints between services
->
-> What comes to mind?"
+Examples of targeted questions (adapt to what you found):
+- "I found 3 different auth patterns (`src/auth/jwt.ts`, `src/middleware/session.ts`,
+  `src/legacy/basic-auth.ts`) — is one canonical, or do different areas use different
+  approaches?"
+- "The database has both soft-delete (`deleted_at` columns) and hard-delete tables —
+  which is the convention for new tables?"
+- "I see `src/lib/internal-http` wrapping all outbound HTTP — must all new integrations
+  use this, or can they use fetch directly?"
 
-Capture these in a `## Domain Gotchas` section in spec.md. These are the
-highest-value items in the spec — they represent institutional knowledge
-that prevents the most expensive AI mistakes.
+Present all questions at once. Capture answers in a `## Domain Gotchas` section
+in spec.md. These are the highest-value items in the spec — institutional
+knowledge that prevents the most expensive AI mistakes.
 
 ### Phase 2: Check for Existing Files
 
 If the exploration found existing files, ask about each in a single interaction:
 
 - **CLAUDE.md found**: "A CLAUDE.md already exists. Would you like to **(a)** update it to match best-practice format while preserving your content, or **(b)** start fresh?"
-- **spec.md found** (also check `SPEC.md`, `PROJECT-SPEC.md`): "A project spec already exists. Would you like to **(a)** update it to the current template preserving content, or **(b)** start fresh?"
+- **spec.md found** (also check `SPEC.md`, `PROJECT-SPEC.md`): Before asking the
+  user, compare the Current State section against what discovery found. If they
+  diverge, show the specific drift:
+  > "spec.md exists but its Current State appears stale:
+  > - Spec says: '[quote from Current State]'
+  > - Code shows: '[what discovery found]'
+  >
+  > Would you like to **(a)** update it (I'll fix the drift and match best-practice
+  > format), or **(b)** start fresh?"
+
+  If no drift detected, ask without the warning.
 
 Then ask: **"This workflow creates both CLAUDE.md and spec.md. If you only need CLAUDE.md, say so now — otherwise we'll proceed with both."**
 
@@ -172,6 +184,26 @@ Iterate until the user approves.
 2. Write CLAUDE.md and spec.md
 3. Verify the CLAUDE.md Pointers to Deeper Docs section includes the spec.md pointer
 4. Tell the user which sections have placeholders they should fill in
+
+### Phase 8: Domain-Scoped Context (large projects only)
+
+If the project has **5 or more distinct subsystem directories** (e.g., `src/auth/`,
+`src/billing/`, `src/api/`, `src/workers/`, `src/notifications/`), suggest
+creating subdirectory CLAUDE.md files:
+
+> "This project has {N} distinct subsystems. A single root CLAUDE.md will
+> grow past the 200-line cap as conventions accumulate. Consider adding
+> scoped context files for the largest subsystems:
+>
+> - `src/auth/CLAUDE.md` — auth-specific conventions, session handling quirks
+> - `src/billing/CLAUDE.md` — billing domain rules, Stripe integration patterns
+>
+> These load automatically when Claude reads files in those directories.
+> Each should contain only conventions specific to that subsystem — shared
+> rules stay in the root CLAUDE.md."
+
+Only suggest this for subsystems that surfaced domain-specific conventions
+during discovery. Do not create empty subdirectory files.
 
 ---
 

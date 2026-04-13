@@ -125,6 +125,9 @@ commits that might have introduced or relate to the bug.]
 - `[exact git command]` — [what was learned]
 ```
 
+> **Target: 150-250 lines.** Exploration question answers should be
+> 1-3 sentences each, not full code excerpts.
+
 ---
 
 ## impact-map.md
@@ -239,6 +242,9 @@ code path under different conditions]
 *This plan is ready for annotation. Do not implement yet.*
 ```
 
+> **Target: 100-200 lines.** If the plan exceeds 300 lines, the bug
+> likely needs splitting or the scope is too broad.
+
 ---
 
 ## tasks.md
@@ -340,13 +346,6 @@ One file per task at `.claude/bugs/{slug}/tasks/task_{N}.json`:
   ],
   "implementationContext": [
     {"path": "src/services/existing.ts", "reason": "[implementation details only the code writer needs]"}
-  ],
-  "steps": [
-    "Read the reference implementation at src/existing/pattern.ts:42",
-    "Write failing tests based on acceptance criteria below",
-    "Run tests to verify they fail (confirm RED state)",
-    "Write minimal implementation to make tests pass",
-    "Run tests to verify they pass (confirm GREEN state)"
   ],
   "acceptanceCriteria": [
     "GIVEN [precondition], WHEN [action], THEN [expected outcome]"

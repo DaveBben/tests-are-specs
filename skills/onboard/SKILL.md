@@ -192,28 +192,31 @@ Fix any issues found. If fixes were significant, run through the checklist
 once more. **Maximum 2 passes** — after 2 passes, note remaining findings
 for the user rather than looping further.
 
-### Phase 6: Review with User
-
-Present both drafts together. Ask:
-
-**For CLAUDE.md:**
-- Note which sections have placeholders the user should fill in (Project Identity, Critical Constraints, or any others left blank)
-
-**For spec.md:**
-- "Does the Current State section accurately describe what is implemented and working today, with nothing aspirational or future-tense?"
-- "Does this accurately describe the project?"
-- "Is anything missing that would cause an AI to make wrong assumptions?"
-- "Are the failure behaviors and constraints for external dependencies accurate?"
-- "Is anything included that's obvious from reading the code?" (remove it if so)
-
-Iterate until the user approves.
-
-### Phase 7: Write Files
+### Phase 6: Write Files
 
 1. If `$ARGUMENTS` provides an output path, use it. If it's a directory, write both files inside it. Otherwise default to the project root.
-2. Write CLAUDE.md and spec.md
-3. Verify the CLAUDE.md Pointers to Deeper Docs section includes the spec.md pointer
-4. Tell the user which sections have placeholders they should fill in
+2. Write CLAUDE.md and spec.md to disk.
+3. Verify the CLAUDE.md Pointers to Deeper Docs section includes the spec.md pointer.
+
+### Phase 7: Review with User
+
+Tell the user the files have been written and ask them to open and review them. Say something like:
+
+> "I've written CLAUDE.md and spec.md — please open them and review. Let me know what you'd like to change."
+
+**Prompt them to check:**
+
+**For CLAUDE.md:**
+- Which sections have placeholders they should fill in (Project Identity, Critical Constraints, or any others left blank)
+
+**For spec.md:**
+- Does the Current State section accurately describe what is implemented and working today, with nothing aspirational or future-tense?
+- Does this accurately describe the project?
+- Is anything missing that would cause an AI to make wrong assumptions?
+- Are the failure behaviors and constraints for external dependencies accurate?
+- Is anything included that's obvious from reading the code? (remove it if so)
+
+Iterate — applying their feedback as edits to the files — until the user approves. Once approved, update the **Status** field in spec.md (and any domain specs) from `Draft` to `Active`, and update the **Last verified** date to today.
 
 ### Phase 8: Domain-Scoped Specs
 
@@ -312,14 +315,9 @@ After writing all files, create `.claude/rules/spec-maintenance.md`
 (no `paths` frontmatter — this loads unconditionally every session):
 
 ```markdown
-# .claude/rules/spec-maintenance.md
+# Spec Maintenance
 
-After completing a feature implementation that changes the project's
-capabilities, check spec.md and update the Current State section if
-it no longer matches reality. If the changes are within a directory
-that has its own domain spec.md, update that domain spec's Current
-State and interface contracts too. Update the Last verified date on
-any spec you review.
+After implementing a feature, update `spec.md` Current State if it no longer reflects reality. For changes scoped to a subdirectory with its own `spec.md`, update that domain spec too. Always update the Last verified date on any spec you touch.
 ```
 
 Also add to CLAUDE.md's Critical Constraints section:
@@ -337,4 +335,3 @@ Then suggest drift detection to the user:
 > and flags them for review."
 
 ---
-

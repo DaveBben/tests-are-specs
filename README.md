@@ -38,6 +38,9 @@ Is it a bug?
 
 Is it a new feature or capability?
   └── Yes → /cks:feature → then /cks:execute
+
+Want to understand what was just built?
+  └── Yes → /cks:retro (after /cks:execute completes)
 ```
 
 ### Depth Modes
@@ -60,6 +63,7 @@ Not every change needs the full pipeline. Pick the depth that matches your situa
 | `/cks:feature` | Investigates scope, produces a plan and TDD task files | `.claude/features/{slug}/plan.md`, `.claude/features/{slug}/tasks/task_N.md`, `.claude/features/{slug}/human_plan.md` |
 | `/cks:bug` | Captures symptom, root cause, and fix tasks | `.claude/bugs/{slug}/plan.md`, `.claude/bugs/{slug}/tasks/task_N.md`, `.claude/bugs/{slug}/human_plan.md` |
 | `/cks:execute` | Implements tasks: TDD cycle + two-tier review + PR | Branch, commits, PR |
+| `/cks:retro` | Post-execution comprehension walkthrough — understand what was built | Dialogue (no artifacts) |
 | `/cks:light-review` | Single-agent code review across all dimensions | Review report |
 | `/cks:deep-review` | Four-agent parallel review (security, reliability, maintainability, performance) | Consolidated review report |
 
@@ -109,6 +113,17 @@ Takes a feature or bug plan directory and processes all tasks:
 5. Push branch + create PR using `gh`
 
 Multi-repo: tasks are tagged with their target repository. Each repo is processed sequentially with contract stubs to decouple cross-repo dependencies.
+
+### `/cks:retro`
+
+Post-execution comprehension check. After `/cks:execute` completes, this skill walks through the implementation task by task, asking you to predict how each task was implemented before revealing the actual diff. Finds the gaps between what you expected and what was built — those gaps are where learning happens.
+
+Use this when:
+- You used `/cks:execute` on unfamiliar code or a new codebase
+- You want to own the code the AI produced, not just ship it
+- You're growing into a domain and want to build mental models faster
+
+Not a review, not a gate — a learning tool. Entirely opt-in, skip any task at any time.
 
 ### `/cks:light-review`
 
@@ -191,6 +206,8 @@ cks/
       references/
         templates.md
     execute/
+      SKILL.md
+    retro/
       SKILL.md
     light-review/
       SKILL.md

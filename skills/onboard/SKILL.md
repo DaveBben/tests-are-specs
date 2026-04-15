@@ -13,11 +13,6 @@ effort: high
 
 # Onboard — Repository Setup
 
-Creates both CLAUDE.md and spec.md in a single workflow. CLAUDE.md is quick-reference context
-(tech stack, commands, constraints). spec.md is a living specification (current state,
-architecture, boundaries, ownership). Together they give Claude everything it needs to work
-effectively in a repository.
-
 ## What Goes Where
 
 | spec.md | CLAUDE.md |
@@ -32,19 +27,13 @@ effectively in a repository.
 | System context (if part of a larger platform) | — |
 | Ownership, known issues, tech debt | — |
 
-Do not duplicate content between the two files.
-
 ---
 
 ## Workflow
 
 ### Phase 1: Unified Discovery
 
-One exploration pass gathers everything needed for both documents. Focus on the project root
-and first-level subdirectories. Do not recurse deeply into source directories. **Stop
-exploring once you have concrete answers for each category below** — do not continue
-reading files for additional supporting evidence. Over-retrieval wastes context and
-delays the user.
+One exploration pass gathers everything needed for both documents. Focus on the project root and first-level subdirectories. Do not recurse deeply into source directories. **Stop exploring once you have concrete answers for each category below** — do not continue reading files for additional supporting evidence. Over-retrieval wastes context and delays the user.
 
 **Gather for CLAUDE.md:**
 - Primary language(s), frameworks, and their versions
@@ -63,16 +52,8 @@ delays the user.
 - For pipelines or multi-stage systems: trace data flows between stages, document handoff contracts
 
 **Identify domains:**
-- From the top-level directory structure, identify **distinct subsystems or
-  deployment units** — areas with their own conventions, dependencies, or
-  interfaces. Examples: `backend/`, `frontend/`, `workers/`, `infra/`,
-  or `src/auth/`, `src/billing/` in a monolith.
-- A simple app may have 0-1 domains (just the root spec.md is sufficient).
-  A multi-service system may have 2-5. Record each with its root directory
-  and a one-line description.
-- Let the user confirm, add, or remove domains before proceeding. They may
-  identify domains the directory structure doesn't make obvious (e.g., a
-  shared library that serves as an internal API boundary).
+- Identify distinct subsystems or deployment units from the directory structure (e.g., `backend/`, `frontend/`, `src/auth/`, `src/billing/`). Simple apps have 0-1; multi-service systems have 2-5. Record each with its root directory and a one-line description.
+- Let the user confirm — they may know of boundaries the directory structure doesn't make obvious.
 
 **Gather for both:**
 - Existing files: `CLAUDE.md`, `.claude/CLAUDE.md`, `.claude/rules/`, `spec.md`, `SPEC.md`, `docs/architecture.md`, `README.md`, `CONTRIBUTING.md`
@@ -84,40 +65,26 @@ delays the user.
 
 Follow up based on gaps — external services, failure behavior, testing, CI/CD, ownership, known issues, tech debt, things an AI should never touch, non-obvious gotchas.
 
-**For mature/brownfield codebases** (>50k lines or >2 years of git history),
-add a domain risks interview after initial discovery. Generate **3-5 targeted
-questions based on what you actually found** during exploration — not generic
-examples. Each question should reference a specific discovery:
+**For mature/brownfield codebases** (>50k lines or >2 years of git history), add a domain risks interview after initial discovery. Generate **3-5 targeted questions based on what you actually found** during exploration — not generic examples. Each question should reference a specific discovery:
 
 Examples of targeted questions (adapt to what you found):
-- "I found 3 different auth patterns (`src/auth/jwt.ts`, `src/middleware/session.ts`,
-  `src/legacy/basic-auth.ts`) — is one canonical, or do different areas use different
-  approaches?"
-- "The database has both soft-delete (`deleted_at` columns) and hard-delete tables —
-  which is the convention for new tables?"
-- "I see `src/lib/internal-http` wrapping all outbound HTTP — must all new integrations
-  use this, or can they use fetch directly?"
+- "I found 3 different auth patterns (`src/auth/jwt.ts`, `src/middleware/session.ts`, `src/legacy/basic-auth.ts`) — is one canonical?"
+- "The database has both soft-delete (`deleted_at` columns) and hard-delete tables — which is the convention for new tables?"
 
-Present all questions at once. Capture answers in a `## Domain Gotchas` section
-in spec.md. These are the highest-value items in the spec — institutional
-knowledge that prevents the most expensive AI mistakes.
+Present all questions at once. Capture answers in a `## Gotchas` section in spec.md — these are the highest-value items in the spec.
 
 ### Phase 2: Check for Existing Files
 
 If the exploration found existing files, ask about each in a single interaction:
 
 - **CLAUDE.md found**: "A CLAUDE.md already exists. Would you like to **(a)** update it to match best-practice format while preserving your content, or **(b)** start fresh?"
-- **spec.md found** (also check `SPEC.md`, `PROJECT-SPEC.md`): Before asking the
-  user, compare the Current State section against what discovery found. If they
-  diverge, show the specific drift:
+- **spec.md found** (also check `SPEC.md`, `PROJECT-SPEC.md`): Before asking the user, compare the Current State section against what discovery found. If they diverge, show the specific drift:
   > "spec.md exists but its Current State appears stale:
   > - Spec says: '[quote from Current State]'
   > - Code shows: '[what discovery found]'
   >
   > Would you like to **(a)** update it (I'll fix the drift and match best-practice
   > format), or **(b)** start fresh?"
-
-  If no drift detected, ask without the warning.
 
 Then ask: **"This workflow creates both CLAUDE.md and spec.md. If you only need CLAUDE.md, say so now — otherwise we'll proceed with both."**
 
@@ -126,14 +93,10 @@ If the user opts out of spec.md, skip Phases 4, 5, and the spec.md portions of P
 **Merge rules when updating existing files:**
 - Existing content wins for human-judgment sections (Project Identity, Critical Constraints, motivation, ownership, boundaries, architecture decisions)
 - Discovery data wins for factual sections (versions, commands, current state, testing strategy, deployment)
-- Merge and deduplicate where both sources have content
 
 ### Phase 3: Draft CLAUDE.md
 
-Read [references/quality-guide.md](references/quality-guide.md) for principles. Use
-[references/claude-md-format.md](references/claude-md-format.md) for the exact section structure.
-
-Using discovery data, draft each section per the format reference:
+Read [references/quality-guide.md](references/quality-guide.md) for principles. Use [references/claude-md-format.md](references/claude-md-format.md) for the exact section structure.
 
 - **Fill from exploration data**: Tech Stack and Codebase Map, Operational Commands, Pointers to Deeper Docs. If a command category was not found, include a placeholder comment like `<!-- add test command -->`.
 - **Leave blank with HTML comment placeholder**: Project Identity — this requires human judgment and cannot be reliably inferred.
@@ -148,31 +111,17 @@ Using discovery data, draft each section per the format reference:
 
 ### Phase 4: Draft spec.md
 
-Read [references/spec-standards.md](references/spec-standards.md) for principles and anti-patterns.
-Use [references/spec-template.md](references/spec-template.md) for the section structure. Consult
-[references/spec-section-guidance.md](references/spec-section-guidance.md) for what makes each section good.
+Draft using [spec-template.md](references/spec-template.md) for structure, [spec-standards.md](references/spec-standards.md) for principles, and [spec-section-guidance.md](references/spec-section-guidance.md) for section guidance.
 
 **Include a `## Table of Contents` after the header block** (title, dates, status, blurb) listing all sections with anchor links. Omit entries for sections you didn't include (e.g., Domain Specs for single-domain projects).
 
-**Write Current State first — it is section #1 in the spec.** Get it right before proceeding.
-It anchors every other section and is the most important thing the spec communicates. It must
-describe only what is actually implemented and working today. No future tense. Include a named
-**"Not yet implemented"** list for any stubs, placeholders, or intentionally incomplete
-features — do not bury these in prose.
+**Write Current State first — it is section #1 in the spec.** Get it right before proceeding. It anchors every other section and is the most important thing the spec communicates. It must describe only what is actually implemented and working today. No future tense. Include a named **"Not yet implemented"** list for any stubs, placeholders, or intentionally incomplete features — do not bury these in prose.
 
-**Include a System Context section only if** this project is part of a larger platform,
-has adjacent services with explicit ownership boundaries, or if the project's origin prevents
-a wrong technical assumption. Omit it for standalone projects.
+**Include a System Context section only if** this project is part of a larger platform, has adjacent services with explicit ownership boundaries, or if the project's origin prevents a wrong technical assumption. Omit it for standalone projects.
 
-**Include a Gotchas section if** Phase 1 or the mature codebase interview surfaced
-institutional knowledge that isn't derivable from the code — naming traps, hidden side
-effects, things that have caused incidents. Omit if none exist.
+**Include a Gotchas section if** Phase 1 or the mature codebase interview surfaced institutional knowledge that isn't derivable from the code — naming traps, hidden side effects, things that have caused incidents. Omit if none exist.
 
-**If Phase 1 identified 2+ domains:** Write a slim, system-level root spec (target
-60-100 lines). Domain-specific content (external deps, testing gaps, known issues,
-tech debt, domain boundaries) goes in domain specs created in Phase 8. Don't put
-domain-specific content in the root — it will be loaded unnecessarily when the agent
-works in an unrelated domain.
+**If Phase 1 identified 2+ domains:** Write a slim, system-level root spec (target 60-100 lines). Domain-specific content (external deps, testing gaps, known issues, tech debt, domain boundaries) goes in domain specs created in Phase 8.
 
 **If single-domain project:** Include everything in the root spec (target 100-200 lines).
 Skip Phase 8.
@@ -181,8 +130,7 @@ Do not include tech stack, directory structure, or dev commands — those belong
 
 ### Phase 5: Self-Review
 
-Before presenting to the user, review the spec.md draft against these checks
-from [references/spec-standards.md](references/spec-standards.md):
+Before presenting to the user, review the spec.md draft against these checks from [references/spec-standards.md](references/spec-standards.md):
 
 **Required sections present:**
 - [ ] Current State (most critical — must be section #1, must describe what is implemented today)
@@ -218,9 +166,17 @@ from [references/spec-standards.md](references/spec-standards.md):
 - [ ] Code style rules enforced by a linter
 - [ ] Organizational motivation without a decision-informing constraint attached
 
-Fix any issues found. If fixes were significant, run through the checklist
-once more. **Maximum 2 passes** — after 2 passes, note remaining findings
-for the user rather than looping further.
+Fix any issues found. Maximum 2 passes — after that, note remaining findings for the user.
+
+**Decision-gap check:** After the checklist passes, ask: *"If I got this wrong, what would break silently, be hard to reverse, or require a production fix?"* Generate exactly one question per category below — only if discovery surfaced a specific candidate. If a category has no candidate, skip it rather than inventing one.
+
+| Category | What to look for | Where the answer goes |
+|----------|-----------------|----------------------|
+| **Invisible walls** | Capability constraints or integration limits not visible from the code — what the system *can't* do (rate limits, context windows, non-recursive APIs, output format restrictions) | External Dependencies "Constraints / Can't Do" column |
+| **Settled decisions that look unsettled** | Multiple patterns in the codebase where one should be canonical — e.g., two HTTP clients, three auth approaches, mixed error-handling styles | Gotchas |
+| **Silent side effects** | Operations that appear safe but have non-obvious consequences in this specific codebase — e.g., migrations auto-run on deploy, queue submissions are not idempotent, config object is mutated in-flight | Gotchas |
+
+Each question must reference the specific file, pattern, or discovery that prompted it. Go find the answer — read files, run `git log`, grep for patterns — then update the relevant spec section before proceeding to Phase 6.
 
 ### Phase 6: Write Files
 
@@ -230,11 +186,7 @@ for the user rather than looping further.
 
 ### Phase 7: Review with User
 
-Tell the user the files have been written and ask them to open and review them. Say something like:
-
-> "I've written CLAUDE.md and spec.md — please open them and review. Let me know what you'd like to change."
-
-**Prompt them to check:**
+Tell the user the files are written and ask them to review. Prompt them to check:
 
 **For CLAUDE.md:**
 - Which sections have placeholders they should fill in (Project Identity, Critical Constraints, or any others left blank)
@@ -256,37 +208,15 @@ If Phase 1 identified **2 or more domains**, create a domain spec for each.
 
 #### Step 1: Draft Domain Specs
 
-For each domain, write `{domain-dir}/spec.md` using the
-[domain-spec-template.md](references/domain-spec-template.md). Each domain
-spec is **under 100 lines** and contains:
+Write each `{domain-dir}/spec.md` using [domain-spec-template.md](references/domain-spec-template.md). Each spec is **under 100 lines**. Content gathered in Phase 1 but excluded from root (domain-specific deps, testing gaps, issues, boundaries) belongs here — don't leave it orphaned.
 
-- What this domain owns and does NOT own
-- Current state of this domain specifically
-- Domain-specific conventions
-- Interface contracts (internal + exposed + domain-specific external deps)
-- Testing — coverage gaps and domain-specific test conventions
-- Domain boundaries — domain-specific Always/Ask First/Never rules
-- Known issues in this domain
-- Gotchas and anti-patterns
+**Do not duplicate the root spec.md.** Shared conventions, project-wide boundaries, and deployment info stay at root. Omit empty sections.
 
-Content that was gathered during Phase 1 discovery but excluded from the
-root spec (domain-specific deps, testing gaps, known issues, tech debt,
-domain boundaries) goes here. This is the primary home for that content
-— don't leave it orphaned.
-
-**Do not duplicate the root spec.md.** Shared conventions, project-wide
-boundaries, and deployment info stay at root. Omit empty sections rather
-than including placeholders.
-
-These are **drafts** — present them to the user for review just like the
-root spec.md. LLM-generated context files that aren't human-reviewed
-reduce resolution rates (ETH Zurich, 2602.11988).
+Present drafts to the user for review before finalizing.
 
 #### Step 2: Create Loading Rules
 
-For each domain spec, create a path-scoped rule in `.claude/rules/`
-that loads the spec when Claude works in that directory. Rules use
-YAML frontmatter with a `paths` field for scoping:
+For each domain spec, create a path-scoped rule in `.claude/rules/` that loads the spec when Claude works in that directory. Rules use YAML frontmatter with a `paths` field for scoping:
 
 ```markdown
 # .claude/rules/{domain-name}-context.md
@@ -301,29 +231,22 @@ contracts, and boundaries before making changes in this area.
 
 #### Step 2b: Verify Rules Load
 
-After creating rule files, verify each one by checking that the glob
-pattern matches actual files in the domain directory:
+After creating rule files, verify each one by checking that the glob pattern matches actual files in the domain directory:
 
 ```
 ls {domain-dir}/**/* | head -3
 ```
 
-If the glob returns no files, the pattern is wrong and the rule will
-never trigger. Fix the pattern before proceeding. Common mistakes:
-missing `**` for recursive matching, wrong directory prefix.
+If the glob returns no files, fix the pattern — common mistakes are missing `**` and wrong directory prefix.
 
 #### Step 3: Update Root Pointers
 
-Add a `## Domain Specs` section to the root spec.md listing each
-domain spec with its path and one-line description. Add a pointer in
-CLAUDE.md's "Pointers to Deeper Docs" section.
+Add a `## Domain Specs` section to the root spec.md listing each domain spec with its path and one-line description. Add a pointer in CLAUDE.md's "Pointers to Deeper Docs" section.
 
 #### When NOT to Create Domain Specs
 
-- Project has only 1 domain or is a simple app — root spec.md is sufficient
-- A subsystem has no domain-specific conventions — don't create an empty spec
-- The domain's conventions are already in the root spec — move them to the
-  domain spec instead of duplicating
+- Project has only 1 domain — root spec.md is sufficient
+- A subsystem has no domain-specific conventions, or its conventions are already in root — move them there, don't duplicate
 
 ---
 
@@ -333,20 +256,8 @@ CLAUDE.md's "Pointers to Deeper Docs" section.
 - **Leave human-judgment sections as placeholders** — Project Identity and Critical Constraints require human input. Do not fill these with generic advice.
 - **Keep CLAUDE.md under 200 lines** — A CLAUDE.md that's too long defeats its purpose as quick-reference context.
 - **Don't skip discovery for existing projects** — Even when the user describes the project verbally, explore the codebase first — the code is the source of truth.
-- **Don't describe what will be built** — spec.md captures current state only. Redirect future plans to `/cks:feature`.
-- **Specs balloon quickly** — If a section restates what the code already shows, cut it.
 - **Don't confuse project spec with change spec** — If the user starts describing a specific feature or bug fix mid-interview, redirect them to `/cks:feature` for that work.
 - **Keep cross-references in sync** — When writing or moving files, verify CLAUDE.md's pointer to spec.md is correct.
 - **This skill targets the root CLAUDE.md** — For subdirectory CLAUDE.md files in a monorepo, scope content to that package's domain.
-
----
-
-## Spec Maintenance
-
-After writing all files, suggest drift detection to the user:
-
-> "To catch spec drift in CI, consider a post-merge hook that checks
-> whether files touched in a PR overlap with paths documented in spec.md
-> and flags them for review."
 
 ---

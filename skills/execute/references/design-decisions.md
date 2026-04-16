@@ -70,6 +70,6 @@ demonstrated that scaffolding quality matters more than model capability
 model reasoning. Haiku with strong task JSON scaffolding handles simple
 pattern-following. Sonnet handles standard multi-file work. Complex
 tasks (4 files, interface changes) get higher turn limits and additional
-context (evidence.md, full interface files) because the ~60 pp
+context (brainstorm.md, full interface files) because the ~60 pp
 performance collapse from single-file to multi-file tasks is primarily
 a context problem, not a model capability problem.

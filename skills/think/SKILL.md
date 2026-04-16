@@ -1,6 +1,6 @@
 ---
 name: think
-effort: medium
+effort: high
 model: opus
 disable-model-invocation: true
 argument-hint: "[change request]"
@@ -74,64 +74,34 @@ before proceeding.
 Read `CLAUDE.md`, `spec.md`, and any domain `spec.md` files relevant to
 this change. Do not summarize these — use them to orient investigation.
 
-Launch **3 parallel Explore agents** to retrieve raw findings only.
-Agents search and read — they do not reason about approaches or trade-offs.
-
-**Agent 1 — Blast radius:**
-1. Which files contain the entry point and immediate consumers of this
-   change? Follow imports one level deep from the entry point.
-2. Which test files import, mock, or call into any of those files?
-   Return: file path, test symbol (describe/it/test block name).
-3. What is the import chain from the app entry point to the target
-   symbol? Return the ordered list of file paths (3-5 hops max).
-
-**Agent 2 — Existing patterns:**
-1. Does anything structurally similar already exist in the codebase
-   that this change could extend rather than duplicate?
-   Return: file:line and one sentence on what it does.
-2. Are there any TODOs, FIXMEs, or comments in the target area that
-   mention relevant constraints or known issues?
-   Return: file:line and the comment text verbatim.
-3. What is the closest analogous change already made in this codebase?
-   Return: file:line of the reference implementation.
-
-**Agent 3 — Data shapes and contracts:**
-1. What type definitions, interfaces, or schemas describe data flowing
-   through the target area? Return: file:line for each type/interface.
-2. What external callers consume the output of the target — routes, API
-   handlers, queue consumers, other services? These are what break
-   silently when a shape changes. Return: file:line for each caller.
-3. Are there serialization boundaries near the target — places where
-   data is written to a database, cache, queue, or sent over the wire
-   in a format that encodes the current shape?
-   Return: file:line and the storage mechanism (e.g. "postgres column",
-   "redis key", "JSON response body").
-
-Cap each agent's return to **3 lines per question**. Format:
-```
-Q: [question]
-A: file:line — [finding]
-Note: [one sentence max]
-```
-
-If any question lacks a `file:line` answer, note it as "not found" —
-do not invent answers. Unverified context is worse than no context.
+Launch **3 parallel Explore agents** (blast radius, existing patterns,
+data shapes) using the questions in
+[agent-questions.md](references/agent-questions.md). Agents retrieve
+raw findings only — they do not reason about approaches or trade-offs.
 
 Once agents return, **synthesize in the main session** (do not delegate):
-- From blast radius: identify concern groups affected and their dependency chain
-- From patterns: identify 2-3 distinct implementation approaches, each
-  grounded in what the agents found — what each touches, risks, and avoids
-- From data shapes: identify which types/interfaces are load-bearing
-  (changing them breaks external callers or serialized data), and which
-  serialization boundaries constrain what the change can safely do
-- Across all three: identify the 2-3 highest-consequence failure modes —
-  things that would break silently or be hard to reverse
-- **Security flag** (only if the blast radius includes any of the following):
-  auth middleware, permission guards, input validation, query construction,
-  or external-facing endpoints. If present, call it out explicitly:
-  > "This change touches a security-relevant surface: [file:line].
-  > The chosen approach must preserve [the auth check / validation / etc]."
-  This becomes a hard constraint in brainstorm.md — not a suggestion.
+- Concern groups and dependency chain (from blast radius)
+- 2-3 implementation approaches grounded in findings (from patterns)
+- Load-bearing types/interfaces and serialization boundaries (from data shapes)
+- 2-3 highest-consequence failure modes (across all three)
+- **Security flag**: if blast radius includes auth, validation, query
+  construction, or external endpoints, call it out as a hard constraint
+  in brainstorm.md — not a suggestion.
+
+**Checkpoint**: After synthesis, write a draft brainstorm.md
+(`Status: Draft`, `DraftDate: YYYY-MM-DD`) with the findings so far —
+impact surface, at-risk test candidates, approaches, failure modes.
+
+On resume (directory exists, Draft brainstorm.md present):
+- If `DraftDate` is ≤3 days old: skip to Step 4.
+- If `DraftDate` is >3 days old: spot-check 3 file:line references
+  from the draft against the current codebase. If any are stale, warn:
+  > "Draft brainstorm.md is {N} days old and some references have
+  > changed. Re-run investigation or continue with stale findings?"
+  If user continues, proceed to Step 4. If re-run, delete draft and
+  restart from Step 3.
+
+The draft is overwritten in Phase 4 with the final version.
 
 ### Step 4 — Surface Findings to User
 
@@ -146,35 +116,39 @@ be involved that isn't, or one you didn't expect?"
 
 Wait for response before proceeding.
 
-**Batch 2 — At-risk tests:**
-List every test that could regress, with the reason for each.
-Ask the user to confirm or correct the list:
+**Batch 2 — At-risk tests (predict-before-reveal):**
+Before presenting any test list, ask:
 
-> "These are the tests I believe are at risk. Do any of these seem
-> wrong, or are there tests I've missed?"
+> "Which tests do you think are at risk from this change?"
+
+Wait for their answer. Then present the AI-identified list for
+comparison — highlight where it agrees and where it differs. This
+breaks anchoring so the user evaluates the list independently.
+
+> "Here are the tests I found that could regress: [list with reasons].
+> Combined with yours, does this look complete?"
 
 **This list requires human confirmation before it goes into
 brainstorm.md.** An incorrect at-risk test list is worse than none.
 
 Wait for confirmation.
 
-**Batch 3 — Ask first, then compare:**
-Before presenting any approaches, ask:
+**Batch 3 — Approaches (predict-before-reveal):**
+Ask: "What approach would you take? High level is fine."
 
-> "Given what you've seen — the impact surface, the at-risk tests, the
-> data constraints — what approach would you take? High level is fine."
+Wait for their answer. If they have no instinct, acknowledge and
+proceed. Then present the 2-3 approaches as constraint elimination:
+lead with what limits the design space, then show how each approach
+follows. Where the human's instinct aligns, say so. Where it diverges,
+explain the trade-off with specific findings.
 
-Wait for their answer. If they have no instinct ("I don't know", "you
-tell me"), acknowledge it and proceed directly to presenting the
-approaches — do not push for a prediction they don't have. Then present
-the 2-3 approaches synthesized from the findings. For each, show what it touches and what it risks. Where
-the human's instinct aligns with an approach, say so. Where it diverges,
-explain the trade-off — not "you're wrong" but "that direction risks X
-because of [specific finding]."
+Do not recommend one. The human decides.
 
-Do not recommend one. The human decides. If they ask for a
-recommendation, surface the constraint that most limits the options and
-ask again — the finding should point toward the answer, not you.
+**Checkpoint**: After the user chooses an approach, update the draft
+brainstorm.md with `Phase: AwaitingDecisions` and record the confirmed
+impact surface, at-risk tests, and chosen approach. On resume with
+`Phase: AwaitingDecisions`, skip to Step 5 — do not re-present
+Batches 1-3.
 
 ---
 
@@ -199,30 +173,17 @@ Getting them wrong here is harder to fix downstream.
 
 ### Step 6 — Failure Modes and Reversibility
 
-Present the 2-3 highest-consequence failure modes synthesized in Step 3.
-For each, ask how it should be handled if it goes wrong.
+Present the 2-3 highest-consequence failure modes from Step 3. Focus on
+**irreversible or silently-broken** scenarios only. For each, get a
+human decision on how to handle it.
 
-The goal is not to enumerate every edge case — it is to surface
-**irreversible or silently-broken** scenarios and get a human decision
-before planning begins. If a failure mode has an obvious answer, state
-it and confirm. Only ask explicitly when the right answer is unclear.
+Additionally, if applicable (skip if not):
+- **Data/state migration**: if change touches persisted data or schemas,
+  ask about migration/backfill/coexistence
+- **Rollback story**: if change involves migrations or breaking
+  interface changes, ask about safe revert
 
-Then ask two additional questions if the investigation found either
-condition — skip if neither applies:
-
-**Data/state migration** (ask only if the change touches persisted data,
-a schema, a stored format, or a shared cache):
-> "This change touches [X]. What happens to existing data — does it need
-> migrating, backfilling, or can old and new formats coexist?"
-
-**Rollback story** (ask only if the change involves a migration, a
-breaking interface change, or removes something callers depend on):
-> "If this needs to be reverted after deploying — is that clean, or does
-> it leave the system in a broken state? Is there anything we should
-> design now to make rollback safe?"
-
-Record the answers in brainstorm.md's Failure Modes Decided section.
-If no decision is reached, mark `[TBD]` — do not choose for the user.
+Record answers in brainstorm.md. Unresolved items → `[TBD]`.
 
 ---
 
@@ -231,28 +192,10 @@ If no decision is reached, mark `[TBD]` — do not choose for the user.
 Write `.claude/features/{slug}/brainstorm.md` using the
 [brainstorm.md template](references/templates.md#brainstormmd).
 
-**Hard rules for this file:**
-- **Under 200 lines.** If you're approaching 200, cut — omit empty
-  sections, compress prose, remove anything derivable from the code.
-- **Only confirmed decisions.** Do not write speculative content.
-  If the human hasn't decided something, mark it `[TBD]` — do not
-  choose for them.
-- **Every at-risk test was confirmed by the human.** If a test is on
-  the list without human confirmation, mark it `[unverified]`.
-- **Every file:line reference must exist on disk.** Do not include
-  references that weren't verified during investigation.
-- **No implementation details.** brainstorm.md contains decisions and
-  constraints, not code. Code goes in plan.md (Phase 2 of /plan).
+**Hard rules:** under 200 lines; only confirmed decisions (unresolved
+→ `[TBD]`); unconfirmed tests → `[unverified]`; every file:line
+verified on disk; no implementation details (code goes in plan.md).
 
-Present to user:
-
-> "brainstorm.md is at `.claude/features/{slug}/brainstorm.md`.
-> Review it and either:
-> 1. **Correct anything** — tell me what's wrong
-> 2. **Approve** — say 'approve' to proceed to /cks:plan"
-
-Apply any corrections. Once approved, set the Status field in
-brainstorm.md to `Approved` and update the Date to today. Then say:
-
-> "Run `/cks:plan .claude/features/{slug}` to generate the
-> implementation plan from this brainstorm."
+Present to user for review. Apply corrections. On approval, set
+Status to `Approved`, update Date, and direct user to run
+`/cks:plan .claude/features/{slug}`.

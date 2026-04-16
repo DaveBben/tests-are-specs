@@ -1,5 +1,9 @@
 # Plan Artifact Templates
 
+- [plan.md](#planmd)
+- [task_{N}.json](#task_njson)
+- [plan.json](#planjson)
+
 ## plan.md
 
 ```markdown

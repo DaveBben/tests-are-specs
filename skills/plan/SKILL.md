@@ -1,12 +1,12 @@
 ---
 name: plan
-effort: medium
+effort: high
 model: opus
 disable-model-invocation: true
 argument-hint: "[feature slug or .claude/features/{slug} path]"
 description: >
   Takes an approved brainstorm.md and produces plan.md and task JSONs
-  ready for /act. Minimal user interaction — Think already made the
+  ready for /cks:execute. Minimal user interaction — Think already made the
   decisions. Do NOT run without an approved brainstorm.md (run /think
   first). Do NOT use for bugs (use /cks:bug).
 ---
@@ -50,16 +50,22 @@ Hard stop if:
 - More than 3 `[TBD]` entries — too many open decisions. Return to
   `/cks:think` to resolve them.
 
-Read `CLAUDE.md` and any domain `spec.md` for the affected area.
-Do not summarize — use to orient the investigation below.
+Warn (do not hard stop) if:
+- Dependency Chain section is empty or absent — dependency chains
+  prevent NameError-class failures on multi-file tasks. Warn:
+  > "brainstorm.md has no dependency chain. Multi-file tasks are at
+  > higher risk of cross-file reference errors. Continue or return to
+  > /cks:think to add one?"
 
-Check the `Last verified` date on any `spec.md` read. If older than
-30 days, warn before continuing:
-> "spec.md was last verified {date} — {N} days ago. It may not reflect
-> the current codebase. Consider running /cks:onboard to refresh it
-> before planning. Continue anyway? (yes/no)"
-A stale spec means the investigation may be anchored to wrong
-assumptions. Do not block — warn and let the user decide.
+If 1–3 `[TBD]` entries remain (allowed by think), extract them now.
+During Step 2 investigation, attempt to resolve each from the codebase.
+Any that remain unresolved after Step 2 must appear in the relevant
+task's `doNot` as: "Do not assume [TBD topic] — decision pending."
+
+Read `CLAUDE.md` and any domain `spec.md` for orientation. If any
+`spec.md`'s `Last verified` date is >30 days old, warn (do not block):
+> "spec.md was last verified {date}. Consider refreshing before
+> planning. Continue anyway?"
 
 ---
 
@@ -90,47 +96,25 @@ dependency chains into task JSONs.
 Write `.claude/features/{slug}/plan.md` using the
 [plan.md template](references/templates.md#planmd).
 
-**Content rules:**
+**Content rules:** real code (not pseudocode), omit empty sections,
+exhaustive impact table, max 2 pattern references, What NOT to Do
+copied verbatim from brainstorm.md. Under ~500 lines → single PR;
+over → vertical slices only. End with "Do not implement yet."
 
-- **Real code, not pseudocode.** Every symbol in the Implementation
-  section must exist in the codebase or be the exact proposed new
-  signature. Paste the current signature alongside the proposed change.
-- **Omit empty sections.** A shorter plan outperforms a comprehensive
-  one. If a template section has no content, leave it out.
-- **Impact table is exhaustive.** Every file that will be created,
-  modified, or deleted — with the specific symbol and reason.
-- **Patterns to Follow** cites at most 2 references. More than 2 is
-  noise. Pick the closest analogue only.
-- **What NOT to Do** pulls directly from brainstorm.md's Do NOT and
-  Constraints sections — do not rewrite, copy verbatim.
-- **Delivery strategy**: under ~500 lines total → single PR.
-  Over → vertical slices only. Never horizontal layers.
-- End with "Do not implement yet."
-
-**Target: 100–200 lines.** If approaching 200, cut — the plan is
-input to task decomposition, not documentation.
+**Target: 100–200 lines.**
 
 ---
 
 ## Step 4 — Verify plan.md
 
-Launch the `plan-verifier` agent. It checks that every `file:line`
-reference, type, and function signature in the plan actually exists.
+Launch the `plan-verifier` agent. Apply every `@FIX:` correction.
+Ignore verifier output about missing `testContext`/`implementationContext`
+(removed fields). If >3 discrepancies, re-investigate the affected
+files rather than patching one by one.
 
-Note: the plan-verifier was written for the old feature skill schema
-which included `testContext` and `implementationContext`. Those fields
-are removed in this skill. The verifier's checks on file references,
-code snippets, assumptions, pattern references, impact table, and
-at-risk tests all still apply — ignore any output about missing
-`testContext`/`implementationContext` fields.
-
-Apply every `@FIX:` correction before proceeding. Do not present a
-plan with unresolved discrepancies.
-
-If the verifier finds more than 3 discrepancies, re-read the affected
-files and rewrite those sections before re-running verification.
-A plan with many stale references indicates the investigation in Step 2
-was insufficient — do not patch one by one, fix the source.
+After verification passes, write `tasks/plan.json` with
+`status: "PendingDecomposition"`. On resume: if plan.json exists with
+this status, skip to Step 5.
 
 ---
 
@@ -158,58 +142,22 @@ Never a horizontal layer (all models, then all controllers).
 Each slice must be independently reviewable and have exactly one reason
 it would be reverted.
 
-### Task JSON fields
+### Task JSON schema and validation
 
-Each task JSON contains exactly these fields — no others:
+Use the schema and field notes in
+[task_{N}.json template](references/templates.md#task_njson). Key rules:
 
-```
-id, slice, repository, title, status, implementer
-intent        — WHY this task exists (one sentence, enables
-                ambiguity resolution — not what it does)
-files         — 1–4 paths, hard max 4
-symbol        — specific function or type to create/modify
-reference     — single closest pattern (file:line), from plan.md
-                Patterns to Follow. One entry only.
-dependencyChain — ordered import path, entry point → target (3–5 hops)
-                  verified against codebase in Step 2
-relevantFiles — each file in `files` with action: "create" or "modify".
-                Used by /act to verify filesystem state before dispatch.
-blockedBy     — task IDs that create types/interfaces this task consumes
-atRiskTests   — from brainstorm.md At-Risk Tests, confirmed by user.
-                Each entry: path, symbol, reason.
-                Empty array only if no existing tests touch affected code.
-doNot         — at least one boundary, pulled from plan.md What NOT to Do
-acceptanceCriteria — GIVEN/WHEN/THEN, one entry per observable behaviour
-verificationCommand — single runnable test command
-regressionCheck — command to run atRiskTests. Empty only if atRiskTests
-                  is empty. MUST be set when atRiskTests is non-empty.
-doneWhen      — mechanically verifiable. MUST include "and regressionCheck
-                passes" when atRiskTests is non-empty.
-scopeBoundaries — what this task owns vs what adjacent tasks own
-```
-
-**Fields removed from the old schema and why:**
-- `testContext` — merged into `atRiskTests` (same information, one
-  channel reduces context interference)
-- `implementationContext` — removed. Research shows adding a third
-  context type on top of blast radius + patterns can catastrophically
-  interfere (36% → 19% resolution). `reference` (one entry) is
-  sufficient.
-- `environmentCheck` — keep if the project requires it; omit otherwise.
-  Not a universal field.
-
-### Validate each task JSON before writing
-
-- `files` has 1–4 entries. More than 4: split the task.
-- Every path in `files` has a matching entry in `relevantFiles`
-- `relevantFiles` paths with `action: modify` exist on disk
-- `relevantFiles` paths with `action: create` do NOT exist on disk
-- `doNot` and `acceptanceCriteria` are non-empty
-- `doneWhen` is non-empty and mechanically verifiable
 - `intent` explains *why*, not *what*
-- `regressionCheck` is set whenever `atRiskTests` is non-empty
-- `reference` is a single entry pointing to a verified `file:line`
-- No `[TBD]` values — all fields must be resolved
+- `files` hard max 4 — more means split the task
+- `reference` is a single entry only
+- `atRiskTests` from brainstorm.md's confirmed list — not re-derived
+- `regressionCheck` MUST be set when `atRiskTests` is non-empty
+- `doneWhen` MUST include "and regressionCheck passes" when atRiskTests
+  is non-empty
+
+**Validate before writing:** all paths exist/don't-exist as expected,
+`dependencyChain` hops have real import relationships (grep to confirm),
+no `[TBD]` values remain.
 
 Write `tasks/plan.json` + `tasks/task_{N}.json` per task.
 
@@ -222,7 +170,7 @@ Present plan.md to the user:
 > "The plan is at `.claude/features/{slug}/plan.md` and {N} task JSONs
 > are in `tasks/`. Review the plan and either:
 > 1. **Give feedback** — tell me what's wrong, I'll revise once
-> 2. **Approve** — say 'approve' to proceed to /cks:act"
+> 2. **Approve** — say 'approve' to proceed to /cks:execute"
 
 Process feedback as one revision pass. Re-run the plan-verifier after
 any changes to plan.md that touch code references.
@@ -232,6 +180,6 @@ After revision, if the user gives further feedback: apply it, but flag:
 > intent, consider returning to /cks:think — the approach may need
 > revisiting rather than the plan."
 
-On approval: set plan.json status to `Approved`. Say:
+On approval: update plan.json status from `PendingDecomposition` to `Approved`. Say:
 
 > "Run `/cks:act .claude/features/{slug}` to execute."

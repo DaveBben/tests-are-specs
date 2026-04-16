@@ -1,418 +1,208 @@
 ---
 name: bug
-effort: high
+effort: medium
 model: opus
 disable-model-invocation: true
-argument-hint: "[bug description, symptom, or existing bug directory path]"
+argument-hint: "[bug symptom or .claude/bugs/{slug} path]"
 description: >
-  Bug investigation and fix planning skill. Guides the user through capturing
-  a well-formed symptom report, deeply researches the codebase to trace the
-  bug's code path, attempts to reproduce the bug programmatically, then
-  produces an impact map and implementation plan with tasks compatible with
-  /cks:execute. Human reviews via annotation cycle.
-  Do NOT use for feature requests (use /cks:feature).
-  Do NOT use for trivial one-line fixes (just make the change).
+  Bug investigation and fix skill. Captures the symptom, reproduces it
+  programmatically, traces root cause, and produces task JSONs for /act.
+  No separate plan.md — bugs are 2-4 tasks and go straight to task JSONs.
+  Do NOT use for features (use /think). Do NOT use for trivial one-line
+  fixes (just make the change).
 ---
 
-# Bug Investigator
+# Bug — Symptom to Fix
 
-> Takes a bug symptom, captures it conversationally, deeply researches the
-> codebase, attempts programmatic reproduction, produces an impact map and
-> plan with actual code snippets, then decomposes into implementation tasks.
-> Human reviews at key phases. Expect 15-30 minutes.
-
-### Supporting Files
-
-- [Templates](references/templates.md) — Markdown and JSON templates for all artifacts
-- [Anti-Patterns](references/anti-patterns.md) — Common mistakes to catch during symptom capture
-- [Symptom Capture](references/symptom-capture.md) — Phase 0 conversational protocol
-
-### /cks:execute Compatibility
-
-This skill writes task JSON files to `.claude/bugs/{slug}/tasks/` so
-`/cks:execute` can pick them up:
+> Bugs are different from features: the user has a symptom, not a change
+> request. The highest-value step is reproduction — confirming the bug
+> exists and producing a failing test. This skill goes from symptom to
+> executable task JSONs with minimal intermediate artifacts.
 
 ```
-/cks:execute .claude/bugs/{slug}
+User describes symptom → /cks:bug
+  Phase 1: Capture (symptom, repro steps, severity)
+  Phase 2: Investigate (trace code path, reproduce programmatically)
+  Phase 3: Confirm (present findings, user confirms root cause)
+  Phase 4: Task JSONs (produce tasks for /act)
 ```
+
+Artifacts written to `.claude/bugs/{slug}/`.
 
 ---
 
 ## Input Handling
 
-If `$ARGUMENTS` were provided, classify them:
-
-1. **Existing bug directory** (path to a `.claude/bugs/{slug}/` directory):
-   Enter **Resumption Mode** — check which artifacts exist and resume from
-   the last incomplete phase:
-   - No `research.md` → start at Phase 0 (symptom capture)
-   - Has `research.md` but no `impact-map.md` → start at Phase 3
-   - Has `impact-map.md` but no `plan.md` → start at Phase 4
-   - Has `plan.md` with `Status: Draft` → start at Phase 5 (annotation cycle)
-   - Has `plan.md` with `Status: Approved` but no `tasks.md` → start at Phase 6
-   - Has `tasks.md` → tell the user: "This bug is fully planned. Use the
-     implementation command at the bottom of tasks.md to implement, or run
-     `/cks:execute .claude/bugs/{slug}`."
-
-2. **Free-form text description**: Use as the symptom seed. Generate a
-   URL-safe slug from the first 3-5 significant words of the symptom (e.g.,
-   "stale text displays after re-recording" becomes
-   `stale-text-after-rerecording`). If `.claude/bugs/{slug}/` already exists,
-   append a short numeric suffix (`-2`, `-3`). Create the directory and
-   proceed to Phase 0.
-
-3. **No input**: Ask the user what bug they observed. Include the hint:
+1. **Existing bug directory**: Resume from last incomplete phase based
+   on which artifacts exist.
+2. **Free-form text**: Generate a URL-safe slug from the symptom
+   (max 40 chars). Create `.claude/bugs/{slug}/` and Phase 1.
+3. **No input**: Ask user to describe the symptom, not the cause:
    > "Describe what you saw — the symptom, not the cause. For example:
-   > 'After saving a memo, the old text still shows' rather than
-   > 'the cache doesn't invalidate.'"
+   > 'After saving, the old text still shows' rather than 'the cache
+   > doesn't invalidate.'"
 
 ---
 
-## Phase 0: Symptom Capture
+## Phase 1: Capture
 
-Capture the user's bug observation through conversation. Produces structured
-symptom data (environment, reproduction steps, expected vs actual, severity)
-and 10 exploration questions for Phase 1.
+### Step 1 — Understand the Symptom
 
-See [Symptom Capture](references/symptom-capture.md) for the full
-conversational protocol, including diagnosis detection, scope checking,
-the five conversation rounds (Environment, Steps, Expected/Actual,
-Severity, Evidence), and exploration question generation.
+Listen to the user's description. Check for diagnosis leakage — if
+they describe a root cause instead of an observable symptom, redirect:
 
-**Do not proceed to Phase 1 until the user acknowledges the symptom summary.**
+> "That sounds like a diagnosis. What did you actually see? What
+> behavior was wrong?"
 
----
+If description contains multiple bugs, split:
+> "That sounds like two issues. Which is more urgent? We'll handle
+> the other separately."
 
-## Phase 1: Codebase Research
+### Step 2 — Fill the Gaps
 
-**This phase must complete before any planning begins.** The research
-artifact is the review surface. If the research is wrong, the plan will be
-wrong, and the fix will be wrong.
+Conversationally (not as checklist), 1-2 questions at a time: repro
+steps, expected vs actual, severity, environment if relevant.
+Push back on vagueness.
 
-### Step 1: Read Project Context
+### Step 3 — Confirm
 
-Read any project architecture or spec files not yet loaded in this session
-(e.g., `architecture.md`, `ARCHITECTURE.md`, `spec.md`, `SPEC.md`). These
-provide the domain context the bug exists within. Skip files already read.
-
-### Step 2: Deep Codebase Exploration
-
-Launch Explore agents via the Agent tool to **deeply trace the code path
-involved in the reported symptom**.
-
-**Pass the 10 Exploration Questions** from Phase 0 Step 4 to every Explore
-agent. These questions are the agent's primary research mandate alongside
-tracing the bug's code path. The agents must:
-
-1. **Trace the reproduction steps through code** — starting from the entry
-   point (what handler/function receives the user action), follow the code
-   path step by step until reaching where the symptom manifests
-2. Read the full content of every file along the code path — do not
-   summarize from file names or directory structure alone
-3. **Understand the intended behavior** of each function in the path —
-   read function bodies, comments, tests, and related documentation
-4. Trace every caller and downstream consumer of code that will change
-5. Search for existing code that handles the same scenario correctly
-   elsewhere — note exact `file:line` references
-6. Check `git log --oneline -20 -- [affected files]` for recent changes
-   in affected areas
-7. **Answer every one of the 10 Exploration Questions** with specific
-   `file:line` evidence. If an agent cannot answer a question, it must
-   explain what it searched and why no answer was found — "not applicable"
-   is acceptable only with justification
-
-Each agent reports back structured findings with full file paths and
-`file:line` references. Do not accept vague findings like "there's a
-utility module" — demand specifics.
-
-**After all agents return**, review their answers to the 10 Exploration
-Questions. If any question lacks a `file:line` answer and was not
-explicitly marked "not applicable with justification," launch a targeted
-follow-up agent to answer that specific question. Do not proceed to
-Step 3 with unanswered questions.
-
-### Step 3: Answer Three Mandatory Questions
-
-Before any planning, answer these in writing based on the exploration:
-
-1. **Where does this symptom originate in the system?**
-   Name the specific module, file, and function. Explain why this location
-   and not adjacent alternatives. Distinguish between where the symptom
-   *appears* and where the bug *lives* — they may be different.
-
-2. **What is the intended behavior of this code path?**
-   Describe what the code was designed to do. Reference tests, comments,
-   or specifications that document the expected behavior.
-
-3. **What has changed recently in this area?**
-   Check `git log` for affected files. Note any recent commits that might
-   have introduced or relate to the bug.
+Summarize: symptom title, numbered steps, expected/actual, severity.
+Wait for confirmation before proceeding.
 
 ---
 
-## Phase 2: Bug Reproduction Attempt
+## Phase 2: Investigate
 
-**This is the key differentiator from `/cks:feature`.** Before planning a fix,
-attempt to reproduce the bug programmatically. This validates the symptom
-and provides concrete evidence for the research.
+### Step 4 — Codebase Tracing
 
-### Step 1: Check Existing Test Coverage
+Read `CLAUDE.md` and any relevant `spec.md`. Then launch **2 parallel
+Explore agents**:
 
-Search for existing tests that exercise the affected code path:
+**Agent 1 — Code path:** trace repro steps through code (file:line per
+hop), find existing tests for the path, check `git log --oneline -10`
+for recent changes.
 
-1. Grep for test files related to the affected module/function
-2. Run those tests. Note if any already fail — they may be testing the
-   same scenario
-3. If existing tests pass, note what scenarios they cover and what gap
-   the bug falls into
+**Agent 2 — Blast radius:** other callers of affected function, shared
+state (caches, globals, singletons), working patterns elsewhere.
 
-### Step 2: Write a Draft Reproduction Test
+Cap returns to **3 lines per question**.
 
-Write a test that reproduces the bug:
+### Step 5 — Reproduce
 
-1. Set up the preconditions from the reproduction steps (Phase 0)
-2. Perform the action that triggers the bug
-3. Assert the **expected** behavior (so the test fails if the bug exists)
-4. Follow the project's existing test conventions (detected during Phase 1)
+1. If existing test already fails on the bug, note it and skip to 3.
+2. Write draft reproduction test (asserts expected behavior → fails if
+   bug exists). Save to `.claude/bugs/{slug}/repro-test.[ext]`, do NOT
+   commit.
+3. Run test. Record: **RED** (confirmed), **GREEN** (did not reproduce),
+   or **ERROR** (infrastructure issue, do not block).
 
-Name the test descriptively: `test_[slug]_[symptom_description]`
+### Step 6 — Synthesize Root Cause
 
-### Step 3: Run the Reproduction Test
-
-Run the test and record the result:
-
-- **RED (test fails)**: Bug confirmed programmatically. Capture the exact
-  failure output — assertion message, stack trace, actual vs expected values.
-- **GREEN (test passes)**: Bug did not reproduce in the test environment.
-  Note possible reasons: environment-specific, intermittent, already fixed,
-  or test setup doesn't match real conditions closely enough.
-- **ERROR (infrastructure issue)**: Test couldn't run. Note what failed
-  (missing fixture, wrong framework, compilation error). Do not block on this.
-
-### Step 4: Save but Do NOT Commit
-
-The reproduction test is a **draft artifact**. Do not commit it. Save the
-test file to `.claude/bugs/{slug}/draft-reproduction-test.[ext]` so it can
-be referenced later. It will be:
-- Included in `research.md` as evidence
-- Added to the first task's `testContext` so the TDD test-writer can use
-  it as a starting point rather than writing from scratch
+In the main session (not delegated), synthesize:
+- **Root cause hypothesis**: where the bug lives (not where the symptom
+  appears), what is going wrong, and the evidence supporting it
+- **At-risk tests**: every existing test that exercises the affected
+  code path — these could regress from the fix
+- **Reference pattern**: the working implementation found by Agent 2
+  that the fix should follow
 
 ---
 
-## Phase 3: Write research.md and impact-map.md
+## Phase 3: Confirm
 
-### Step 1: Write research.md
+### Step 7 — Present Findings
 
-Write all findings to `.claude/bugs/{slug}/research.md` using the
-[research.md template](references/templates.md#researchmd).
+Present to the user in three parts:
 
-**Populate the Sources Read section.** Before finishing research.md, review
-the full conversation history from Phases 0-2 and compile every source
-consulted:
+**Part 0 — Ask first (prevent anchoring):**
+Ask: "Where do you think the bug lives?" Wait for answer. If no
+instinct, acknowledge and proceed.
 
-- **Files**: Every project file read by you or by explore agents
-  (architecture files, spec files, every source file traced during code path
-  exploration, test files examined during Phase 2). Use project-relative paths.
-- **URLs**: Every URL fetched or provided by the user. If none, write
-  "*No URLs fetched during this research.*"
-- **Git History**: Every `git log` command run during exploration (e.g.,
-  `git log --oneline -20 -- [files]`). Include the exact command and a brief
-  note of what was learned.
+**Part 1 — Root cause:**
+State hypothesis with file:line evidence. Where user's instinct aligns,
+say so. Where it diverges, explain the evidence. Ask if they have
+additional context. Wait for response.
 
-Each entry gets a short annotation (a few words) explaining why it was read.
-Do not omit sources because they seem unimportant — the section is an audit
-trail.
+**Part 2 — At-risk tests (predict-before-reveal):**
+Before presenting any test list, ask:
 
-Include:
-- The symptom summary from Phase 0
-- The reproduction findings from Phase 2 (including the draft test code
-  and its output)
-- The codebase findings from Phase 1 (with file:line references)
-- The root cause hypothesis (clearly labeled as a hypothesis)
-- Existing patterns that inform what the fix should look like
-- Recent changes from git log
-- Open questions for the user
+> "Which existing tests do you think could break from this fix?"
 
-### Step 2: Write impact-map.md
+Wait for their answer. Then present the AI-identified list for
+comparison — highlight agreements and differences.
 
-Write to `.claude/bugs/{slug}/impact-map.md` using the
-[impact-map.md template](references/templates.md#impact-mapmd).
+> "Here are the tests I found at risk: [list with reasons].
+> Combined with yours, does this look complete?"
 
-Bug fixes typically touch fewer files than features. The map should include:
-- The file(s) containing the bug (action: modify)
-- The regression test file (action: create)
-- Edge case test files if applicable (action: create)
-- Any files with related code that might be similarly affected
+**This requires human confirmation** — same rule as /think. Incorrect
+at-risk test context is worse than none.
 
-### Step 3: Present for Review
+Wait for confirmation.
 
-Present the research findings and impact map to the user. Highlight:
-- Whether the bug was reproduced programmatically (and the test output)
-- The root cause hypothesis and supporting evidence
-- The code path trace from entry point to symptom
-- Any open questions
+### Step 8 — Boundaries
 
-> "Review the research and impact map above. Does the root cause hypothesis
-> match your understanding? Is anything missing from the impact map?"
-
-**Do not proceed to Phase 4 until the user acknowledges the research.**
+Present what the fix will and will NOT do (no refactoring, no unrelated
+fixes, no API changes unless required). Wait for confirmation.
 
 ---
 
-## Phase 4: Plan Document
+## Complexity Gate (between Phase 3 and Phase 4)
 
-### Step 1: Write plan.md
+Before producing task JSONs, check whether the fix exceeds bug-pipeline
+scope. If investigation revealed **>3 files affected**, the fix
+requires **changing a shared interface/type**, or would require
+**>4 tasks**, recommend escalating:
 
-Write to `.claude/bugs/{slug}/plan.md` using the
-[plan.md template](references/templates.md#planmd).
+> "This looks larger than a typical bug fix — it touches {N} files
+> across {concerns}. The bug pipeline skips approach selection and
+> plan verification, which matter at this size. Recommend escalating
+> to `/cks:think` → `/cks:plan` → `/cks:act`. I can pass the
+> findings so far. Escalate or continue as bug?"
 
-**Include actual code snippets.** Not pseudocode, not descriptions — the
-actual proposed fix and test code. The draft reproduction test from Phase 2
-serves as the starting point for the regression test section.
-
-Bug fix plans should be focused:
-- 2-3 implementation sections (test, fix, edge cases)
-- Explicit "What NOT to Do" section preventing scope creep
-- "Do not implement yet" at the end
-
-### Step 2: Present the Plan
-
-Present the plan to the user and transition to the annotation cycle:
-
-> "The plan is at `.claude/bugs/{slug}/plan.md`. You can:
->
-> 1. **Annotate in your editor** — open the file, add inline notes starting
->    with `@NOTE:`, `@FIX:`, or `@REMOVE:` at the exact location of each
->    issue, then tell me 'review'
-> 2. **Give feedback here** — describe corrections in chat and I'll update
->    the plan
-> 3. **Approve** — say 'approve' if the plan is ready for task breakdown"
+If the user chooses to continue, proceed — but note the decision in
+plan.json's `knownRisks`: "User opted to keep bug pipeline despite
+{N}-file scope."
 
 ---
 
-## Phase 5: Annotation Cycle
+## Phase 4: Task JSONs
 
-Same mechanism as `/cks:feature` but lighter — bug fixes are smaller scope and
-should need fewer rounds.
+Bugs follow a natural structure: **reproduction test → fix → edge case
+tests**. Expect 2-4 tasks.
 
-### How Inline Annotations Work
+### Step 9 — Write plan.json and task JSONs
 
-The user opens `plan.md` in their editor and adds notes directly:
+Write to `.claude/bugs/{slug}/tasks/`.
 
-- `@NOTE: [correction or context]` — domain knowledge
-- `@FIX: [what's wrong and what it should be]` — correcting an assumption
-- `@REMOVE: [reason]` — rejecting a proposed approach
+Use the schemas in [bug templates](references/templates.md): plan.json
+(same as features + `type`, `severity`, `reproductionResult`,
+`rootCause`) and task JSONs (identical schema to feature tasks).
 
-The `@` prefix avoids collisions with markdown blockquotes (`>`).
+**Task structure for bugs:**
 
-### Processing Annotations
+**Task 0 — Reproduction test** (if draft exists): write test that
+fails on the bug. `doNot`: no implementation code. Reference the
+draft repro-test path in `acceptanceCriteria`.
 
-When the user says "review" (or provides chat feedback):
+**Task 1 — Fix**: `blockedBy: ["task_0"]`, `atRiskTests` from Phase 3,
+`doneWhen`: repro test passes GREEN + regressionCheck passes.
 
-1. Read the updated `.claude/bugs/{slug}/plan.md`
-2. Find all annotation markers — match `@NOTE:`, `@FIX:`, `@REMOVE:`
-   case-insensitively with flexible whitespace
-3. Address **every** annotation — do not skip any
-4. Remove the annotation markers from the updated plan
-5. Write the updated plan back to `plan.md`
-6. Present what changed in response to each annotation
+**Task 2 — Edge cases** (optional): `blockedBy: ["task_1"]`, only if
+investigation found related scenarios.
 
-### Cycle Counter
+### Step 10 — Validate and Present
 
-Track the annotation cycle count with an HTML comment in `plan.md`:
+Validate each task JSON:
+- `files` has 1-4 entries
+- `relevantFiles` paths match expected disk state
+- `doNot` and `acceptanceCriteria` non-empty
+- `regressionCheck` set when `atRiskTests` non-empty
+- `reference` is a single verified file:line
+- No `[TBD]` values
+- If task_0 references `repro-test.[ext]` in `acceptanceCriteria` and
+  `reproductionResult` was ERROR: verify the file exists on disk. If
+  absent, remove the reference — let the agent write from scratch.
 
-```
-<!-- annotation-cycle: 1/3 -->
-```
-
-Insert this comment after the `**Status**` line when entering Phase 5.
-Increment the counter each time annotations are processed.
-
-### Cycle Repetition
-
-After addressing annotations, increment the cycle counter and ask:
-
-> "I've addressed all your annotations (cycle {N}/3). Review the updated
-> plan — add more notes or say 'approve' when satisfied."
-
-If the plan is still not approved after 3 cycles, ask the user if the
-bug scope needs to be reconsidered.
-
-### On Approval
-
-When the user says "approve":
-
-1. Update the plan's `**Status**` to `Approved`
-2. Write the updated `plan.md`
-3. Proceed to Phase 6
-
----
-
-## Phase 6: Task Breakdown
-
-After the plan is approved, produce a granular task list. Bug fixes are
-naturally smaller than features — expect 2-4 tasks, not 10+.
-
-### Task Granularity Rules
-
-- **Single-concern scope.** Each task targets one logical concern
-  (typically 1-3 files).
-- **Bug fixes have a natural structure**: regression test → fix → edge
-  case tests. Follow this unless the plan indicates otherwise.
-- **Feed the reproduction test to the first task.** If a draft reproduction
-  test was saved during Phase 2, add its path to the first task's
-  `testContext` with reason `"draft reproduction test — use as starting
-  point for the regression test"`. The TDD test-writer can adopt its
-  reproduction logic while applying proper structure and assertions.
-- **Size warning.** If the task list exceeds ~8 tasks, the bug may be
-  more complex than expected. Consider splitting into multiple bugs.
-- Use **RFC 2119 keywords**: MUST for hard constraints, SHOULD for strong
-  preferences, MAY for discretion. Uppercase keywords signal constraint level
-  clearly to the executing agents.
-
-### Task Format
-
-Each task must contain:
-
-- **The file(s)** to touch (explicit paths, typically 1-3 files for one concern)
-- **The specific function or symbol** to create or modify
-- **A reference** to an existing pattern to follow (exact `file:line`)
-- **What NOT to do** — adjacent concerns or scope that must not change
-- **A "done when" condition** that can be checked mechanically
-
-### Step 1: Write tasks.md
-
-Write to `.claude/bugs/{slug}/tasks.md` using the
-[tasks.md template](references/templates.md#tasksmd).
-
-### Step 2: Write Task JSON Files
-
-Write each task as a JSON file to `.claude/bugs/{slug}/tasks/` using
-the [task JSON schemas](references/templates.md#task-json-schemas):
-
-- `tasks/plan.json` — plan-level information (includes `"type": "bugfix"`)
-- `tasks/task_{N}.json` — one per task (e.g. `task_0.json`, `task_1.json`)
-
-### Step 3: Generate Human Plan
-
-Launch the `human-plan-synthesizer` agent via the Agent tool. Pass it the
-bug directory path: `.claude/bugs/{slug}`.
-
-The agent reads all artifacts in the directory and writes
-`.claude/bugs/{slug}/human_plan.md` — a synthesis document for developers
-who want to fix the bug themselves without AI execution.
-
-### Step 4: Present Tasks
-
-Present the task breakdown to the user:
-
-> "Task breakdown complete — {N} tasks in `.claude/bugs/{slug}/tasks.md`.
->
-> I've also generated `human_plan.md` — a synthesis document if you prefer
-> to fix this yourself without AI execution.
->
-> Review the tasks. When ready to implement, run:
->
-> `/cks:execute .claude/bugs/{slug}`"
-
+Present to user:
+> "{N} tasks in `.claude/bugs/{slug}/tasks/`.
+> Review, then run `/cks:act .claude/bugs/{slug}` to execute."

@@ -192,7 +192,14 @@ CONTEXT MANAGEMENT:
 POST-IMPLEMENTATION:
   Full test suite + lint, update spec.md if capabilities changed
 
-DOES NOT: commit, push, create PR
+PER-TASK COMMIT: after trust-but-verify passes, commit with message "task_{N}: {title}" for rollback granularity
+HANDOFF CHECK: if next task has blockedBy on this task, dispatch task-handoff-checker subagent (haiku)
+  - checks export/import consistency between completed and dependent task
+  - runs dependent task's atRiskTests before dependent task starts
+  - returns single line: PASS or BLOCKED — [reason]
+  - skipped entirely when no task depends on the completed one
+
+DOES NOT: push, create PR
 ```
 
 ---
@@ -221,6 +228,67 @@ DOES NOT: modify test files, commit, plan, make product decisions
 
 ---
 
+## SKILL: bug
+```
+WHY A SEPARATE SKILL (not just /think):
+  - Bugs start from a SYMPTOM, not a change request. Think's Phase 1 asks
+    "what is the concrete change?" — for bugs the answer is unknown.
+  - Reproduction (writing a failing test) is the highest-value bug-specific
+    step with no feature equivalent. Features use existing atRiskTests;
+    bugs CREATE the test that proves the problem exists.
+  - Research supports the distinction: SWE-bench Verified (bug fixes) has
+    74% resolution vs FeatureBench (features) at 11%. Bugs are naturally
+    scoped — forcing them through think→plan→act adds overhead without
+    value for the high-resolution-rate case.
+
+PHASES:
+  Phase 1 — Capture: symptom (not diagnosis), repro steps, severity
+  Phase 2 — Investigate: 2 parallel Explore agents (code path + blast radius),
+             then reproduce programmatically (write draft failing test)
+  Phase 3 — Confirm: present root cause hypothesis, at-risk tests, boundaries
+             for human confirmation
+  Phase 4 — Task JSONs: produce tasks directly (no plan.md intermediate)
+
+AGENTS:
+  Agent 1 — Code path: trace repro steps through code, find existing tests,
+            check git log for recent changes
+  Agent 2 — Blast radius: other callers of affected function, shared state,
+            working patterns elsewhere in codebase
+
+REPRODUCTION:
+  - Draft reproduction test saved to .claude/bugs/{slug}/repro-test.[ext]
+  - NOT committed — used as starting point for task_0's acceptance criteria
+  - Result recorded as RED (confirmed), GREEN (did not reproduce), or ERROR
+
+TASK STRUCTURE (2-4 tasks, natural bug fix order):
+  task_0: reproduction test (write test that fails on bug)
+  task_1: fix (blockedBy task_0, doneWhen repro test goes GREEN + regressionCheck passes)
+  task_2: edge case tests (optional, only if investigation found related scenarios)
+
+SAME TASK JSON SCHEMA AS FEATURES:
+  id, slice, repository, title, status, implementer
+  intent, files, symbol, reference, dependencyChain, relevantFiles,
+  blockedBy, atRiskTests, doNot, acceptanceCriteria,
+  verificationCommand, regressionCheck, doneWhen, scopeBoundaries
+
+  No testContext, no implementationContext (removed fields).
+  /act does not need to know whether it's executing a bug or feature.
+
+WHAT WAS REMOVED FROM THE OLD BUG SKILL AND WHY:
+  - research.md (LLM-generated context file — research shows these hurt -0.5 to -3% resolution)
+  - impact-map.md (redundant with task JSON's files + atRiskTests)
+  - plan.md (overhead for 2-4 task bugs; task JSONs go straight to /act)
+  - annotation cycle (anchoring risk; one confirmation pass in Phase 3 instead)
+  - human-plan-synthesizer agent (unnecessary overhead)
+  - symptom-capture.md (227 lines → inlined as 30 lines; verbose instructions harm performance)
+  - 10 exploration questions (reduced to 6 targeted agent questions across 2 agents)
+
+FEEDS INTO: /act (same as features, same task JSON contract)
+DOES NOT: commit, push, create PR, produce plan.md
+```
+
+---
+
 ## REVIEW QUESTIONS — answer for each skill and the pipeline as a whole
 
 1. DATA CONTRACT GAPS: Are there fields that think produces but plan does not read? Fields plan produces that act does not validate? Fields act passes to code-implementor that no longer exist?
@@ -245,3 +313,7 @@ DOES NOT: modify test files, commit, plan, make product decisions
 7. INSTRUCTION BLOAT: Are there sections that instruct the AI how to do something it already knows (language conventions, standard code quality), consuming tokens without informing decisions specific to this pipeline?
 
 8. PIPELINE BREAKS: What happens if the user runs plan without think, or act without plan? Are the guard conditions sufficient and the error messages actionable?
+
+9. BUG VS FEATURE BOUNDARY: Is the boundary between /bug and /think clear? Could a user reasonably be confused about which to use? Are there cases where a "bug" is actually a multi-file change that should go through think→plan→act instead?
+
+10. BUG DATA CONTRACT: Does /bug produce task JSONs that /act can consume without modification? Are there any bug-specific fields in plan.json that /act doesn't read or validate? Does the reproduction test draft flow correctly into task_0's acceptance criteria?

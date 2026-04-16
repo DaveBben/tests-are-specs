@@ -44,6 +44,12 @@ Main session:
 Resolve `$ARGUMENTS`:
 
 1. **Feature/bug directory path**: Verify `tasks/plan.json` exists.
+   If missing and path is under `.claude/bugs/`:
+   > "No tasks found at `.claude/bugs/{slug}/tasks/`. Run
+   > `/cks:bug {slug}` to complete investigation and produce task JSONs."
+   If missing and path is under `.claude/features/`:
+   > "No plan.json found at `.claude/features/{slug}/tasks/`. Run
+   > `/cks:plan {slug}` to produce the plan and task JSONs."
 2. **Slug**: Try `.claude/features/{slug}/` then `.claude/bugs/{slug}/`.
 3. **No input**: Glob for available plans, present choices.
 
@@ -75,22 +81,19 @@ Critical violations → report and ask. Minor issues → warn and continue.
 
 ### Test Baseline
 
-Run full test suite. Record passing count and known failures. During
-execution, the agent only needs to ensure: new tests pass + baseline
-tests still pass + known failures are ignored.
+Run full test suite. Record passing count and known failures.
 
-### Spec Freshness Check
+### Spec Freshness
 
-If the project has a root `spec.md`, check its `Last verified` date.
-If older than 30 days and the plan's date is also older than 7 days:
-warn — the spec may have drifted since planning. If the plan was just
-produced, skip this warning (Plan already checked).
+If any `spec.md` (root or domain) has `Last verified` >30 days old
+and plan date >7 days old: warn and continue. Skip if plan was just
+produced.
 
-If any task touches files in a directory with its own domain `spec.md`,
-check that domain spec's `Last verified` date too. Stale domain specs
-are a silent failure mode — agents trust them absolutely.
+### Brainstorm.md Check
 
-Do not block execution on stale specs — warn and continue.
+If any task qualifies as Complex tier, verify `brainstorm.md` exists.
+If missing: warn, offer to downgrade to Standard tier or return to
+`/cks:think`. Do not block.
 
 ### Gate Check
 
@@ -101,17 +104,19 @@ Do not block execution on stale specs — warn and continue.
 
 ## Fast Path (Small Plans)
 
-If the plan has **≤3 tasks** and total estimated size is **under 200
-lines**, skip task-by-task execution:
+If the plan has **≤2 tasks**, total estimated size is **under 200
+lines**, and the combined unique `files` across all tasks is **≤4**,
+skip task-by-task execution:
 
-1. Dispatch a single implementation agent with the full plan context
-   (all task JSONs, plan constraints, all atRiskTests merged)
+1. Dispatch a single implementation agent with each task JSON path
+   (not merged), plan constraints, and the union of atRiskTests
 2. If agent returns DONE and all regressionChecks pass: proceed to Post-Implementation
 3. If agent STOPs or exceeds 200 lines: fall back to standard
    task-by-task execution below
 
-This avoids the per-task overhead (dispatch, status update)
-when the total work fits comfortably in a single agent context.
+≤2 tasks / ≤4 files keeps the agent within the context interference
+threshold. Do not merge task JSONs into a single blob — pass them as
+separate files so the agent reads each task's boundaries independently.
 
 ---
 
@@ -143,95 +148,71 @@ tier before marking BLOCKED.
 #### Step 1: Pre-task Check
 
 - Do `relevantFiles` paths match expected state (exist/not-exist)?
-- Is `git status` clean?
+- Is `git status` clean? (Should be — prior task was committed in Step 3.)
+  If not clean, something went wrong. Ask user before proceeding.
 - If `blockedBy` lists tasks that aren't DONE, skip and report.
+- If `execution-state.json`'s `executionNotes` has a BLOCKED note for
+  this task, show it to the user and ask whether to proceed.
 
 If assumptions violated, ask the user.
 
 #### Step 2: Implement
 
-Dispatch the `code-implementor` agent via Agent tool
-(`subagent_type: "code-implementor"`). Pass it:
-- Task JSON path
-- Plan JSON path (for constraints)
-- Test baseline (known failures to ignore)
-- Plan constraints verbatim
-- Task's `doNot` and `dependencyChain` fields verbatim
-- Instruction: after completing edits but before running verification,
-  re-read the task's `doNot` and plan `constraints` to check compliance.
-  This counters instruction fade-out over long implementation runs.
+Dispatch the `code-implementor` agent. Pass: task JSON path, plan JSON
+path, test baseline, plan constraints verbatim, task's `doNot` and
+`dependencyChain` verbatim. Instruct agent to re-read `doNot` and
+constraints before verification (counters instruction fade-out).
 
-If agent returns STOPPED: mark task `BLOCKED`, record reason in
-`executionNotes`, ask user how to proceed.
+If STOPPED: mark `BLOCKED`, record in `executionNotes[task_id]`, ask user.
 
-If succeeded, **trust-but-verify**: run the task's `regressionCheck`
-command (if non-empty) from the orchestrator — do not rely solely on
-the agent's self-reported test results. If at-risk tests fail: send
-the agent back to fix. If still failing after one retry: mark task
-`BLOCKED`, record which tests broke.
+**Trust-but-verify**: run `regressionCheck` from the orchestrator (do
+not rely on agent self-report). If fails: one retry, then `BLOCKED`.
 
-#### Step 3: Size Check
+#### Step 3: Commit
 
-```
-git diff --stat HEAD
-```
+Commit with message `task_{N}: {task title}`. Do not push.
 
-If task exceeds 200 lines: note in `executionNotes`, inform user.
-If cumulative slice diff exceeds 500 lines: warn user, ask whether to
-continue or split.
+#### Step 4: Handoff Check
 
-#### Step 4: Drift Check
+If any pending task has this task's ID in its `blockedBy`, dispatch the
+`task-handoff-checker` agent (completed + dependent task JSON paths,
+known-failures baseline). Returns `PASS` or `BLOCKED — [reason]`.
 
-If the agent used **>80% of its maxTurns** (e.g. >40 of 50), flag the
-task: "High turn count — possible drift or difficulty."
+On BLOCKED: record in `executionNotes[dependent_task_id]`, warn user.
+Skip entirely if no task depends on this one.
 
-#### Step 5: Update Status
+#### Step 5: Size & Drift
 
-Set task to `DONE` (or `BLOCKED`). Update `execution-state.json`.
-Mark TodoWrite entry completed.
+- Task >200 lines: note in `executionNotes`, inform user
+- Cumulative slice >500 lines: warn, ask to continue or split
+- Agent used >80% maxTurns: flag possible drift
 
-#### Step 6: Observation Masking
+#### Step 6: Update Status & Mask
 
-After updating status, mentally discard the full agent output and diff
-stats from completed tasks. Retain only a one-line summary per prior
-task: `"Task N: DONE|BLOCKED, X files, Y lines"`. Keep the **last 2
-tasks'** full results for continuity. This prevents stale observation
-tokens from crowding out the current task's context.
+Set task `DONE`/`BLOCKED`. Update `execution-state.json` with one-line
+summary. For next task prompt: reference only summaries for prior tasks
+(keep last 2 full results for continuity).
 
 ### Context Pause Gate
 
-After every **6 completed tasks**, pause: report progress, tasks
-remaining. Ask user to check `/context` and either continue or start
-a fresh session (resumption picks up automatically).
+Every **6 completed tasks**: pause, report progress, ask user to check
+`/context` or start fresh session (resumption picks up automatically).
 
 ### Blocked Tasks
 
-If any agent STOPs: record reason, set `BLOCKED`, check `blockedBy`
-dependents, ask user whether to continue with unblocked tasks or stop.
+Record reason, set `BLOCKED`, check dependents, ask user to continue
+or stop.
 
 ---
 
-## Post-Implementation
+## Post-Implementation & Finalize
 
-Run only when ALL tasks in the current slice are complete.
+After all tasks in the current slice:
+1. Run full test suite + lint. Fix failures.
+2. If `spec.md` exists and capabilities changed, update it.
+3. Set plan.json status to `COMPLETE`.
+4. Present summary: branch, task results, remaining issues.
+5. Point to [PR templates](references/pr-templates.md) for body content.
 
-### Step 1: Full Test Suite + Lint
-
-Run full tests and linting. Fix any failures.
-
-### Step 2: Update spec.md
-
-If `spec.md` exists and feature changes capabilities in `## Current State`,
-update to reflect what was built.
-
----
-
-## Finalize
-
-1. Set plan.json status to `COMPLETE`
-2. Present summary: branch, task results, findings fixed/remaining
-3. Point to [PR templates](references/pr-templates.md) for body content
-
-**Do NOT commit, push, or create a PR.** User handles this manually.
-
-For plan deviations, see [error handling](references/error-handling.md).
+**Do NOT push or create a PR.** User handles this manually.
+See [error handling](references/error-handling.md) for plan deviations.

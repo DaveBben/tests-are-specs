@@ -10,21 +10,17 @@ disable-model-invocation: false
 
 # Deep Code Review
 
-Perform a thorough, multi-dimensional code review by dispatching 4 specialized review agents
-in parallel and consolidating their findings into a single report.
+Perform a thorough, multi-dimensional code review by dispatching 4 specialized review agents in parallel and consolidating their findings into a single report.
 
 ## Input
 
 If `$ARGUMENTS` is provided, use it as the base branch or commit to diff against.
 
-If `$ARGUMENTS` is empty, review staged changes (`git diff --cached`). If nothing is staged,
-diff against the main branch.
+If `$ARGUMENTS` is empty, review staged changes (`git diff --cached`). If nothing is staged, diff against the main branch.
 
 ## Review Agents
 
-Each agent is an independent specialist that reviews the diff through its own lens. All 4
-run in parallel to minimize wall-clock time. Agents use different models to maximize
-diversity of reasoning — research shows 2 diverse agents can outperform 16 homogeneous ones.
+Each agent is an independent specialist that reviews the diff through its own lens. All 4 run in parallel to minimize wall-clock time. Agents use different models to maximize diversity of reasoning — research shows 2 diverse agents can outperform 16 homogeneous ones.
 
 | Agent | Model | Dimensions |
 |-------|-------|-----------|
@@ -50,14 +46,11 @@ Before dispatching agents, build a brief change context summary:
 2. Read the most recent commit messages on the branch to understand intent
 3. Write a 2-3 sentence summary: what changed, why, and what areas are affected
 
-This context is passed to every agent — research shows human-curated context improves
-review quality by ~4%.
+This context is passed to every agent — research shows human-curated context improves review quality by ~4%.
 
 ### Step 3: Dispatch all 4 agents in parallel
 
-Launch all 4 review agents simultaneously using the Agent tool. Each agent receives the same
-base reference AND the change context summary. Send a single message with all 4 Agent tool
-calls to ensure parallel execution.
+Launch all 4 review agents simultaneously using the Agent tool. Each agent receives the same base reference AND the change context summary. Send a single message with all 4 Agent tool calls to ensure parallel execution.
 
 **Prompt template for each agent** (substitute the agent's dimension focus):
 
@@ -82,9 +75,7 @@ verify. LOW = suspicious but could be intentional or safe.
 
 ### Step 4: Consolidate findings
 
-After all 4 agents return their reports, consolidate through 4 sub-steps. Strip agent
-identity (which agent produced which finding) before evaluating — this prevents majority
-bias from inflating low-quality findings that happen to appear in multiple agents.
+After all 4 agents return their reports, consolidate through 4 sub-steps. Strip agent identity (which agent produced which finding) before evaluating — this prevents majority bias from inflating low-quality findings that happen to appear in multiple agents.
 
 #### 4a. Collect and deduplicate
 
@@ -92,40 +83,26 @@ bias from inflating low-quality findings that happen to appear in multiple agent
 2. Deduplicate on TWO levels:
    - **By file:line** — if multiple agents flag the same location, merge into one finding
      with combined dimension tags (e.g., `[Reliability, Security]`)
-   - **By concept** — if multiple agents flag the same logical issue at different line
-     numbers (e.g., both flag "this class does too much"), merge into one finding at the
-     most relevant location
-3. For merged findings: keep the highest severity, preserve the most detailed description,
-   note agreement count (e.g., `[2/4 agents]`)
+   - **By concept** — if multiple agents flag the same logical issue at different line numbers (e.g., both flag "this class does too much"), merge into one finding at the most relevant location
+3. For merged findings: keep the highest severity, preserve the most detailed description, note agreement count (e.g., `[2/4 agents]`)
 
 #### 4b. Audit evidence quality
 
 For each finding, evaluate the reasoning — not just the conclusion:
 
-- **Does it include a trace?** A finding that says "SQL injection at line 42" without
-  showing the data flow from user input to the query is unsubstantiated. Downgrade or drop.
-- **Is the evidence specific?** "This could be slow" is noise. "This is O(n²) because
-  of the nested loop at lines 15-22, processing the `orders` collection which grows
-  unbounded" is signal.
-- **Does it contradict another agent's context?** If the security reviewer flags a
-  function as vulnerable but the reliability reviewer's analysis shows the input is
-  already validated upstream, resolve the conflict. Drop the finding if the contradiction
-  is clear; flag it with a note if ambiguous.
+- **Does it include a trace?** A finding that says "SQL injection at line 42" without showing the data flow from user input to the query is unsubstantiated. Downgrade or drop.
+- **Is the evidence specific?** "This could be slow" is noise. "This is O(n²) because of the nested loop at lines 15-22, processing the `orders` collection which grows unbounded" is signal.
+- **Does it contradict another agent's context?** If the security reviewer flags a function as vulnerable but the reliability reviewer's analysis shows the input is already validated upstream, resolve the conflict. Drop the finding if the contradiction is clear; flag it with a note if ambiguous.
 
 #### 4c. Filter for actionability
 
 Challenge each surviving finding against these criteria:
 
-- **Is it specific enough to act on?** A developer should know exactly what to change.
-  Drop findings that are vague observations without a concrete fix.
-- **Is the confidence level reasonable for the severity?** A BLOCKING finding with LOW
-  confidence should be downgraded to SHOULD_FIX or dropped. A SUGGESTION with HIGH
-  confidence can stay as-is.
-- **Would a developer act on this?** Findings that are technically correct but low-value
-  (style nitpicks, theoretical edge cases in cold paths) erode trust. When in doubt, drop.
+- **Is it specific enough to act on?** A developer should know exactly what to change. Drop findings that are vague observations without a concrete fix.
+- **Is the confidence level reasonable for the severity?** A BLOCKING finding with LOW confidence should be downgraded to SHOULD_FIX or dropped. A SUGGESTION with HIGH confidence can stay as-is.
+- **Would a developer act on this?** Findings that are technically correct but low-value (style nitpicks, theoretical edge cases in cold paths) erode trust. When in doubt, drop.
 
-If aggressive filtering leaves fewer than expected findings, that is a GOOD outcome.
-An empty report with high trust is better than a noisy report that gets ignored.
+If aggressive filtering leaves fewer than expected findings, that is a GOOD outcome. An empty report with high trust is better than a noisy report that gets ignored.
 
 #### 4d. Sort and compute verdict
 
@@ -173,24 +150,14 @@ Follow this format:
 1. [One-line summary of each BLOCKING and SHOULD_FIX item]
 ```
 
-If a severity section has no findings, omit it. A clean review with 0 findings is a valid
-outcome — do not manufacture findings to fill the template.
+If a severity section has no findings, omit it. A clean review with 0 findings is a valid outcome — do not manufacture findings to fill the template.
 
 ## Principles
 
 - **Every finding needs a fix.** Show the concrete change, not just the problem.
-- **Every finding needs a trace.** Show the reasoning path (data flow, logic chain, or
-  evidence) that led to the conclusion. Unsubstantiated findings get dropped.
-- **Severity must be honest.** BLOCKING means "this will cause a real problem in production."
-  Do not inflate to get attention or deflate to be polite.
-- **False positives erode trust faster than false negatives.** Research shows developers
-  ignore ALL AI feedback once false positive rates exceed ~70%. When in doubt, drop the
-  finding. A clean report that developers trust is worth more than a thorough report they
-  ignore.
-- **The aggregator is the most consequential step.** Collecting and sorting is not enough.
-  The consolidation step must actively audit reasoning quality, resolve cross-agent
-  contradictions, and filter for actionability.
-- **Adapt depth to change size.** A 5-line hotfix gets a quick pass. A 500-line feature gets
-  the full treatment.
-- **Empty sections are fine.** Do not manufacture findings to fill a template. A clean review
-  with 0 findings is a valid and common outcome.
+- **Every finding needs a trace.** Show the reasoning path (data flow, logic chain, or evidence) that led to the conclusion. Unsubstantiated findings get dropped.
+- **Severity must be honest.** BLOCKING means "this will cause a real problem in production." Do not inflate to get attention or deflate to be polite.
+- **False positives erode trust faster than false negatives.** Research shows developers ignore ALL AI feedback once false positive rates exceed ~70%. When in doubt, drop the finding. A clean report that developers trust is worth more than a thorough report they ignore.
+- **The aggregator is the most consequential step.** Collecting and sorting is not enough. The consolidation step must actively audit reasoning quality, resolve cross-agent contradictions, and filter for actionability.
+- **Adapt depth to change size.** A 5-line hotfix gets a quick pass. A 500-line feature gets the full treatment.
+- **Empty sections are fine.** Do not manufacture findings to fill a template. A clean review with 0 findings is a valid and common outcome.

@@ -83,8 +83,7 @@ If the exploration found existing files, ask about each in a single interaction:
   > - Spec says: '[quote from Current State]'
   > - Code shows: '[what discovery found]'
   >
-  > Would you like to **(a)** update it (I'll fix the drift and match best-practice
-  > format), or **(b)** start fresh?"
+  > Would you like to **(a)** update it (I'll fix the drift and match best-practice format), or **(b)** start fresh?"
 
 Then ask: **"This workflow creates both CLAUDE.md and spec.md. If you only need CLAUDE.md, say so now — otherwise we'll proceed with both."**
 

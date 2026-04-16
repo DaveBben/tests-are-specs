@@ -52,8 +52,27 @@ One exploration pass gathers everything needed for both documents. Focus on the 
 - For pipelines or multi-stage systems: trace data flows between stages, document handoff contracts
 
 **Identify domains:**
-- Identify distinct subsystems or deployment units from the directory structure (e.g., `backend/`, `frontend/`, `src/auth/`, `src/billing/`). Simple apps have 0-1; multi-service systems have 2-5. Record each with its root directory and a one-line description.
-- Let the user confirm — they may know of boundaries the directory structure doesn't make obvious.
+
+Directory structure is a starting point, not a conclusion. Subdirectories often represent architectural layers (models, controllers, routes, utils) rather than separate domains.
+
+The core question is: **if you wrote one spec section covering both areas, would a reader need to constantly ask "does this constraint apply to X or Y?"** If yes, they are separate domains. Test candidate directories against these signals to answer that question:
+
+**Strong signals — any one likely means a separate domain:**
+- **Separate deployment targets** — deploys to a different service, runtime, or pipeline (e.g., Lambda vs. ECS, CDK stack vs. application code). Different deployment means independent lifecycle, independent failure modes, and different operational context.
+- **Hard interface boundaries** — areas that communicate only through contracts (APIs, queues, events, shared database tables) rather than direct function calls. If you can't import across the boundary, it's a domain boundary.
+- **Divergent constraints** — areas governed by meaningfully different rules, even if they share infrastructure. An auth subsystem with compliance requirements and a billing subsystem with financial audit constraints are separate domains even if they deploy together — the constraints an AI must respect when working in each are different.
+
+**Supporting signals — strengthen the case but insufficient alone:**
+- Separate entry points (own handler, main, or index — not shared)
+- Distinct external dependency sets (different APIs, databases, or services)
+- Independent CI jobs or test suites
+- Can fail independently — one area breaking does not break the other
+
+**Consolidation check:** If two candidate directories share the same deployment target, communicate through direct imports, and are governed by the same constraints, they are one domain even if they live in separate directories.
+
+**Anti-pattern — do not do this:** Labeling `src/models/`, `src/controllers/`, `src/routes/` as separate domains. These are architectural layers within a single domain — they share a deployment target, call each other directly, and have no divergent constraints.
+
+Record each domain with its root directory and a one-line description. Simple apps have 0-1 domains; multi-service systems have 2-5. Let the user confirm — they may know of boundaries the code structure doesn't make obvious.
 
 **Gather for both:**
 - Existing files: `CLAUDE.md`, `.claude/CLAUDE.md`, `.claude/rules/`, `spec.md`, `SPEC.md`, `docs/architecture.md`, `README.md`, `CONTRIBUTING.md`
@@ -83,7 +102,8 @@ If the exploration found existing files, ask about each in a single interaction:
   > - Spec says: '[quote from Current State]'
   > - Code shows: '[what discovery found]'
   >
-  > Would you like to **(a)** update it (I'll fix the drift and match best-practice format), or **(b)** start fresh?"
+  > Would you like to **(a)** update it (I'll fix the drift and match best-practice
+  > format), or **(b)** start fresh?"
 
 Then ask: **"This workflow creates both CLAUDE.md and spec.md. If you only need CLAUDE.md, say so now — otherwise we'll proceed with both."**
 
@@ -257,6 +277,7 @@ Add a `## Domain Specs` section to the root spec.md listing each domain spec wit
 - **Don't skip discovery for existing projects** — Even when the user describes the project verbally, explore the codebase first — the code is the source of truth.
 - **Don't confuse project spec with change spec** — If the user starts describing a specific feature or bug fix mid-interview, redirect them to `/cks:feature` for that work.
 - **Keep cross-references in sync** — When writing or moving files, verify CLAUDE.md's pointer to spec.md is correct.
+- **Don't conflate layers with domains** — `src/lambda_fn/` and `src/backend/` may look like siblings in a directory listing, but if they deploy separately or have divergent constraints, they are separate domains. Conversely, `src/models/`, `src/controllers/`, `src/routes/` share a deployment target, import each other directly, and have no divergent constraints — they are layers within one domain. Always apply the litmus test and signals from Phase 1, not directory names.
 - **This skill targets the root CLAUDE.md** — For subdirectory CLAUDE.md files in a monorepo, scope content to that package's domain.
 
 ---

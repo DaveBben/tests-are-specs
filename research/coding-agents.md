@@ -148,6 +148,189 @@ The following ranks interventions by the magnitude of empirical evidence support
 **Where the evidence is insufficient.** No paper directly compares optimal context window utilization thresholds for coding tasks specifically — the cited "40% utilization" threshold traces to a practitioner blog post, not controlled research (2604.07502). Cross-task context reuse has a benchmark (SWE-ContextBench, 2602.08316) but no published agent results. The interaction between task decomposition and specific SWE-bench-family performance remains untested. And the regression problem lacks standardized measurement — SWE-CI, TDAD, SWE-EVO, and SWE-Bench Pro each define regression differently, making cross-paper comparison difficult. The field urgently needs a unified regression metric adopted across benchmarks.
 
 ---
+
+## Q7: Context types interfere — more categories ≠ better
+
+The intuition that providing more types of context (tests + dependencies + specs + constraints) should help additively is contradicted by the evidence. A controlled study testing all 8 combinations of three retrieval types (contextual code, similar code snippets, API information) found that **the best pair (Context + API) achieved 36.52% Pass@1, but adding the third type (similar code) dropped performance to 19.57% — worse than no retrieval at all** on CoderEval (2503.20589). The mechanism: similar code introduces semantic noise that displaces useful information from the model's attention. This interference held across both GPT-4o Mini and Gemini 1.5 Flash and across two benchmarks.
+
+Progressive layering studies show more nuance. Bug Fixing with Broader Context (2506.24015) tested progressive injection: Bug Knowledge → +Repository Knowledge → +Project Knowledge across 6 bug types and 2 models. **Repository context always helped. Project context helped some bug types but showed zero gain for Performance bugs (stuck at 87%) and Permission/Deprecation bugs (stuck at 50%).** Different bug types need different context depths — no single combination is universally optimal.
+
+Positive synergy is possible but conditional. CATCODER (2406.03283) found that retrieved code + type context together exceeded the sum of their individual contributions — type information helped the model interpret which APIs were available in the retrieved code. The lesson: **context types synergize when one helps the model interpret the other, but interfere when they compete for attention on independent dimensions.**
+
+Prompt component conflicts extend beyond coding. A 4-condition ablation study found that adding a system wrapper + generic rules decreased extraction accuracy from 100% to 90% and RAG compliance from 93.3% to 80%, while improving instruction-following — **non-additive, competing effects between prompt components** (2601.22025). CodeScout (2603.05744) found that removing relevance filtering eliminated or reversed all gains, and agent self-augmentation (adding their own context during execution) performed worse than baseline.
+
+Input reduction provides the counterpoint: **shrinking test inputs by 89.1% improved pass@10 by 53.8%** for program repair (2507.15251). Less context of the right type beats more context of even the same type.
+
+**Actionable rules:**
+- Do not assume context types help additively — test combinations, not just individual elements
+- When combining context types, ensure each type helps the model interpret the others (synergy) rather than competing for attention (interference)
+- Filter ruthlessly: unfiltered context consistently hurts across every study that tested it
+- Prefer fewer, higher-precision context fields over more comprehensive but noisier fields
+- The optimal context combination is task-dependent — no single recipe is universal
+
+---
+
+## Q8: Frontier models degrade on coding tasks starting at 32K–64K tokens
+
+The question of *where* frontier models start losing coding performance as context grows now has direct empirical answers. LongCodeBench (2505.07897) tested Claude 3.5 Sonnet, GPT-4o, GPT-4.1, Gemini 1.5 Pro, Gemini 2.0 Flash, Gemini 2.5 Pro, Llama 3.1-405B, and Jamba 1.5-400B on real GitHub bug-fixing (LongSWE-Bench) and comprehension (LongCodeQA) tasks at controlled context lengths.
+
+**Bug-fixing performance by context length:**
+
+| Model | 32K | 64K | 128K | 256K |
+|-------|-----|-----|------|------|
+| Claude 3.5 Sonnet | 29% | 19% | 15% | **3%** |
+| Gemini 2.5 Pro | 23% | 25% | 22% | 24% (7% at 1M) |
+
+Claude's sharpest cliff was 128K→256K. Gemini 2.5 Pro was notably more robust, staying stable until 1M tokens. **For comprehension tasks, degradation was much gentler** — Claude held 65.5% at 32K to 66.6% at 256K — meaning the model can *understand* long context far better than it can *act on it* to generate correct fixes.
+
+This is confirmed by the finding that **context length itself — not noise, not retrieval failure — causes degradation** (2510.05381). Even with perfect retrieval and whitespace padding (zero distraction), performance drops 13.9–85% across 5 models. Degradation begins within 7K tokens and is progressive, not a sudden cliff.
+
+For practical coding agent design, a study on fault localization (2604.05481) found the sweet spot is **6–10 relevant files** with file-level localization. Line-level expansion was frequently counterproductive due to "noise amplification." Web agents showed the same pattern: success rates dropped from 40–50% at baseline to less than 10% at 25K–150K tokens (2512.04307).
+
+The concept of the **Maximum Effective Context Window** (MECW) may be as much as **99% shorter** than advertised context windows (2509.21361). Multi-turn interactions compound the problem: GPT-4o shows up to **32% accuracy decrease** in extended multi-turn contexts (2506.00069).
+
+**Actionable rules:**
+- Budget the execution prompt at **under 32K tokens** for coding tasks requiring code generation/repair
+- Comprehension-only tasks (code review, analysis) tolerate longer context than generation tasks
+- Models differ significantly in context robustness — Gemini 2.5 Pro is more robust than Claude 3.5 Sonnet in current benchmarks (this may shift with newer model releases)
+- Target 6–10 relevant files as the practical ceiling for a single agent action
+- Multi-turn agent sessions compound degradation — compress or reset context between major steps
+
+---
+
+## Q9: Wrong context is worse than no context
+
+The question of whether partially correct or imperfect context still helps has a clear and alarming answer. SWE Context Bench (2602.08316) compared oracle (correctly selected) context, autonomously selected (potentially wrong) context, and no context baseline. **Oracle context improved resolution from 26.26% to 34.34%. But autonomously selected context dropped performance to 22.22% — 4 percentage points below the no-context baseline.** The paper states: "incorrectly selected summaries can be misleading."
+
+This is not just about wrong retrievals. SWE-PRBench (2603.26130) tested structured semantic context (AST, import graphs, test signatures) against simple diff-only prompts across 8 models. **Richer structured context monotonically degraded performance across all 8 models tested.** A 2,000-token diff-with-summary prompt outperformed a 2,500-token full-context prompt enriched with execution context, behavior mapping, and test signatures. The authors attribute this to attention representation limits.
+
+Agents compound the problem through systematic overconfidence. A study on agentic uncertainty (2602.06948) found that **agents that succeed only 22% of the time predict 77% success.** Post-execution agents (GPT-5.2-Codex) predicted 73% success against a true 35% rate on SWE-Bench-Pro. Agents will not self-correct when operating on bad context — they will confidently produce wrong answers.
+
+On noisy inputs specifically, LLMs can still solve heavily obfuscated coding tasks via "eager pattern matching" — matching corrupted inputs to memorized training data (2505.23598). This is not reasoning but memorization, and it fails for post-cutoff tasks. The model appears robust to noise but is actually just recognizing familiar problems.
+
+**Actionable rules:**
+- Never provide context you cannot verify is correct — wrong context is measurably worse than no context
+- If dependency/test information cannot be guaranteed accurate, let the agent discover context on its own rather than feeding it stale data
+- Do not trust agent self-assessment of whether its context is sufficient — overconfidence is systematic
+- Implement validation steps for any auto-generated context before injecting it into execution prompts
+- Prefer precise, verifiable context (file paths that exist, function signatures that compile) over rich but potentially stale context (dependency graphs, architecture descriptions)
+
+---
+
+## Q10: Reference implementations help surface patterns but not architectural reasoning
+
+Providing "follow this pattern" references in coding agent prompts has measurable but bounded benefits. A controlled ablation study (2508.06414) found that removing meaningful identifier names from code examples degraded performance by up to **30 percentage points**. However, **LLMs largely fail to extract generalizable problem-solving strategies from similar code examples.** They use direct information — naming conventions, API signatures, formatting — but cannot reliably learn the architectural approach from a reference implementation the way a human developer would.
+
+Retrieval-augmented code generation confirms the positive case: CodeRAG-Bench (2406.14497) found that retrieving similar code from the codebase yielded a **21-point improvement** on SWE-bench over no-retrieval baselines. An empirical study (2501.13742) found that "Sketch Filling Fusion" — extracting structural patterns from retrieved examples rather than copying them whole — further enhances performance. AGENTS.md files encoding conventions and architecture delivered **28.64% faster** task completion (2601.20404).
+
+The risks are equally documented. SlopCodeBench (2603.24755) found that agents **amplify anti-patterns** from reference code over iterative edits — code became **2.2x more verbose** than human code, with erosion increasing in **80% of trajectories.** Even prompt interventions that improved initial quality did not halt degradation. Security degrades similarly: iterative refinement caused a **37.6% increase in critical security vulnerabilities** after just 5 iterations (2506.11022). A study of 19 code LLMs identified **20 distinct repetition patterns** at character, statement, and block levels (2504.12608).
+
+Anchoring effects extend to human-AI interaction. Developers anchored on LLM-provided code patterns exhibited the highest reversal rate (43.4%) for fixation bias, repeatedly applying failed solutions (2601.08045).
+
+**Actionable rules:**
+- Reference implementations are high-value for surface patterns: naming, API usage, file structure, formatting conventions
+- Do not expect reference code to teach the agent *how to architect* — it will copy surface form, not underlying reasoning
+- Keep references minimal: a function signature + 3–5 lines of pattern is more useful than a full implementation
+- Be aware of anti-pattern amplification: if the reference has any code smells, the agent will amplify them
+- For multi-step tasks, refresh or remove reference context between steps to prevent compounding pattern reinforcement
+
+---
+
+## Q11: Python performance does not generalize to other languages
+
+The assumption that coding agent findings from Python-dominated benchmarks transfer to other languages is empirically false. Multi-SWE-bench (2504.02605) tested agents across 7 languages and found **dramatic performance collapse** outside Python:
+
+| Language | Resolution rate (GPT-4o, best agent) |
+|----------|--------------------------------------|
+| Python | 18.8–36.2% |
+| Java | 9.4–12.5% |
+| Go | 2.3–3.5% |
+| Rust | 2.1–5.9% |
+| C++ | 2.3–7.0% |
+| TypeScript | 0.0–2.2% |
+| JavaScript | 0.8–2.0% |
+| C | 0.0–1.6% |
+
+SWE-PolyBench (2504.08703) confirmed the pattern across 2,110 instances: Python 24.1%, Java 15.8%, TypeScript 13.0%, JavaScript 12.6%. Critically, **Java outperformed TypeScript despite higher structural complexity**, meaning performance differences cannot be explained by code difficulty alone — they likely reflect training data distribution.
+
+Rust presents unique challenges. Rust-SWE-bench (2602.22764) found the best baseline resolved only **21.2%** of Rust issues versus ~70% on Python SWE-bench Verified. Rust-specific failure modes include: 43.7% of compilation errors from failure to understand repository-wide code organization, 32.6% from violating Rust's strict type/trait/ownership system, and **44.5% of tasks failed at the reproduction stage alone** — a near-zero issue for Python.
+
+The picture has one consolation: **agent architectural weaknesses are universal** (2511.13998). The comprehension-efficiency trade-off (r=-0.42), weak multi-session memory (0.32–0.37), and tool usage patterns manifest consistently across all 10 languages tested. The bottlenecks are the same — only the absolute performance varies.
+
+SWE-Compass (2511.05459) adds an important nuance: **performance is governed more by tooling determinism and diagnosability than raw coding difficulty.** Claude Code excels on deterministic stacks (Java/JavaScript/C#) while SWE-Agent performs better on systems languages. Environment setup is itself a key bottleneck — improved environment reuse raised Fail-to-Pass rates by 8.6% while reducing time costs by 43% (2601.22859).
+
+**Actionable rules:**
+- Do not assume Python-benchmarked prompt strategies transfer to other languages — expect 50–90% performance drop
+- For TypeScript/JavaScript: despite being high-level, these languages show the lowest resolution rates, likely due to event-driven paradigm complexity and dynamic typing
+- For Rust/C++: provide explicit type/trait/ownership context — the agent's most common failures are type-system violations
+- For Java: agent performance is relatively stronger, likely due to training data volume and deterministic tooling
+- Environment setup and reproducibility matter as much as prompt content for non-Python languages
+- The performance gap starts at localization (file retrieval), not just patch generation — SWE-PolyBench shows 9–12 point retrieval gap before agents even try patching
+
+---
+
+## Q12: Human review of agent plans — evidence gap with warning signs
+
+No controlled experiment compares "agent with human plan review" vs "agent alone" on final code quality. This is a genuine research gap. The closest evidence is indirect but suggestive from both directions.
+
+**Evidence that human checkpoints prevent degradation:** Without human intervention, agent output degrades systematically. Security vulnerabilities increased **37.6%** after 5 iterations of LLM self-refinement across 400 code samples (2506.11022). SlopCodeBench (2603.24755) found code quality eroded in **80% of trajectories** and **89.8% for verbosity**, with no agent solving any problem end-to-end. Strict solve rates collapsed to **0.5%** by the final checkpoint. These findings imply human checkpoints would arrest degradation, but nobody has measured the delta.
+
+**Evidence that human review carries anchoring risks:** A randomized experiment with **2,784 participants** (2509.08514) found that exposure to poor initial AI suggestions reduced engagement and increased acceptance of incorrect suggestions — consistent with anchoring. Requiring corrections for flagged errors actually *reduced* engagement and *increased* acceptance of wrong suggestions. Individual attitudes toward AI were the strongest predictor: skeptical participants detected errors more reliably, while those favorable toward automation showed "dangerous overreliance."
+
+Applied to code specifically: when both the generating agent and the reviewing agent (or human) reason from the same specification artifact, **"correlated errors in homogeneous LLM pipelines amplify rather than diminish"** (2603.25773). A survey of 868 scientists (2512.19644) found the strongest predictor of perceived productivity is the number of lines of generated code accepted at once — suggesting inadequate scrutiny. Human reviewers exchange **11.8% more review rounds** when reviewing AI-generated code vs human-written code, and over half of rejected AI suggestions are incorrect or require alternative fixes (2603.15911).
+
+The infrastructure for human-agent collaboration is being built (Magentic-UI 2507.22358, Cocoa 2412.10999, HULA 2411.12924), but these papers measure usability and trust rather than quality deltas. HiL-Bench (2604.09408) shows agents themselves don't know when to escalate to humans — no leading model recovers full performance when deciding whether to ask for help.
+
+**Actionable rules:**
+- Assume human review helps (degradation without it is well-documented) but be aware of anchoring risk
+- Reviewers should evaluate against the original specification, not just the plan itself — correlated reasoning from the same artifact amplifies errors
+- Skeptical reviewers catch more errors; build review processes that reward questioning rather than rubber-stamping
+- Do not rely on agents to know when they need human help — they are systematically overconfident
+- This is an area where your intuition is currently more load-bearing than the evidence — treat review processes as hypotheses to test, not proven interventions
+
+---
+
+## Updated intervention rankings
+
+The following updates the original intervention ranking with findings from the extended research (Q7–Q12), adding new entries and adjusting existing ones.
+
+**1. Task decomposition into bounded subtasks** — **+10 to +40 percentage points** (unchanged). Still the highest-ceiling intervention.
+
+**2. Context precision over context volume** — **NEW.** Wrong context drops resolution 4 points below baseline (2602.08316). Context types can catastrophically interfere, dropping from 36.5% to 19.6% when a third type is added (2503.20589). Richer structured context monotonically degraded performance across all 8 models (2603.26130). This is arguably the most important meta-finding: **the default instinct to provide more context is the single most common way to degrade agent performance.**
+
+**3. Providing interface specifications and dependency context** — **~60 percentage point gap** (unchanged, but with a critical caveat from Q9: this context must be verified correct. Wrong dependency information is worse than none.)
+
+**4. Keeping execution context under 32K tokens** — **NEW.** Frontier models degrade measurably on coding tasks above 32K tokens (2505.07897). Practical ceiling is 6–10 relevant files (2604.05481). This puts a hard budget on how much context an execution prompt can carry.
+
+**5. Hierarchical context management** — **+6.6 percentage points** (unchanged).
+
+**6. Instruction brevity** — **4× resolution improvement** (unchanged, and reinforced by Q8 evidence).
+
+**7. Targeted test context over procedural TDD** — **72% reduction in regressions** (unchanged, but with Q9 caveat: the test context must be correct).
+
+**8. Reference implementations for surface patterns only** — **REFINED.** 21-point improvement from retrieved code (2406.14497), 30-point loss when naming removed (2508.06414). But agents cannot extract architectural reasoning from examples, and amplify anti-patterns over iterations (2603.24755). **Provide minimal references (signature + 3–5 lines), not full implementations.**
+
+**9. Single-agent over multi-agent architectures** — **4–220× lower token cost** (unchanged).
+
+**10. Language-specific prompt adaptation** — **NEW.** 50–90% performance drop outside Python (2504.02605). TypeScript/JavaScript paradoxically worst despite being high-level. Rust requires explicit type/ownership context. Java benefits from training data volume. **Prompt strategies must be tuned per language.**
+
+**11. Developer-written context files** — **28.64% faster** (unchanged).
+
+**12. Tool output compression** — **50–200 characters** (unchanged).
+
+---
+
+## Where evidence is still insufficient (updated)
+
+In addition to the gaps identified in the original report:
+
+- **Interaction effects of the specific context combination used in practice** (test info + dependency chains + interface specs + boundary constraints) remain untested as a factorial experiment. The closest study (2503.20589) tested a different set of three context types.
+- **The optimal context budget for current frontier models** (Claude Opus 4, GPT-5, Gemini 2.5 Pro) on coding tasks is extrapolated from slightly older models. The 32K threshold may have shifted.
+- **Human plan review effects** remain unmeasured in a controlled coding experiment. Anchoring risks are documented in adjacent domains but not validated for code plan review specifically.
+- **Partial context quality** — the degradation curve between "perfect context" and "wrong context" is unmapped. We know the endpoints (correct helps, wrong hurts) but not whether 80% correct context is net positive or net negative.
+- **Non-Python prompt strategies** are almost entirely unexplored. Language-specific findings exist for Rust (type context) but not for TypeScript, Go, or Java specifically.
+
+---
 Additional Papers and summaries:
 
 # Paper Summaries
@@ -271,3 +454,127 @@ The gains are achieved without labeled supervision, but this means the framework
 This paper challenges the implicit assumption that RAG and retrieval systems fully solve the long-context problem for LLMs. The authors demonstrate that even under *ideal* retrieval conditions — where models have access to all relevant information and irrelevant tokens are masked or replaced with whitespace — model performance still degrades substantially as input length grows. Across 5 models and three task types (math, QA, and coding), degradation ranged from 13.9% to 85%. This means the problem is not just about retrieval quality or distractor noise — the sheer volume of tokens in context is itself harmful, even when those tokens are neutral. The proposed mitigation is elegantly simple: prompt the model to recite the retrieved evidence before attempting to solve the problem, yielding up to 4% gains on GPT-4o. Accepted at EMNLP 2025 Findings.
 
 The "perfect retrieval" condition is a laboratory construct — in practice, retrieval is never perfect, so real-world degradation is likely worse than what this paper measures. The findings vary widely across models (13.9% to 85% degradation range), suggesting some architectures handle length scaling significantly better, though the paper does not fully explain what architectural factors drive that variance.
+
+---
+
+# What to Retrieve for Effective Retrieval-Augmented Code Generation? An Empirical Study and Beyond
+
+This paper tests all 8 combinations of three retrieval types — contextual code, similar code snippets, and API information — for code generation across two benchmarks (CoderEval and a second benchmark) and two models (GPT-4o Mini and Gemini 1.5 Flash). The headline finding is that context types can catastrophically interfere: the best pair (Context + API) achieved 36.52% Pass@1, but adding similar code dropped performance to 19.57% — worse than no retrieval at all. Similar code introduces semantic noise that competes for the model's attention. The study is the only clean factorial experiment testing all combinations of retrieval types for coding tasks, making it uniquely valuable for understanding context interaction effects.
+
+The three context types tested (contextual code, similar code, APIs) may not fully represent the types used in agentic workflows (dependency chains, test information, boundary constraints). The benchmarks are single-function generation tasks, not multi-file agentic development, so the interference patterns may differ at larger scale.
+
+---
+
+# Bug Fixing with Broader Context: Enhancing LLM-Based Program Repair via Layered Knowledge Injection
+
+This paper tests progressive context layering for bug fixing: Bug Knowledge → +Repository Knowledge → +Project Knowledge, across 6 bug types and 2 models (Llama 3.3, GPT-4o-mini). Repository context always helped, but Project context showed zero gain for Performance bugs (stuck at 87%) and Permission/Deprecation bugs (stuck at 50%). The key insight is that different bug types need different context depths — no single combination is universally optimal. Accepted at ASE 2025.
+
+The study uses only 2 models and focuses on bug fixing rather than feature development. The progressive layering design does not test removing earlier layers, so it cannot distinguish whether later layers help because of their content or because of accumulated volume.
+
+---
+
+# LongCodeBench: Evaluating Coding LLMs at 1M Context Windows
+
+LongCodeBench tests frontier models (Claude 3.5 Sonnet, GPT-4o, GPT-4.1, Gemini 1.5 Pro/2.0 Flash/2.5 Pro, Llama 3.1-405B, Jamba 1.5-400B) on real GitHub bug-fixing and comprehension tasks at controlled context lengths from 32K to 1M tokens. For bug-fixing, Claude 3.5 Sonnet degrades from 29% at 32K to 3% at 256K, with the sharpest cliff at 128K→256K. Gemini 2.5 Pro is notably more robust, staying stable until 1M tokens. Comprehension tasks degrade much more gently than generation tasks, showing that models can understand long context far better than they can act on it to produce correct code.
+
+The benchmark tests context length as an independent variable but does not optimize content selection — it includes the full repository context at each length rather than testing "the right N tokens." Performance thresholds may shift with newer model releases.
+
+---
+
+# On the Role of Fault Localization Context for LLM-Based Program Repair
+
+This study finds that optimal code repairs occur with 6–10 relevant files using file-level localization. File-level context gives 15–17x improvement over no context for program repair. However, line-level expansion is frequently counterproductive due to "noise amplification" — more granular context introduces more irrelevant tokens that degrade the model's reasoning about the fix. The practical implication is that the sweet spot for coding agent prompts is measured in files, not lines.
+
+The study uses GPT-4-mini on SWE-bench Verified, so thresholds may differ for more capable frontier models. The finding that line-level context hurts may not apply when the line-level context is precisely correct (as opposed to approximate localization output).
+
+---
+
+# SWE Context Bench: A Benchmark for Context Learning in Coding (Extended Finding)
+
+The extended finding from this benchmark: oracle (correctly selected) context improved resolution from 26.26% to 34.34%, but autonomously selected (potentially wrong) context dropped performance to 22.22% — 4 points below the no-context baseline. The penalty for wrong context (-4 points) is meaningful relative to the benefit of correct context (+8 points), establishing a 2:1 asymmetry where the cost of wrong context is half the benefit of correct context.
+
+---
+
+# SWE-PRBench: Benchmarking AI Code Review Quality Against Pull Request Feedback
+
+Across 8 models, richer structured context (AST, import graphs, test signatures) monotonically degraded code review performance compared to simple diff-with-summary prompts. A 2,000-token diff-with-summary prompt outperformed a 2,500-token full-context prompt enriched with execution context, behavior mapping, and test signatures. The authors attribute this to attention representation limits — models cannot reliably distinguish changed from unchanged lines once both appear in a flat token sequence.
+
+The finding applies to code review (a comprehension task), not code generation. The structured context may have been presented in a suboptimal format; different serialization strategies might yield different results.
+
+---
+
+# Agentic Uncertainty Reveals Agentic Overconfidence
+
+Agents that succeed only 22% of the time predict 77% success. Post-execution agents (GPT-5.2-Codex) predicted 73% success against a true 35% rate on SWE-Bench-Pro. This systematic overconfidence means agents will not self-correct when operating on bad context and cannot be relied upon to flag when their inputs are insufficient or incorrect.
+
+The calibration gap may vary across tasks, models, and prompt designs. The study does not test whether explicit calibration prompting ("rate your confidence honestly") reduces the gap.
+
+---
+
+# Multi-SWE-bench: A Multilingual Benchmark for Issue Resolving
+
+The most comprehensive cross-language benchmark: agents that resolve 25–36% of Python issues collapse on other languages — Java 9–12%, Go 2–3%, Rust 2–6%, TypeScript 0–2%, JavaScript 0.8–2%, C 0–1.6%. The paper states: "existing LLMs and methods demonstrate strong performance in resolving Python issues but struggle to generalize effectively across other languages." TypeScript and JavaScript had the lowest rates despite being high-level languages, attributed to event-driven paradigm complexity.
+
+The benchmark may inherit confounds from different issue difficulty distributions across language ecosystems. Repository selection may favor Python projects with cleaner test infrastructure.
+
+---
+
+# SWE-PolyBench: A Multi-Language Benchmark for Repository Level Evaluation of Coding Agents
+
+Across 2,110 instances in Python, Java, JavaScript, and TypeScript: Python 24.1%, Java 15.8%, TypeScript 13.0%, JavaScript 12.6%. Java outperforms TypeScript despite higher structural complexity, meaning performance differences cannot be explained by code difficulty alone — training data distribution is the likely driver. Python's file retrieval metrics exceed other languages by 9–12 percentage points, showing the performance gap starts at localization, not patch generation.
+
+---
+
+# Rust-SWE-bench / RustForger: Evaluating Automated Repository-Level Rust Issue Resolution
+
+The best baseline resolved only 21.2% of Rust issues versus ~70% on Python SWE-bench Verified. Rust-specific failure modes: 43.7% of compilation errors from failure to understand repository-wide code organization, 32.6% from violating Rust's strict type/trait/ownership system, 44.5% of tasks failed at the reproduction stage alone. RustForger improved resolution to 28.6% through Rust-specific adaptations. Accepted at ICSE 2026.
+
+---
+
+# SlopCodeBench: Benchmarking How Coding Agents Degrade Over Long-Horizon Iterative Tasks
+
+No agent solved any problem end-to-end across multi-checkpoint iterative tasks. Highest checkpoint solve rate was 17.2%. Code quality eroded in 80% of trajectories, verbosity increased in 89.8%, and agent code was 2.2x more verbose than human code. Even prompt interventions that improved initial quality did not halt degradation. Strict solve rates collapsed to 0.5% by the final checkpoint. Each multi-turn edit preserves and extends the anti-patterns of prior turns.
+
+---
+
+# Security Degradation in Iterative AI Code Generation
+
+Iterative LLM self-refinement caused a 37.6% increase in critical security vulnerabilities after just 5 iterations across 400 code samples, 40 rounds, and 4 prompting strategies. Deliberately excluded humans to show that pure LLM feedback loops degrade quality, implicitly arguing human checkpoints are needed to arrest degradation.
+
+---
+
+# Bias in the Loop: How Humans Evaluate AI-Generated Suggestions
+
+Randomized experiment with 2,784 participants. Exposure to poor initial AI suggestions reduced human engagement and increased acceptance of incorrect suggestions. Requiring corrections for flagged errors actually reduced engagement and increased acceptance of wrong suggestions. Individual attitudes toward AI were the strongest predictor: skeptical participants detected errors more reliably, while those favorable toward automation showed "dangerous overreliance."
+
+Not coding-specific, but the anchoring mechanism applies to plan review workflows where humans evaluate AI-generated plans.
+
+---
+
+# Human-AI Synergy in Agentic Code Review
+
+Across 278,790 code review conversations in 300 OSS projects, human reviewers exchange 11.8% more rounds when reviewing AI-generated code versus human-written code. Over half of rejected AI suggestions are incorrect or require alternative fixes. AI suggestions when adopted produce larger increases in code complexity.
+
+---
+
+# What Builds Effective In-Context Examples for Code Generation?
+
+Ablation studies found that removing meaningful identifier names from code examples degraded performance by up to 30 percentage points. However, LLMs largely fail to extract generalizable problem-solving strategies from similar code examples — they use direct information (naming, formatting, API signatures) but cannot reliably learn the architectural approach from a reference implementation. The authors call this a "fundamental challenge in reflection-based learning for code generation tasks."
+
+---
+
+# CodeRAG-Bench: Can Retrieval Augment Code Generation?
+
+Retrieving similar code from the codebase yielded a 21-point improvement on SWE-bench over no-retrieval baselines using Retrieval-then-Rerank with GPT-4o. Retrievers struggle with limited lexical overlap, and generators sometimes fail to integrate retrieved context effectively. Quality of retrieved context matters enormously.
+
+---
+
+# Code Copycat Conundrum: Demystifying Repetition in LLM-based Code Generation
+
+Study of 19 code LLMs identified 20 distinct repetition patterns at character, statement, and block levels. Code repetition is pervasive. Mitigation technique improved Pass@1 by 208.3% over greedy search, quantifying how severely pattern-copying behavior degrades output.
+
+---
+
+# The Specification as Quality Gate: Three Hypotheses on AI-Assisted Code Review
+
+When both the generating agent and the reviewing agent (or human) reason from the same specification artifact, correlated errors in homogeneous LLM pipelines amplify rather than diminish. The implication: if a human reviewer is anchored to the same specification the agent used, corrections may be correlated with the agent's errors rather than independent.

@@ -34,14 +34,14 @@ uncommitted. If something is ambiguous or contradicts reality, STOP and report.
 You receive:
 
 - **Task JSON file path** — your specification: acceptanceCriteria, reference,
-  files, atRiskTests, doNot, scopeBoundaries, testContext, implementationContext
+  files, atRiskTests, doNot, scopeBoundaries, dependencyChain, relevantFiles
 - **Plan JSON file path** — for global constraints
 - **Plan constraints** — verbatim from plan.json; do NOT violate these
 - **Known-failures baseline** — tests failing before this task; ignore them
-- **Evidence file** (optional, complex tasks only) — path to `evidence.md`
-  containing exploration findings with actual code snippets. When provided,
-  read it before starting — it contains code context that may have been
-  lost between planning and execution.
+- **brainstorm.md path** (optional, complex tasks only) — path to the
+  feature's `brainstorm.md`. When provided, read the Chosen Approach and
+  Constraints sections before starting — they contain the architectural
+  decisions made before planning that inform how to resolve ambiguities.
 
 ---
 
@@ -53,14 +53,16 @@ You receive:
    not the entire file. Read full files only when they are under ~100 lines
    or when you need broad structural understanding. Each full-file read
    costs 2–3K tokens — budget them deliberately.
-3. Read `testContext` and `implementationContext` entries — interfaces and
-   type signatures only, not full file contents unless needed
-4. Read the reference implementation cited in the task — follow its pattern
+3. Read the `atRiskTests` entries — for each, read the test file's import
+   block and the specific test symbol to understand what behaviour it
+   exercises. This tells you what must not break.
+4. Read the single `reference` entry cited in the task — grep for the
+   symbol, read the surrounding function only (not the full file)
 5. If the task has a `dependencyChain`, read the import/export boundary of
    each file in the chain (the import lines + the exported symbol signature)
    to verify the chain is intact before editing
-6. **Dynamic context discovery** — treat `testContext` and
-   `implementationContext` as starting hints, not a complete list. Also read:
+6. **Dynamic context discovery** — treat the task JSON as a starting
+   point, not a complete picture. Also read:
    - Every file your `relevantFiles` already imports (one level deep)
    - Any interfaces or types your task references defined outside `relevantFiles`
    - A preceding task may have introduced new conventions, renamed a method,
@@ -123,7 +125,7 @@ Hard stops — do not work around these:
 - **Task contradicts the codebase** — report what you found vs expected
 - **File does not exist** that the task says to modify — report
 - **Scope much larger than expected** (>200 lines of changes) — report
-- **Interface discrepancy** — testContext/implementationContext expectations
+- **Interface discrepancy** — `reference` or `dependencyChain` expectations
   don't match current file state — report
 
 State what you found, what you expected, and what needs to change.

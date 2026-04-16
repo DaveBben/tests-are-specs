@@ -66,7 +66,8 @@ another branch: confirm with user. Never execute on main.
 
 For each task:
 - `files` paths exist (modify) or don't exist (create)
-- `testContext` and `implementationContext` paths exist
+- `relevantFiles` paths with `action: modify` exist on disk
+- `relevantFiles` paths with `action: create` do NOT exist on disk
 - `doNot`, `acceptanceCriteria` non-empty; `doneWhen` non-empty
 - `verificationCommand` is syntactically valid
 
@@ -81,8 +82,9 @@ tests still pass + known failures are ignored.
 ### Spec Freshness Check
 
 If the project has a root `spec.md`, check its `Last verified` date.
-If older than 30 days: warn the user that the spec may be stale and
-recommend running `/cks:onboard` to refresh before executing.
+If older than 30 days and the plan's date is also older than 7 days:
+warn — the spec may have drifted since planning. If the plan was just
+produced, skip this warning (Plan already checked).
 
 If any task touches files in a directory with its own domain `spec.md`,
 check that domain spec's `Last verified` date too. Stale domain specs
@@ -131,7 +133,7 @@ Before dispatching each task, classify it:
 |------|----------|-------------|
 | **Simple** | 1 file, clear reference, no interface changes | maxTurns: 20, model: haiku |
 | **Standard** | 2-3 files, or 1 file with interface changes | maxTurns: 50, model: sonnet (default) |
-| **Complex** | 4 files, or touches shared interfaces/types | maxTurns: 75, model: sonnet, also pass `evidence.md` and full interface files (ignore testContext/implementationContext caps) |
+| **Complex** | 4 files, or touches shared interfaces/types | maxTurns: 75, model: sonnet, also pass `brainstorm.md` path for additional approach context |
 
 If a Simple task agent STOPs or hits maxTurns, retry once at Standard
 tier before marking BLOCKED.

@@ -44,9 +44,10 @@ Before dispatching agents, build a brief change context summary:
 
 1. Run `git diff --stat [base]` to get files changed and line counts
 2. Read the most recent commit messages on the branch to understand intent
-3. Write a 2-3 sentence summary: what changed, why, and what areas are affected
+3. **Classify the change** as exactly one of: **Feature** | **Bug Fix** | **Refactor** | **Enhancement**. This classification anchors the actionability filter in Step 4c — pick one, don't hedge.
+4. Write a 2-3 sentence summary: what changed, why, and what areas are affected
 
-This context is passed to every agent — research shows human-curated context improves review quality by ~4%.
+Record both the change type and summary — both are passed to every agent and reused in the Step 5 report. Research shows human-curated context improves review quality by ~4%.
 
 ### Step 3: Dispatch all 4 agents in parallel
 
@@ -92,7 +93,14 @@ For each finding, evaluate the reasoning — not just the conclusion:
 
 - **Does it include a trace?** A finding that says "SQL injection at line 42" without showing the data flow from user input to the query is unsubstantiated. Downgrade or drop.
 - **Is the evidence specific?** "This could be slow" is noise. "This is O(n²) because of the nested loop at lines 15-22, processing the `orders` collection which grows unbounded" is signal.
-- **Does it contradict another agent's context?** If the security reviewer flags a function as vulnerable but the reliability reviewer's analysis shows the input is already validated upstream, resolve the conflict. Drop the finding if the contradiction is clear; flag it with a note if ambiguous.
+- **Does it contradict another agent's context?** When two agents
+  disagree, decompose before resolving: (1) What does each agent
+  claim? (2) Can both be true simultaneously? (3) Which agent's
+  evidence is more specific — file:line trace vs general assertion?
+  (4) Is there information neither agent had that resolves it? Do
+  not default to "the more severe finding wins" or "the one that
+  says it's fine wins." Drop only when the contradiction is clear
+  from evidence; flag with a note if ambiguous.
 
 #### 4c. Filter for actionability
 
@@ -100,7 +108,16 @@ Challenge each surviving finding against these criteria:
 
 - **Is it specific enough to act on?** A developer should know exactly what to change. Drop findings that are vague observations without a concrete fix.
 - **Is the confidence level reasonable for the severity?** A BLOCKING finding with LOW confidence should be downgraded to SHOULD_FIX or dropped. A SUGGESTION with HIGH confidence can stay as-is.
-- **Would a developer act on this?** Findings that are technically correct but low-value (style nitpicks, theoretical edge cases in cold paths) erode trust. When in doubt, drop.
+- **Would a developer act on this?** Step back and anchor this
+  judgment to the **change type recorded in Step 2** (Feature / Bug
+  Fix / Refactor / Enhancement). Do not re-classify here — use the
+  Step 2 value. A cosmetic finding in a Bug Fix should be dropped;
+  the same finding in a Refactor may be SHOULD_FIX. A performance
+  suggestion in a Feature is context-relevant; in a Bug Fix it's
+  scope-creep. Evaluate each finding in the context of the recorded
+  change type, not in isolation. When in doubt, drop — technically
+  correct but low-value findings (style nitpicks, theoretical edge
+  cases in cold paths) erode trust.
 
 If aggressive filtering leaves fewer than expected findings, that is a GOOD outcome. An empty report with high trust is better than a noisy report that gets ignored.
 

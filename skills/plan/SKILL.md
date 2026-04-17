@@ -96,15 +96,26 @@ After verification passes, write `tasks/plan.json` with `status: "PendingDecompo
 
 Re-read from brainstorm.md: Chosen Approach, Do NOT, Constraints, At-Risk Tests. Re-read from plan.md: Impact table, What NOT to Do. These are the boundaries every task inherits. Do not proceed without re-reading — they degrade in attention over long sessions.
 
+### Explore alternative decompositions before committing
+
+Generate **2-3 candidate decompositions** with different slice
+boundaries, task groupings, or ordering. For each candidate, evaluate:
+
+- Does every task stay within the 1–4 file hard max?
+- Are `blockedBy` chains short (ideally ≤2 deep)?
+- Is each slice independently reviewable with one revert reason?
+- Does the decomposition minimize cross-task interface coupling?
+
+Select the candidate that scores best. If two are equivalent, prefer
+fewer tasks. Do not default to the first decomposition you think of —
+the first plausible split is often not the best.
+
 ### Task granularity
 
-- **Single concern** — 1–3 files, hard max 4. Route + controller + types = one concern. Auth + schema + frontend = three concerns.
-- **Count decisions, not lines.** 200 lines / one decision > 30 lines / three decisions.
-- **Over 20 tasks**: the feature needs splitting.
-
-### Vertical slices only
-
-Each slice = complete vertical path (data layer + service + API + test). Never a horizontal layer (all models, then all controllers). Each slice must be independently reviewable and have exactly one reason it would be reverted.
+- **Single concern** — 1–3 files, hard max 4
+- **Count decisions, not lines.** 200 lines / one decision > 30 lines / three decisions
+- **Over 20 tasks**: the feature needs splitting
+- **Vertical slices only** — each slice is a complete vertical path (data layer + service + API + test). Never a horizontal layer. Each slice must be independently reviewable with exactly one reason it would be reverted.
 
 ### Task JSON schema and validation
 
@@ -116,6 +127,13 @@ Use the schema and field notes in [task_{N}.json template](references/templates.
 - `atRiskTests` from brainstorm.md's confirmed list — not re-derived
 - `regressionCheck` MUST be set when `atRiskTests` is non-empty
 - `doneWhen` MUST include "and regressionCheck passes" when atRiskTests is non-empty
+
+**Verify acceptance criteria before writing:** for each task, ask
+"If I were implementing this and only had these criteria, could I
+resolve every ambiguity? Does each criterion test exactly one
+observable behavior?" If a criterion is ambiguous or tests multiple
+behaviors, split or sharpen it now — the code-implementor's
+verification chain is built on these.
 
 **Validate before writing:** all paths exist/don't-exist as expected, `dependencyChain` hops have real import relationships (grep to confirm), no `[TBD]` values remain.
 

@@ -44,16 +44,33 @@ Read the task JSON and its referenced files (`symbol`, `reference`, `atRiskTests
 
 **Dynamic context discovery** (cap: 3 files beyond `relevantFiles`):
 - Read import blocks of `relevantFiles`; if a preceding task changed an API you consume, verify the current exported signature matches.
-- Discrepancy between task expectations and file state → STOP and report. Do not work around it silently.
+- **Discrepancy check** — for each file, decompose: (1) What does the
+  task expect this file to look like? (2) What does it actually look
+  like? (3) For each difference: is it explained by a `blockedBy` task's
+  changes or a `relevantFiles` entry with `action: create`? If yes,
+  it's expected. If no, STOP and report. Do not work around real
+  discrepancies silently, but do not false-STOP on predecessor changes.
 - Wrong context is worse than no context — stop reading at 3 extra files.
 
 Stay within the file boundaries declared in the task.
 
 ---
 
-## Self-Review (one pass only)
+## Self-Review: Chain-of-Verification
 
-Re-read changed files + task's `doNot`, `acceptanceCriteria`, and plan `constraints`. Check: all criteria satisfied, no `doNot` violations, nothing added beyond requirements. Fix issues found in this single pass, then proceed to verification — do not re-run self-review.
+Do not re-read your code and ask "does this look right?" — that confirms
+your own reasoning. Instead, verify against the spec independently:
+
+1. **Generate questions from the spec.** For each acceptance criterion,
+   write a concrete verification question *before* looking at your code:
+   "If GIVEN X WHEN Y, what does the code at [symbol] actually return?"
+   Also generate one question per `doNot` entry.
+2. **Answer each question by reading the code.** Grep for the symbol,
+   read the relevant lines, and answer factually — not from memory of
+   what you wrote.
+3. **Compare answers to criteria.** Any contradiction → fix the code.
+4. After all questions pass, proceed to verification. Do not re-run
+   self-review — one pass only.
 
 ---
 

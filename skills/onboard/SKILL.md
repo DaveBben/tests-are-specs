@@ -68,6 +68,15 @@ The core question is: **if you wrote one spec section covering both areas, would
 - Independent CI jobs or test suites
 - Can fail independently — one area breaking does not break the other
 
+**Structured evaluation:** For each pair of candidate directories,
+answer three questions: (1) Do they share a deployment target?
+(2) Do they communicate through direct imports or through contracts?
+(3) Are they governed by the same constraints? If all three answers
+are shared/direct/same → one domain. If any answer is
+separate/contract/different → likely separate domains. This makes
+the evaluation systematic rather than intuitive — intuitive grouping
+defaults to directory structure, which is the anti-pattern.
+
 **Consolidation check:** If two candidate directories share the same deployment target, communicate through direct imports, and are governed by the same constraints, they are one technical domain even if they live in separate directories.
 
 **Anti-pattern — do not do this:** Labeling `src/models/`, `src/controllers/`, `src/routes/` as separate technical domains. These are architectural layers within a single technical domain — they share a deployment target, call each other directly, and have no divergent constraints.
@@ -189,7 +198,15 @@ Before presenting to the user, review the spec.md draft against these checks fro
 
 Fix any issues found. Maximum 2 passes — after that, note remaining findings for the user.
 
-**Decision-gap check:** After the checklist passes, ask: *"If I got this wrong, what would break silently, be hard to reverse, or require a production fix?"* Generate exactly one question per category below — only if discovery surfaced a specific candidate. If a category has no candidate, skip it rather than inventing one.
+**Decision-gap check:** After the checklist passes, step back and
+classify the project: is it greenfield, mature monolith, multi-service
+platform, or internal tool? The risk profile differs — a greenfield
+project's invisible walls are framework limitations and external API
+constraints; a mature monolith's are legacy conventions and
+undocumented side effects. Anchor the questions below to this
+classification.
+
+Then ask: *"If I got this wrong, what would break silently, be hard to reverse, or require a production fix?"* Generate exactly one question per category below — only if discovery surfaced a specific candidate. If a category has no candidate, skip it rather than inventing one.
 
 | Category | What to look for | Where the answer goes |
 |----------|-----------------|----------------------|

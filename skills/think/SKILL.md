@@ -68,11 +68,39 @@ Read `CLAUDE.md`, `spec.md`, and any domain `spec.md` files relevant to this cha
 Launch **3 parallel Explore agents** (blast radius, existing patterns, data shapes) using the questions in [agent-questions.md](references/agent-questions.md). Agents retrieve raw findings only — they do not reason about approaches or trade-offs.
 
 Once agents return, **synthesize in the main session** (do not delegate):
+
+**Step back first**: before producing any outputs, classify the change.
+Is it **additive** (new path through existing infra — risk is shadowing
+or resource contention), **modificative** (altering shared contracts —
+risk is every consumer, failures are silent type mismatches), or
+**extractive** (pulling apart coupled code — risk is severing implicit
+dependencies)? State the classification in one sentence. This frames
+the failure modes and approaches below — an additive change and a
+modificative change have fundamentally different risk profiles even
+when they touch the same files.
+
+Then produce:
 - Concern groups and dependency chain (from blast radius)
 - 2-3 implementation approaches grounded in findings (from patterns)
 - Load-bearing types/interfaces and serialization boundaries (from data shapes)
-- 2-3 highest-consequence failure modes (across all three)
+- 2-3 highest-consequence failure modes — identify these twice using
+  different frames: first "what breaks silently?" (returns wrong data,
+  corrupts state, passes tests while wrong), then "what's irreversible?"
+  (data loss, schema migration, published API contract). Take the union.
+  Single-pass failure analysis anchors on the obvious risk and misses
+  the subtle one.
 - **Security flag**: if blast radius includes auth, validation, query construction, or external endpoints, call it out as a hard constraint in brainstorm.md — not a suggestion.
+
+**At-risk test convergence check**: each agent independently identifies
+test files that could regress. During synthesis, compare their lists:
+- Tests named by **2+ agents** → confirmed at-risk (present in Batch 2
+  as the primary list)
+- Tests named by **only 1 agent** → uncertain (present separately in
+  Batch 2 as "lower-confidence candidates — these appeared in only one
+  investigation thread")
+
+This filters out low-confidence items. An incorrect at-risk test is
+worse than a missing one.
 
 **Checkpoint**: After synthesis, write a draft brainstorm.md (`Status: Draft`, `DraftDate: YYYY-MM-DD`) with the findings so far — impact surface, at-risk test candidates, approaches, failure modes.
 
@@ -100,9 +128,15 @@ Before presenting any test list, ask:
 
 > "Which tests do you think are at risk from this change?"
 
-Wait for their answer. Then present the AI-identified list for comparison — highlight where it agrees and where it differs. This breaks anchoring so the user evaluates the list independently.
+Wait for their answer. Then present the two tiers from the convergence check:
 
-> "Here are the tests I found that could regress: [list with reasons]. Combined with yours, does this look complete?"
+> "**High-confidence** (identified by multiple investigation threads):
+> [list with reasons]
+>
+> **Lower-confidence candidates** (appeared in only one thread):
+> [list with reasons]
+>
+> Combined with yours, does this look complete?"
 
 **This list requires human confirmation before it goes into brainstorm.md.** An incorrect at-risk test list is worse than none.
 

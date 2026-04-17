@@ -142,7 +142,7 @@ Dispatch the `code-implementor` agent. Pass: task JSON path, plan JSON path, tes
 
 If STOPPED: mark `BLOCKED`, record in `executionNotes[task_id]`, ask user.
 
-**Trust-but-verify**: run `regressionCheck` from the orchestrator (do not rely on agent self-report). If fails: one retry, then `BLOCKED`.
+**Trust-but-verify**: run `regressionCheck` from the orchestrator (do not rely on agent self-report). Check both: (1) exit code is non-zero → fail, and (2) scan output for "fail", "error", "FAIL", "ERROR", or "skipped" — a test suite can exit 0 while skipping the tests you care about. If either check fails: one retry, then `BLOCKED`.
 
 #### Step 3: Commit
 

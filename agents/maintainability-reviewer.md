@@ -65,6 +65,14 @@ Check `.eslintrc`, `tsconfig.json`, `pyproject.toml`, `CONTRIBUTING.md` for codi
 
 Check categories that cause real maintenance problems — not style preferences.
 
+**For every potential finding across all category checks below (Steps 3–7), build an evidence trace before reporting it:**
+1. Identify the specific change in the diff that creates the concern
+2. Trace the downstream impact — callers affected, docs contradicted, patterns diverged from
+3. Show the concrete consequence — what breaks, who is misled, what must change
+4. Verify your claim — grep for callers, confirm pattern dominance is real (not one-off), check that the docs you think drift actually exist
+
+This trace becomes the "Evidence" field in your report. Unsubstantiated findings without a concrete consequence will be dropped during consolidation.
+
 ---
 
 **Stale comments & documentation contradicting code** (highest-priority finding)

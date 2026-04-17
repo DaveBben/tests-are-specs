@@ -79,12 +79,23 @@ Cap returns to **3 lines per question**.
 
 1. If existing test already fails on the bug, note it and skip to 3.
 2. Write draft reproduction test (asserts expected behavior → fails if bug exists). Save to `.claude/bugs/{slug}/repro-test.[ext]`, do NOT commit.
-3. Run test. Record: **RED** (confirmed), **GREEN** (did not reproduce), or **ERROR** (infrastructure issue, do not block).
+3. Before running, verify the test: does it exercise the exact code
+   path from the repro steps? Does it assert *expected* behavior (fails
+   on the bug), not *current* behavior (passes trivially)? A repro test
+   that passes with the bug present is worse than no test — it gives
+   false confidence that the fix works.
+4. Run test. Record: **RED** (confirmed), **GREEN** (did not reproduce), or **ERROR** (infrastructure issue, do not block).
 
 ### Step 6 — Synthesize Root Cause
 
 In the main session (not delegated), synthesize:
-- **Root cause hypothesis**: where the bug lives (not where the symptom appears), what is going wrong, and the evidence supporting it
+- **Root cause hypothesis** — identify through two frames and check
+  convergence: (1) trace backward from symptom — what's the last
+  correct state and where does it go wrong? (2) trace forward from the
+  suspected cause — if this is broken, what symptoms would it produce,
+  and do they match the report? If both frames point to the same
+  location, confidence is high. If they diverge, surface the
+  uncertainty to the user in Step 7 rather than picking one.
 - **At-risk tests**: every existing test that exercises the affected code path — these could regress from the fix
 - **Reference pattern**: the working implementation found by Agent 2 that the fix should follow
 
@@ -150,6 +161,12 @@ Use the schemas in [bug templates](references/templates.md): plan.json (same as 
 **Task 2 — Edge cases** (optional): `blockedBy: ["task_1"]`, only if investigation found related scenarios.
 
 ### Step 10 — Validate and Present
+
+**Verify acceptance criteria:** for each task, ask "Could I implement
+this fix from only these criteria? Does each criterion test exactly one
+observable behavior?" If a criterion is ambiguous or conflates multiple
+behaviors, split or sharpen it — the code-implementor verifies against
+these.
 
 Validate each task JSON:
 - `files` has 1-4 entries

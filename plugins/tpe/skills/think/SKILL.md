@@ -79,20 +79,33 @@ the failure modes and approaches below — an additive change and a
 modificative change have fundamentally different risk profiles even
 when they touch the same files.
 
-**Then interrogate inherited constraints**: list the upstream data
-shapes, interfaces, and structural decisions this change inherits from
-elsewhere in the system. For each, classify as *externally fixed*
-(third-party API contract, regulatory requirement, persisted state
-that can't be cheaply migrated) or *internally malleable* (a prior
-design decision someone on this team made). For any internally-malleable
-constraint whose shape would force non-trivial downstream complexity
-in the approaches below (parallel fetches, retry logic, translation
-shims, defensive validation, caching layers bolted on to bridge a
-mismatch), surface "redesign the upstream shape" as a candidate
-approach in Batch 3 alongside the approaches that accept the shape
-as-is. The skill's job is to make sure the human sees this choice —
-accept inherited complexity or expand scope to remove it — not to pick
-for them.
+**Then interrogate inherited constraints**: the failure to guard
+against here is **anchoring on the current implementation** — treating
+existing data shapes, file layouts, and interfaces as fixed inputs to
+the problem when they're design choices someone made upstream.
+Experienced engineers get bitten by this specifically because they're
+good at solving problems within a frame; the clean downstream solution
+offers no pain signal to step back. The habit to enforce is asking
+"why am I solving this problem at all?" *before* "what's the best way
+to solve it?"
+
+Practical trigger: if any candidate approach below would require
+adding concurrency machinery (thread pools, parallel fetches), retry
+or caching layers, translation shims, or defensive validation to
+bridge a shape mismatch, ask whether the *need* for that machinery can
+be removed by changing the upstream shape instead of accommodated. The
+answer is often no — but the question is cheap and the alternative
+never surfaces unless asked.
+
+Mechanically: list the upstream data shapes, interfaces, and
+structural decisions this change inherits. Classify each as
+*externally fixed* (third-party API contract, regulatory requirement,
+persisted state that can't be cheaply migrated) or *internally
+malleable* (a prior design decision on this team). For any
+internally-malleable constraint the practical trigger flagged, surface
+"redesign the upstream shape" as a candidate approach in Batch 3
+alongside the approaches that accept the shape as-is. The skill's job
+is to make sure the human sees this choice — not to pick for them.
 
 Then produce:
 - Concern groups and dependency chain (from blast radius)

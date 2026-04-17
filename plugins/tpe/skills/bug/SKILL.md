@@ -113,6 +113,12 @@ Ask: "Where do you think the bug lives?" Wait for answer. If no instinct, acknow
 **Part 1 — Root cause:**
 State hypothesis with file:line evidence. Where user's instinct aligns, say so. Where it diverges, explain the evidence. Ask if they have additional context. Wait for response.
 
+If the root cause is architectural (data layout, shared state, interface design) and a **symptom-layer fix** (input validation, caller adaptation, defensive check) could close the bug without touching the architecture, surface both options before moving on:
+- *Fix at root* — eliminates this bug class at source; larger blast radius, more at-risk tests, architectural change
+- *Fix at symptom layer* — smaller change; the architectural issue persists and may resurface as a different symptom
+
+Do not recommend one. The engineer decides based on scope, urgency, and recurrence likelihood — some teams accept a shallow fix with a tracked debt item, others fix at root every time. The AI's job is to make sure both options are visible before committing to a fix location.
+
 **Part 2 — At-risk tests (predict-before-reveal):**
 Before presenting any test list, ask:
 

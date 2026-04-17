@@ -76,6 +76,11 @@ For each **non-test** file that references a symbol undergoing a breaking change
 
 Resolve the dependency chain from brainstorm.md against the actual codebase — verify each hop in the chain exists at the stated path. If a hop is wrong, find the correct path now. Do not carry stale dependency chains into task JSONs.
 
+**Escape hatch — unexamined constraints.** If the investigation reveals that the chosen approach requires substantial complexity (parallel fetches, retry logic, translation shims, caching to bridge mismatches) that stems from an inherited upstream shape brainstorm.md did not interrogate, stop and flag to the user before writing plan.md:
+> "The chosen approach requires [complexity] because [upstream shape]. Brainstorm didn't examine whether [upstream shape] is fixed. Returning to /tpe:think to surface 'redesign upstream' as an alternative may produce a simpler design. Continue with current approach, or return to think?"
+
+Plan's job is to translate an approved approach, not to second-guess it — but if investigation surfaces an inherited-constraint issue think didn't see, the revision cycle is cheaper than shipping the complexity.
+
 ---
 
 ## Step 3 — Write plan.md

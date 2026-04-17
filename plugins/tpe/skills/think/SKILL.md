@@ -79,6 +79,21 @@ the failure modes and approaches below — an additive change and a
 modificative change have fundamentally different risk profiles even
 when they touch the same files.
 
+**Then interrogate inherited constraints**: list the upstream data
+shapes, interfaces, and structural decisions this change inherits from
+elsewhere in the system. For each, classify as *externally fixed*
+(third-party API contract, regulatory requirement, persisted state
+that can't be cheaply migrated) or *internally malleable* (a prior
+design decision someone on this team made). For any internally-malleable
+constraint whose shape would force non-trivial downstream complexity
+in the approaches below (parallel fetches, retry logic, translation
+shims, defensive validation, caching layers bolted on to bridge a
+mismatch), surface "redesign the upstream shape" as a candidate
+approach in Batch 3 alongside the approaches that accept the shape
+as-is. The skill's job is to make sure the human sees this choice —
+accept inherited complexity or expand scope to remove it — not to pick
+for them.
+
 Then produce:
 - Concern groups and dependency chain (from blast radius)
 - 2-3 implementation approaches grounded in findings (from patterns)

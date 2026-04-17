@@ -25,6 +25,10 @@ You verify that a feature plan's claims match the actual codebase. You are a fac
 You receive:
 - The path to a `plan.md` file
 
+Also read, if present in the same feature directory:
+- `brainstorm.md` — source of `atRiskTests`, `Do NOT`, and `Chosen Approach`
+- `tasks/task_*.json` — if tasks have already been decomposed (on verifier re-invocation)
+
 Read the plan in full.
 
 ## Verification Checks
@@ -81,12 +85,34 @@ Check #6 flags false positives — listed tests that don't actually touch the ch
 
 For every Impact table entry with action `modify` (involving a signature change, field removal, or rename) or action `delete`:
 - Grep the repo for references to the symbol or field (e.g. `grep -rn "load_clinical_descriptions\|clinical_descriptions_path" tests/`)
-- For each test file that imports or references the symbol, verify it appears in some task's `atRiskTests` or is explicitly justified as not-at-risk in plan.md
-- Any test that references the symbol but is missing from both is a false negative — flag it. A missed at-risk test creates an unsatisfiable contract for the implementor ("change the API, keep the test green, don't modify tests").
+- For each test file that imports or references the symbol, verify it appears in brainstorm.md's at-risk tests list. If task JSONs exist, verify it also appears in some task's `atRiskTests`.
+- Any test that references the symbol but is missing is a false negative — flag it. A missed at-risk test creates an unsatisfiable contract for the implementor ("change the API, keep the test green, don't modify tests").
 
 This is the mechanical sweep the plan should have done in Step 2. The verifier is the safety net.
 
-### 8. Internal Consistency Against Negated Names
+### 8. Impact Table Completeness for Breaking Changes
+
+Parallel to check #7, but for non-test callers. A plan that changes a signature but lists only one caller when three exist produces compile/type-check failures in unlisted files.
+
+For every Impact table entry with action `modify` (involving a signature change, field removal, or rename) or action `delete`:
+- Grep the repo for non-test references to the symbol or field (exclude test files and the file being modified itself)
+- For each file found, verify it appears in plan.md's Impact table
+- Any file that references the symbol but isn't in the Impact table is a missing caller — flag it as a potential compile failure post-change
+
+### 9. Task Contract Consistency
+
+Only run this check if task JSONs exist (verifier re-invocation after Step 5). Read each `tasks/task_*.json`.
+
+For each task, cross-check three fields for internal contradiction:
+- `acceptanceCriteria` — what must be true after
+- `regressionCheck` / `atRiskTests` — tests that must still pass
+- `doNot` — boundaries the task cannot cross (often including "don't modify tests")
+
+Flag a task as unsatisfiable if an AC removes/changes something (e.g. "field X is removed", "function F takes new arguments") that an at-risk test asserts must behave the old way (e.g. "test asserts X exists", "test calls F with old signature"), AND the task's doNot or scope forbids updating the test. All three can't hold simultaneously — the task is impossible as written.
+
+Typical pattern: `acceptanceCriteria: "remove config.foo_path field"` + `atRiskTests: test_asserting_foo_path_exists` + `doNot: "do not modify test files"` → unsatisfiable. The fix is to either scope the test change into this task, move the test change to a prior blocking task, or update the AC.
+
+### 10. Internal Consistency Against Negated Names
 
 Plan.md's `Scope > Out` and `What NOT to Do` sections establish names the plan explicitly *will not* produce. Elsewhere in plan.md, a naked reference to that same basename will pattern-match onto the negated artifact in a reader's head, even if the author meant a different file.
 

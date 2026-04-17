@@ -70,7 +70,9 @@ For each file in brainstorm.md's Impact Surface, read targeted extracts:
 
 **Breaking-change call-site sweep.** The "cap reads" rule above governs *file reading*, not *reference finding* — these are different. For every symbol in brainstorm.md's Impact Surface undergoing a breaking change (signature change, field removal, rename, deletion), grep the entire repo for references — especially tests. This is mechanical completeness, not speculation: you must find every call site that will stop compiling or pass/fail differently after the change.
 
-For each test file that references a symbol undergoing a breaking change, it must either appear in the task's `atRiskTests` or you must justify in plan.md why it isn't at risk. A plan that lists one obviously-named test but misses sibling tests hitting the same call site creates an impossible situation for the implementor: "change the signature, don't modify tests, regressionCheck must pass" becomes unsatisfiable.
+For each **test** file that references a symbol undergoing a breaking change, it must either appear in the task's `atRiskTests` or you must justify in plan.md why it isn't at risk. A plan that lists one obviously-named test but misses sibling tests hitting the same call site creates an impossible situation for the implementor: "change the signature, don't modify tests, regressionCheck must pass" becomes unsatisfiable.
+
+For each **non-test** file that references a symbol undergoing a breaking change, it must appear in plan.md's Impact table as a `modify` entry (or be explicitly justified as not-at-risk). Changing a function signature while leaving unlisted callers in their old form produces a compile/type-check failure in files the plan never mentioned. Same root cause as the test gap, different failure surface.
 
 Resolve the dependency chain from brainstorm.md against the actual codebase — verify each hop in the chain exists at the stated path. If a hop is wrong, find the correct path now. Do not carry stale dependency chains into task JSONs.
 
@@ -144,6 +146,12 @@ verification chain is built on these.
 **Ground-before-terse:** any path appearing in a task's `files` or `dependencyChain` that isn't already in plan.md's Impact table must be added to the Impact table before writing the task. Task JSONs compress context into bare path strings — every path must be grounded in plan.md first, or a fresh reader has no context for what it is.
 
 **Collision check against negated names:** for each basename in `files`/`dependencyChain`, check plan.md's `Scope > Out` and `What NOT to Do` and brainstorm.md's Do NOT. If the basename collides with anything there (e.g. dependencyChain references `s3.py` when plan.md said "no s3.py is created"), use a disambiguated form — parent dir prefix (`synthetic_data_gen/s3.py`) or a role annotation in the task's `intent`. A naked colliding basename will pattern-match onto the negated artifact in a reader's head.
+
+**blockedBy integrity:** after all task JSONs are drafted, verify the dependency graph:
+- Every id in any `blockedBy` array refers to a real task id in this plan (no dangling references like `task_99` when only `task_1..3` exist).
+- No cycles — transitively follow `blockedBy` from each task; a task must not be reachable from itself. A cycle makes /tpe:execute deadlock.
+
+**Task contract consistency:** for each task, cross-read `acceptanceCriteria`, `atRiskTests` / `regressionCheck`, and `doNot`. If an AC removes or changes something that an at-risk test asserts must behave the old way, *and* `doNot` forbids modifying tests, the task is unsatisfiable (change-X + X-must-still-work + can't-touch-test). Fix by scoping the test change into this task, moving the test change to a prior blocking task, or loosening the AC. Do not ship an unsatisfiable task — the implementor will stop and report, wasting a full execute cycle.
 
 Write `tasks/plan.json` + `tasks/task_{N}.json` per task.
 

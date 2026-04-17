@@ -180,7 +180,8 @@ After all tasks in the current slice:
 1. Run full test suite + lint. Fix failures.
 2. If `spec.md` exists and capabilities changed, update it.
 3. Set plan.json status to `COMPLETE`.
-4. Present summary: branch, task results, remaining issues.
+4. Present summary: branch, task results, remaining issues. Then say:
+   > "Clear your context and run `/tpe:review` to review the changes."
 5. Point to [PR templates](references/pr-templates.md) for body content.
 
 **Do NOT push or create a PR.** User handles this manually.

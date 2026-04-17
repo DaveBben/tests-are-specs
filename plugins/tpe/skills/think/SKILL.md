@@ -187,4 +187,5 @@ Write `.claude/features/{slug}/brainstorm.md` using the [brainstorm.md template]
 
 **Hard rules:** under 200 lines; only confirmed decisions (unresolved → `[TBD]`); unconfirmed tests → `[unverified]`; every file:line verified on disk; no implementation details (code goes in plan.md).
 
-Present to user for review. Apply corrections. On approval, set Status to `Approved`, update Date, and direct user to run `/tpe:plan .claude/features/{slug}`.
+Present to user for review. Apply corrections. On approval, set Status to `Approved`, update Date, and say:
+> "Clear your context and run `/tpe:plan .claude/features/{slug}`."

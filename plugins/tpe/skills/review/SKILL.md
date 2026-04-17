@@ -45,9 +45,14 @@ Before dispatching agents, build a brief change context summary:
 1. Run `git diff --stat [base]` to get files changed and line counts
 2. Read the most recent commit messages on the branch to understand intent
 3. **Classify the change** as exactly one of: **Feature** | **Bug Fix** | **Refactor** | **Enhancement**. This classification anchors the actionability filter in Step 4c — pick one, don't hedge.
-4. Write a 2-3 sentence summary: what changed, why, and what areas are affected
+4. **Look for artifact intent** — check `.claude/features/*/brainstorm.md` and `.claude/bugs/*/tasks/task_*.json` for context relevant to this branch or change. If found:
+   - From `brainstorm.md`: extract the "What" and "Why" sections (the human-approved intent, not the full investigation)
+   - From `task_{N}.json` files: extract the `intent` field from each task (one sentence per task describing why it exists)
+   - Use this to distinguish deliberate decisions from accidental ones — a reviewer seeing a pattern deviation needs to know if it was intentional
+   - **Do not inject** the full plan, implementation rationale, or chosen approach justification — this risks anchoring reviewers to the implementor's reasoning rather than providing independent review
+5. Write a 2-3 sentence summary: what changed, why, and what areas are affected. Append any artifact intent as a brief "Intent context" note (1-2 sentences max).
 
-Record both the change type and summary — both are passed to every agent and reused in the Step 5 report. Research shows human-curated context improves review quality by ~4%.
+Record the change type, summary, and intent context — all are passed to every agent and reused in the Step 5 report. Research shows human-curated context improves review quality; however, over-injection anchors reviewers to the implementor's reasoning, so keep intent context minimal.
 
 ### Step 3: Dispatch all 4 agents in parallel
 
@@ -60,6 +65,11 @@ Review the code changes against [base reference], focusing on [dimension focus].
 [Base reference] is the base branch or commit to diff against.
 
 Change context: [2-3 sentence summary from Step 2]
+
+Intent context: [1-2 sentence artifact intent from Step 2, if found — omit this line if no artifacts were found]
+
+Use intent context to distinguish deliberate decisions from accidental ones. Do not treat it as
+justification for all choices — a stated intent does not make a security vulnerability acceptable.
 
 For every finding, include a Confidence level (HIGH / MEDIUM / LOW) indicating how
 certain you are this is a real issue and not a false positive. HIGH = you traced the

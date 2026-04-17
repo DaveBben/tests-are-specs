@@ -156,4 +156,4 @@ After revision, if the user gives further feedback: apply it, but flag:
 
 On approval: update plan.json status from `PendingDecomposition` to `Approved`. Say:
 
-> "Run `/tpe:execute .claude/features/{slug}` to execute."
+> "Clear your context and run `/tpe:execute .claude/features/{slug}`."

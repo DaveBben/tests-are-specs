@@ -13,7 +13,7 @@ tools:
   - Bash
 model: opus
 maxTurns: 30
-effort: high
+effort: max
 ---
 
 # Security Reviewer

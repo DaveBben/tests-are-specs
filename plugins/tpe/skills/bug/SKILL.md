@@ -1,6 +1,6 @@
 ---
 name: bug
-effort: medium
+effort: xhigh
 model: opus
 disable-model-invocation: true
 argument-hint: "[bug symptom or .claude/bugs/{slug} path]"

@@ -11,7 +11,7 @@ tools:
   - Glob
   - Grep
   - Bash
-model: sonnet
+model: opus
 maxTurns: 15
 effort: high
 ---

@@ -137,6 +137,10 @@ verification chain is built on these.
 
 **Validate before writing:** all paths exist/don't-exist as expected, `dependencyChain` hops have real import relationships (grep to confirm), no `[TBD]` values remain.
 
+**Ground-before-terse:** any path appearing in a task's `files` or `dependencyChain` that isn't already in plan.md's Impact table must be added to the Impact table before writing the task. Task JSONs compress context into bare path strings — every path must be grounded in plan.md first, or a fresh reader has no context for what it is.
+
+**Collision check against negated names:** for each basename in `files`/`dependencyChain`, check plan.md's `Scope > Out` and `What NOT to Do` and brainstorm.md's Do NOT. If the basename collides with anything there (e.g. dependencyChain references `s3.py` when plan.md said "no s3.py is created"), use a disambiguated form — parent dir prefix (`synthetic_data_gen/s3.py`) or a role annotation in the task's `intent`. A naked colliding basename will pattern-match onto the negated artifact in a reader's head.
+
 Write `tasks/plan.json` + `tasks/task_{N}.json` per task.
 
 ---

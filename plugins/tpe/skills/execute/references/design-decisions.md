@@ -57,7 +57,7 @@ per task) catches problems early before they compound.
 
 ADaPT research showed +27-33 pp improvement from reactive decomposition
 — trying the task whole first, decomposing only on failure. For plans
-with ≤3 tasks and <200 total lines, the per-task overhead (dispatch,
+with ≤2 tasks and <200 total lines, the per-task overhead (dispatch,
 commit, review, status update) is disproportionate to the actual work.
 The fast path tries a single-agent approach first, falling back to
 task-by-task only if the agent STOPs or exceeds size limits.

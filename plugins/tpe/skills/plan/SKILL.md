@@ -38,6 +38,8 @@ Resolve `$ARGUMENTS` to a feature directory:
 2. **Slug**: try `.claude/features/{slug}/`
 3. **No input**: glob for available brainstorm.md files, present choices
 
+**Resume check:** if `tasks/plan.json` exists with `status: "PendingDecomposition"`, skip to Step 5. If `status: "Approved"`, the plan is already complete — inform the user and suggest running `/tpe:execute`.
+
 Read `brainstorm.md`. Hard stop if no `brainstorm.md` exists:
 > "No brainstorm.md found at `.claude/features/{slug}/`. Run `/tpe:think {description}` first to produce one."
 
@@ -50,7 +52,7 @@ Warn (do not hard stop) if:
 - Dependency Chain section is empty or absent — dependency chains prevent NameError-class failures on multi-file tasks. Warn:
   > "brainstorm.md has no dependency chain. Multi-file tasks are at higher risk of cross-file reference errors. Continue or return to /tpe:think to add one?"
 
-If 1–3 `[TBD]` entries remain (allowed by think), extract them now. During Step 2 investigation, attempt to resolve each from the codebase. Any that remain unresolved after Step 2 must appear in the relevant task's `doNot` as: "Do not assume [TBD topic] — decision pending."
+If 1–3 `[TBD]` entries remain (allowed by think), extract them now. During Step 2 investigation, search the codebase for evidence that resolves each TBD; if not resolvable within 2-3 targeted reads per TBD, leave it unresolved. Any that remain unresolved after Step 2 must appear in the relevant task's `doNot` as: "Do not assume [TBD topic] — decision pending."
 
 Read `CLAUDE.md` and any domain `spec.md` for orientation. If any `spec.md`'s `Last verified` date is >30 days old, warn (do not block):
 > "spec.md was last verified {date}. Consider refreshing before planning. Continue anyway?"
@@ -68,7 +70,7 @@ For each file in brainstorm.md's Impact Surface, read targeted extracts:
 
 **Cap reads to what the plan will actually cite.** Do not read files speculatively. Before reading a file, state what you expect to find (a signature, a type, a pattern). After reading, it must produce at least one `file:line` reference in plan.md — if it doesn't, stop and do not read the next file in that concern group. If the impact surface exceeds 10 files, read only files involved in breaking changes or the chosen approach's critical path; list remaining files as "verified exists, not read in detail."
 
-**Breaking-change call-site sweep.** The "cap reads" rule above governs *file reading*, not *reference finding* — these are different. For every symbol in brainstorm.md's Impact Surface undergoing a breaking change (signature change, field removal, rename, deletion), grep the entire repo for references — especially tests. This is mechanical completeness, not speculation: you must find every call site that will stop compiling or pass/fail differently after the change.
+**Breaking-change call-site sweep.** The cap-reads rule governs *speculative* file reading. The call-site sweep is *investigation*, not speculation — you may read discovered files to determine whether they are at risk. For every symbol in brainstorm.md's Impact Surface undergoing a breaking change (signature change, field removal, rename, deletion), grep the entire repo for references — especially tests. This is mechanical completeness: you must find every call site that will stop compiling or pass/fail differently after the change. After grepping, read each discovered file to assess risk status.
 
 For each **test** file that references a symbol undergoing a breaking change, it must either appear in the task's `atRiskTests` or you must justify in plan.md why it isn't at risk. A plan that lists one obviously-named test but misses sibling tests hitting the same call site creates an impossible situation for the implementor: "change the signature, don't modify tests, regressionCheck must pass" becomes unsatisfiable.
 
@@ -87,7 +89,7 @@ Plan's job is to translate an approved approach, not to second-guess it — but 
 
 Write `.claude/features/{slug}/plan.md` using the [plan.md template](references/templates.md#planmd).
 
-**Content rules:** real code (not pseudocode), omit empty sections, exhaustive impact table, max 2 pattern references, What NOT to Do copied verbatim from brainstorm.md. Under ~500 lines → single PR; over → vertical slices only. End with "Do not implement yet."
+**Content rules:** real code (not pseudocode), omit empty sections, exhaustive impact table, max 2 pattern references, What NOT to Do copied verbatim from brainstorm.md's "Do NOT" section (if that section exists; if absent, write "None identified during brainstorm"). Under ~500 lines → single PR; over → vertical slices only. End with "Do not implement yet."
 
 **"Real code" means:** paste-ready signatures, type definitions, and structural code that would compile/parse as-is. A function signature with typed parameters and return type is real code. A function body with `// handle validation here` is pseudocode. When the exact body isn't known yet, show the signature and say "body implements [one sentence]" — do not invent placeholder logic.
 
@@ -97,7 +99,7 @@ Write `.claude/features/{slug}/plan.md` using the [plan.md template](references/
 
 ## Step 4 — Verify plan.md
 
-Launch the `plan-verifier` agent. Apply every `@FIX:` correction. Ignore verifier output about missing `testContext`/`implementationContext` (removed fields). If >3 discrepancies, re-investigate the affected files rather than patching one by one.
+Launch the `plan-verifier` agent using the Agent tool with `subagent_type: "plan-verifier"`. Apply every `@FIX:` correction. Ignore verifier output about missing `testContext`/`implementationContext` (removed fields). If >3 discrepancies, re-investigate the affected files rather than patching one by one.
 
 After verification passes, write `tasks/plan.json` with `status: "PendingDecomposition"`. On resume: if plan.json exists with this status, skip to Step 5.
 
@@ -111,11 +113,14 @@ Re-read from brainstorm.md: Chosen Approach, Do NOT, Constraints, At-Risk Tests.
 
 ### Explore alternative decompositions before committing
 
-Generate **2-3 candidate decompositions** with different slice
-boundaries, task groupings, or ordering. For each candidate, evaluate
-these criteria in priority order (first criterion breaks ties):
+For features with **4+ files or 3+ concerns**, generate **2-3 candidate decompositions** with different slice boundaries, task groupings, or ordering. For simpler features (fewer files/concerns), one decomposition is sufficient — skip the comparison.
 
-1. **No unsatisfiable tasks** — every task's AC + doNot + atRiskTests are internally consistent (hard requirement, not a scoring axis)
+For each candidate, evaluate against these criteria:
+
+**Hard gate (must pass):**
+1. **No unsatisfiable tasks** — every task's AC + doNot + atRiskTests are internally consistent
+
+**Scoring axes (in priority order — first distinguishing criterion wins):**
 2. **Minimal cross-task interface coupling** — fewer shared symbols between tasks means fewer integration failures
 3. **Short blockedBy chains** (ideally ≤2 deep) — long chains serialize execution and amplify single-task failures
 4. **Every task within 1–4 file hard max**
@@ -123,15 +128,14 @@ these criteria in priority order (first criterion breaks ties):
 
 Select the candidate that wins on the highest-priority distinguishing
 criterion. If two are equivalent through all criteria, prefer fewer
-tasks. Do not default to the first decomposition you think of —
-the first plausible split is often not the best.
+tasks.
 
 ### Task granularity
 
 - **Single concern** — 1–3 files, hard max 4
 - **Count decisions, not lines.** 200 lines / one decision > 30 lines / three decisions
 - **Over 20 tasks**: the feature needs splitting
-- **Vertical slices only** — each slice is a complete vertical path (data layer + service + API + test). Never a horizontal layer. Each slice must be independently reviewable with exactly one reason it would be reverted.
+- **Vertical slices only** — each slice is a complete functional path through all affected layers. Never a horizontal layer. Each slice must be independently reviewable with exactly one reason it would be reverted.
 
 ### Task JSON schema and validation
 
@@ -212,7 +216,7 @@ After writing the implementation tasks, check whether the architecture decision 
     "GIVEN spec.md has no Architecture Decisions table, WHEN adding the entry, THEN create the subsection under Architecture Overview with the standard table header and the new row",
     "GIVEN the Chosen Approach is obvious or has no rejected alternatives, THEN report DONE with a note explaining why the decision was not recorded"
   ],
-  "verificationCommand": "grep '{approach name from brainstorm.md}' {spec.md path}",
+  "verificationCommand": "grep '<actual approach name>' <actual spec.md path>",
   "regressionCheck": "",
   "scopeBoundaries": "This task owns only the Architecture Decisions table in spec.md / all other spec.md sections are owned by execute's post-implementation step",
   "doneWhen": "Architecture Decisions table in spec.md contains a row matching brainstorm.md's Chosen Approach, or task reports DONE with justification for skipping"

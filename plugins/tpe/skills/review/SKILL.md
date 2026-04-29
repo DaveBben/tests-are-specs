@@ -1,7 +1,7 @@
 ---
 name: review
 description: >
-  Use when the user explicitly requests a thorough, deep, or comprehensive review of large diffs or changes touching multiple files. Dispatches 4 specialized review agents in parallel (security, reliability, performance on Opus; maintainability on Sonnet for model diversity) and consolidates their findings through evidence auditing, cross-agent validation, and actionability filtering. Do NOT use for general code writing guidance, refactoring advice, or spec/design reviews. For a faster single-agent review, use vanilla Claude Code with plan mode instead.
+  Use when the user explicitly requests a thorough, deep, or comprehensive review of large diffs or changes touching multiple files. Dispatches 4 specialized review agents in parallel (security, reliability, performance, maintainability) and consolidates their findings through evidence auditing, cross-agent validation, and actionability filtering. Do NOT use for general code writing guidance, refactoring advice, or spec/design reviews. For a faster single-agent review, use vanilla Claude Code with plan mode instead.
 argument-hint: "<base-branch-or-commit>"
 effort: high
 model: opus
@@ -20,14 +20,16 @@ If `$ARGUMENTS` is empty, review staged changes (`git diff --cached`). If nothin
 
 ## Review Agents
 
-Each agent is an independent specialist that reviews the diff through its own lens. All 4 run in parallel to minimize wall-clock time. Agents use different models to maximize diversity of reasoning — research shows 2 diverse agents can outperform 16 homogeneous ones.
+Each agent is an independent specialist that reviews the diff through its own lens. All 4 run in parallel to minimize wall-clock time.
+
+Each agent name in the table below corresponds to an agent definition file in `plugins/tpe/agents/` (e.g., `security-reviewer` → `plugins/tpe/agents/security-reviewer.md`). When dispatching, use the agent name as the `subagent_type` parameter of the Agent tool.
 
 | Agent | Model | Dimensions |
 |-------|-------|-----------|
 | `security-reviewer` | opus | Injection, access control, CSRF, data exposure, file upload, SSRF, path traversal, XSS, auth/session, misconfiguration, supply chain, rate limiting, subtle attack vectors |
 | `reliability-reviewer` | opus | Correctness, logical soundness (off-by-one, null deref, race conditions, boolean logic, state mutation, resource lifecycle, collection mutation, encoding, time/date, closures). Excludes design quality — maintainability-reviewer covers that |
 | `performance-reviewer` | opus | N+1 queries, unbounded collections/queues, algorithmic complexity, blocking I/O, sequential awaits, retry storms, lock contention, resource leaks, missing pagination, query inefficiency, chatty I/O |
-| `maintainability-reviewer` | sonnet | Backwards compatibility, documentation accuracy, dependency hygiene, consistency with codebase conventions, project doc drift, change amplification. Excludes pure readability/style nitpicks |
+| `maintainability-reviewer` | opus | Backwards compatibility, documentation accuracy, dependency hygiene, consistency with codebase conventions, project doc drift, change amplification. Excludes pure readability/style nitpicks |
 
 ## Workflow
 
@@ -36,7 +38,7 @@ Each agent is an independent specialist that reviews the diff through its own le
 Determine the base reference for the review:
 - If `$ARGUMENTS` provided → use as base branch or commit SHA
 - If nothing provided → check for staged changes (`git diff --cached`)
-- If nothing staged → diff against the main branch (`main` or `master`)
+- If nothing staged → diff against the default branch. Determine it via `git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||'`, falling back to `main` then `master` if that fails.
 
 ### Step 2: Build change context
 
@@ -45,7 +47,7 @@ Before dispatching agents, build a brief change context summary:
 1. Run `git diff --stat [base]` to get files changed and line counts
 2. Read the most recent commit messages on the branch to understand intent
 3. **Classify the change** as exactly one of: **Feature** | **Bug Fix** | **Refactor** | **Enhancement**. This classification anchors the actionability filter in Step 4c — pick one, don't hedge.
-4. **Look for artifact intent** — check `.claude/features/*/brainstorm.md` and `.claude/bugs/*/tasks/task_*.json` for context relevant to this branch or change. If found:
+4. **Look for artifact intent** — these paths are specific to projects using the TPE workflow; if the directories do not exist, skip this sub-step. Check `.claude/features/*/brainstorm.md` and `.claude/bugs/*/tasks/task_*.json` for context relevant to this branch or change. If found:
    - From `brainstorm.md`: extract the "What" and "Why" sections (the human-approved intent, not the full investigation)
    - From `task_{N}.json` files: extract the `intent` field from each task (one sentence per task describing why it exists)
    - Use this to distinguish deliberate decisions from accidental ones — a reviewer seeing a pattern deviation needs to know if it was intentional
@@ -86,7 +88,9 @@ verify. LOW = suspicious but could be intentional or safe.
 
 ### Step 4: Consolidate findings
 
-After all 4 agents return their reports, consolidate through 4 sub-steps. Strip agent identity (which agent produced which finding) before evaluating — this prevents majority bias from inflating low-quality findings that happen to appear in multiple agents.
+After all 4 agents return their reports, consolidate through 4 sub-steps. If an agent fails or returns incomplete output, note the gap in the Review Coverage section of the report and proceed with the available reports.
+
+Strip agent identity (which agent produced which finding) during evaluation (Steps 4a–4c) — this prevents majority bias from inflating low-quality findings that happen to appear in multiple agents. After evaluation, re-annotate merged findings with agreement count for the final report.
 
 #### 4a. Collect and deduplicate
 
@@ -118,26 +122,22 @@ Challenge each surviving finding against these criteria:
 
 - **Is it specific enough to act on?** A developer should know exactly what to change. Drop findings that are vague observations without a concrete fix.
 - **Is the confidence level reasonable for the severity?** A BLOCKING finding with LOW confidence should be downgraded to SHOULD_FIX or dropped. A SUGGESTION with HIGH confidence can stay as-is.
-- **Would a developer act on this?** Step back and anchor this
-  judgment to the **change type recorded in Step 2** (Feature / Bug
-  Fix / Refactor / Enhancement). Do not re-classify here — use the
-  Step 2 value. A cosmetic finding in a Bug Fix should be dropped;
-  the same finding in a Refactor may be SHOULD_FIX. A performance
-  suggestion in a Feature is context-relevant; in a Bug Fix it's
-  scope-creep. Evaluate each finding in the context of the recorded
-  change type, not in isolation. When in doubt, drop — technically
-  correct but low-value findings (style nitpicks, theoretical edge
-  cases in cold paths) erode trust.
+- **Would a developer act on this?** Step back and anchor this judgment to the **change type recorded in Step 2** (Feature / Bug Fix / Refactor / Enhancement). Do not re-classify here — use the Step 2 value. Apply these rules:
+  - **Bug Fix**: Drop cosmetic and style findings. Drop performance suggestions unless they caused the bug. These are scope-creep.
+  - **Refactor**: Cosmetic and structural findings are SHOULD_FIX. Performance findings are relevant only if the refactor changed hot paths.
+  - **Feature**: Performance and maintainability findings are relevant. Cosmetic findings in new code are SUGGESTION at most.
+  - **Enhancement**: Same as Feature.
+  - When in doubt, drop — technically correct but low-value findings (style nitpicks, theoretical edge cases in cold paths) erode trust.
 
 If aggressive filtering leaves fewer than expected findings, that is a GOOD outcome. An empty report with high trust is better than a noisy report that gets ignored.
 
 #### 4d. Sort and compute verdict
 
-1. Sort by severity: BLOCKING first, then SHOULD_FIX, then SUGGESTIONS
-2. Compute verdict:
+1. Sort by severity: BLOCKING first, then SHOULD_FIX, then SUGGESTION
+2. Compute verdict based solely on the severity of surviving findings (ignore sub-agent PASS/CONCERNS verdicts — those are per-agent assessments, not the consolidated verdict):
    - Any BLOCKING → REQUEST CHANGES
-   - Only SHOULD_FIX → REQUEST CHANGES
-   - Only SUGGESTIONS or clean → APPROVE
+   - Any SHOULD_FIX (but no BLOCKING) → REQUEST CHANGES. Findings that survived Step 4c filtering have already been validated as genuinely actionable.
+   - Only SUGGESTION or clean → APPROVE
 
 ### Step 5: Produce the consolidated report
 
@@ -164,7 +164,7 @@ Follow this format:
 - `file:line` — **[Dimension]** (Confidence: HIGH/MEDIUM) [Description]. Trace: [data flow
   or logic path]. Fix: [suggestion]
 
-## SUGGESTIONS
+## SUGGESTION
 
 - `file:line` — **[Dimension]** (Confidence: MEDIUM/LOW) [Suggestion with rationale]
 

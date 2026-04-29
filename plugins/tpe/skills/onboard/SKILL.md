@@ -33,7 +33,7 @@ effort: high
 
 ### Phase 1: Unified Discovery
 
-One exploration pass gathers everything needed for both documents. Focus on the project root and first-level subdirectories. Do not recurse past the second directory level unless you need to verify a specific technical domain boundary (e.g., checking whether `src/auth/middleware/` imports from `src/billing/` to determine if they communicate through direct imports or contracts). When you go deeper, state what you're checking and return to the top level. **Stop exploring once you have concrete answers for each category below** — do not continue reading files for additional supporting evidence. Over-retrieval wastes context and delays the user.
+One exploration pass gathers everything needed for both documents. Focus on the project root and first-level subdirectories. Do not recurse past the second directory level unless you need to verify a specific technical domain boundary (e.g., checking whether `src/auth/middleware/` imports from `src/billing/` to determine if they communicate through direct imports or contracts). When you go deeper, state what you're checking and return to the top level. **Stop exploring during this phase once you have concrete answers for each category below** — do not continue reading files for additional supporting evidence. Over-retrieval wastes context and delays the user. (Phase 5's decision-gap check may require targeted follow-up reads — that is a separate, scoped activity.)
 
 **Gather for CLAUDE.md:**
 - Primary language(s), frameworks, and their versions
@@ -52,6 +52,8 @@ One exploration pass gathers everything needed for both documents. Focus on the 
 - For pipelines or multi-stage systems: trace data flows between stages, document handoff contracts
 
 **Identify technical domains:**
+
+A **technical domain** is a subsystem with its own deployment target, hard interface boundaries, or divergent constraints — distinct enough that a single spec section covering both areas would require constant clarification of which rules apply where.
 
 Directory structure is a starting point, not a conclusion. Subdirectories often represent architectural layers (models, controllers, routes, utils) rather than separate technical domains.
 
@@ -88,14 +90,14 @@ Record each technical domain with its root directory and a one-line description.
 **Gather for both:**
 - Existing files: `CLAUDE.md`, `.claude/CLAUDE.md`, `.claude/rules/`, `spec.md`, `SPEC.md`, `docs/architecture.md`, `README.md`, `CONTRIBUTING.md`
 
-**For new or empty projects**, interview the user. Ask one question at a time, starting with essentials:
+**For new or empty projects**, interview the user. Ask these essential questions one at a time:
 1. What is currently implemented and working in this project?
 2. What does this project do and who uses it?
 3. Why does this project exist? What problem does it solve?
 
 Follow up based on gaps — external services, failure behavior, testing, CI/CD, ownership, known issues, tech debt, things an AI should never touch, non-obvious gotchas.
 
-**For mature/brownfield codebases** (>50k lines or >2 years of git history), add a technical domain risks interview after initial discovery. Generate **3-5 targeted questions based on what you actually found** during exploration — not generic examples. Each question should reference a specific discovery.
+**For mature/brownfield codebases** (rough indicators: >50k lines via `find . -name '*.{ext}' | xargs wc -l`, or >2 years of git history via `git log --reverse --format=%ai | head -1`, or any project where discovery surfaced ambiguous patterns), add a technical domain risks interview after initial discovery. Generate **up to 5 targeted questions based on what you actually found** during exploration — not generic examples. Each question should reference a specific discovery. If the quality filter below eliminates candidates, generate fewer rather than padding with low-value questions.
 
 **Quality filter for interview questions:** each question must (1) reference a specific file, pattern, or discovery, and (2) the answer must change what you write in the spec. If the answer would be "interesting to know" but wouldn't appear in any spec section, the question is wasted. Questions that resolve ambiguity between competing patterns are highest-value; questions that confirm something you're already confident about are lowest.
 
@@ -103,9 +105,9 @@ Examples of targeted questions (adapt to what you found):
 - "I found 3 different auth patterns (`src/auth/jwt.ts`, `src/middleware/session.ts`, `src/legacy/basic-auth.ts`) — is one canonical?" → answer goes in Gotchas
 - "The database has both soft-delete (`deleted_at` columns) and hard-delete tables — which is the convention for new tables?" → answer goes in Boundaries
 
-**Stopping criterion:** stop at the first set of questions (3-5). Do not ask follow-up rounds — Phase 7 review gives the user a chance to add anything missed.
+**Stopping criterion:** stop at the first set of questions. Do not ask follow-up rounds — Phase 7 review gives the user a chance to add anything missed.
 
-Present all questions at once. Capture answers in a `## Gotchas` section in spec.md — these are the highest-value items in the spec.
+Present all mature-codebase questions at once (unlike the new-project interview above, which is one-at-a-time). Capture answers in a `## Gotchas` section in spec.md — these are the highest-value items in the spec.
 
 ### Phase 2: Check for Existing Files
 
@@ -127,7 +129,7 @@ If the user opts out of spec.md, skip Phases 4, 5, and the spec.md portions of P
 **Merge rules when updating existing files:**
 - **Existing content wins** for human-judgment sections (Project Identity, Critical Constraints, motivation, ownership, boundaries)
 - **Discovery data wins** for factual sections (versions, commands, current state, testing strategy, deployment)
-- **Blend rule** for sections that mix both (Architecture Decisions, Gotchas): keep the existing *rationale and judgment* (the "why"), but update *factual claims* (paths, versions, what exists) from discovery. If discovery contradicts an existing rationale, flag the conflict to the user rather than silently overwriting.
+- **Blend rule** for sections that mix both (Architecture Decisions, Gotchas): keep the existing *rationale and judgment* (the "why"), but update *factual claims* (paths, versions, what exists) from discovery silently. When discovery contradicts an existing *rationale* (not just a factual claim), flag the conflict to the user rather than overwriting.
 
 ### Phase 3: Draft CLAUDE.md
 
@@ -142,7 +144,7 @@ Read [references/quality-guide.md](references/quality-guide.md) for principles. 
     worse than no specs.
   ```
   Add a second placeholder comment for any additional human-judgment constraints.
-- **Always include** a pointer to spec.md in Pointers to Deeper Docs (it will be created in Phase 4): `` `spec.md` — current project state, architecture overview, and working constraints ``
+- **If spec.md is being created in this run**, include a pointer to spec.md in Pointers to Deeper Docs: `` `spec.md` — current project state, architecture overview, and working constraints ``. If the user opted out of spec.md in Phase 2, omit this pointer.
 
 **CLAUDE.md self-review** before proceeding to Phase 4:
 - [ ] Under 200 lines
@@ -211,9 +213,9 @@ Before presenting to the user, review the spec.md draft against these checks fro
 - [ ] Code style rules enforced by a linter
 - [ ] Organizational motivation without a decision-informing constraint attached
 
-Fix any issues found. Maximum 2 passes — after that, note remaining findings for the user.
+Fix any issues found. Maximum 2 passes of the checklist above — after that, note remaining findings for the user.
 
-**Decision-gap check:** After the checklist passes, step back and
+**Decision-gap check (separate from the checklist passes above):** After the checklist passes, step back and
 classify the project: is it greenfield, mature monolith, multi-service
 platform, or internal tool? The risk profile differs — a greenfield
 project's invisible walls are framework limitations and external API

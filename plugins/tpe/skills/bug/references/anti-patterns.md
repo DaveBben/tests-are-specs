@@ -6,7 +6,7 @@ explicitly and help the user fix it:
 | Anti-Pattern | Signal | Response |
 |---|---|---|
 | Diagnosis as title | "Race condition in save handler" | Reframe as observable symptom |
-| Vague reproduction | "It just breaks sometimes" | Demand specific steps and conditions |
+| Vague reproduction | "It just breaks sometimes" | Ask for specific steps and conditions |
 | Missing environment | No OS/version/build info | Ask which environment they observed it in |
 | Expected = "it works" | "Expected: it should work correctly" | Ask what "correctly" looks like specifically |
 | Actual = "it's broken" | "Actual: it doesn't work" | Ask what specifically they see/experience |

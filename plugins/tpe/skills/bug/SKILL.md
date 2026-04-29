@@ -1,13 +1,13 @@
 ---
 name: bug
-effort: xhigh
+effort: max
 model: opus
 disable-model-invocation: true
 argument-hint: "[bug symptom or .claude/bugs/{slug} path]"
 description: >
   Bug investigation and fix skill. Captures the symptom, reproduces it
   programmatically, traces root cause, and produces task JSONs for /act.
-  No separate plan.md — bugs are 2-4 tasks and go straight to task JSONs.
+  No plan.md — produces plan.json and task JSONs directly.
   Do NOT use for features (use /think). Do NOT use for trivial one-line
   fixes (just make the change).
 ---
@@ -33,9 +33,11 @@ Artifacts written to `.claude/bugs/{slug}/`.
 
 ## Input Handling
 
-1. **Existing bug directory**: Resume from last incomplete phase based on which artifacts exist.
-2. **Free-form text**: Generate a URL-safe slug from the symptom (max 40 chars). Create `.claude/bugs/{slug}/` and Phase 1.
-3. **No input**: Ask user to describe the symptom, not the cause:
+Resolve `$ARGUMENTS` to one of three modes:
+
+1. **Existing bug directory** (`$ARGUMENTS` is a path to `.claude/bugs/{slug}`): Resume from last incomplete phase based on which artifacts exist.
+2. **Free-form text** (`$ARGUMENTS` is a symptom description): Generate a URL-safe slug from the symptom (max 40 chars). Create `.claude/bugs/{slug}/` and begin Phase 1.
+3. **No input** (`$ARGUMENTS` is empty): Ask user to describe the symptom, not the cause:
    > "Describe what you saw — the symptom, not the cause. For example: 'After saving, the old text still shows' rather than 'the cache doesn't invalidate.'"
 
 ---
@@ -74,7 +76,9 @@ Wait for confirmation before proceeding.
 
 ### Step 4 — Codebase Tracing
 
-Read `CLAUDE.md` and any relevant `spec.md`. Then launch **2 parallel Explore agents**:
+Read `CLAUDE.md` and, if present, any relevant `spec.md`. Then launch **2 parallel Explore agents** using the Agent tool with `subagent_type: "Explore"`. Issue both Agent tool calls in a single message to ensure parallel execution.
+
+See [anti-patterns](references/anti-patterns.md) for diagnosis patterns to catch during investigation.
 
 **Agent 1 — Code path:**
 1. Starting from the entry point of the repro steps, trace the code path to the symptom location. Return: file:line per hop (max 5 hops).
@@ -118,7 +122,7 @@ In the main session (not delegated), synthesize:
   location, confidence is high. If they diverge, surface the
   uncertainty to the user in Step 7 rather than picking one.
   **Confidence calibration:** state your confidence as one of:
-  - *Confirmed* — repro test fails at the exact location, both frames converge, evidence is mechanical (not inferred)
+  - *Confirmed* — repro test fails at the exact location, both frames converge, evidence is directly observable (e.g., a test fails at the exact line, a log shows the wrong value) rather than inferred from code reading
   - *Strong hypothesis* — both frames converge but no failing test yet, or test fails but at a slightly different location
   - *Candidate* — only one frame points here, or evidence is circumstantial (e.g. recent git change near the area)
   Present the label in Step 7 so the user knows how much weight to give the finding.
@@ -154,7 +158,7 @@ Wait for their answer. Then present the AI-identified list for comparison — hi
 
 > "Here are the tests I found at risk: [list with reasons]. Combined with yours, does this look complete?"
 
-**This requires human confirmation** — same rule as /think. Incorrect at-risk test context is worse than none.
+**This requires human confirmation** — do not proceed until the user explicitly confirms the at-risk test list is complete. Incorrect at-risk test context is worse than none.
 
 Wait for confirmation.
 
@@ -167,7 +171,7 @@ Present what the fix will and will NOT do. At minimum, evaluate each category an
 - **Test scope**: does the fix require modifying existing tests, or only adding new ones?
 - **Data/state**: does the fix change persisted data, cached state, or migration behavior?
 
-Skip categories that are clearly not applicable.
+Skip categories where the fix does not touch that domain (e.g., skip "Data/state" if no persisted data is involved).
 
 Wait for confirmation.
 

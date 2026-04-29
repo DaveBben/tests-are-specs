@@ -1,7 +1,7 @@
 ---
 name: execute
 disable-model-invocation: true
-effort: xhigh
+effort: max
 argument-hint: "[feature or bug directory path or slug]"
 model: opus
 description: >
@@ -92,7 +92,7 @@ If any `spec.md` (root or domain) has `Last verified` >30 days old and plan date
 
 ### Brainstorm.md Check
 
-If any task qualifies as Complex tier, verify `brainstorm.md` exists. If missing: warn, offer to downgrade to Standard tier or return to `/tpe:think`. Do not block.
+If any task qualifies as Complex tier, verify `brainstorm.md` exists. If missing: warn (advisory — continue), offer to downgrade to Standard tier or return to `/tpe:think`.
 
 ### Gate Check
 
@@ -103,7 +103,7 @@ If any task qualifies as Complex tier, verify `brainstorm.md` exists. If missing
 
 ## Fast Path (Small Plans)
 
-If the plan has **≤2 tasks**, total estimated size is **under 200 lines**, and the combined unique `files` across all tasks is **≤4**, skip task-by-task execution:
+If the plan has **≤2 tasks**, total estimated size is **under 200 lines**, the combined unique `files` across all tasks is **≤4**, and **no task would be classified as Complex tier**, skip task-by-task execution:
 
 1. Dispatch a single implementation agent with each task JSON path (not merged), plan constraints, and the union of atRiskTests
 2. If agent returns DONE and all regressionChecks pass: proceed to Post-Implementation
@@ -133,14 +133,14 @@ Before dispatching each task, classify it:
 
 **Tiebreaker:** if a task matches multiple tiers, always promote to the higher tier. A 2-file task that changes a shared interface is Complex, not Standard — the interface change is the risk driver, not the file count.
 
-If a Simple task agent STOPs or hits maxTurns, retry once at Standard tier before marking BLOCKED.
+If a Simple task agent STOPs or hits maxTurns (agent-level failure), retry once at Standard tier before marking BLOCKED. This tier promotion applies only to agent-level failures — if the agent returns DONE but regressionCheck fails, retry at the same tier with the failure details (see Step 2 verification below).
 
 ### For Each Task
 
 #### Step 1: Pre-task Check
 
 - Do `relevantFiles` paths match expected state (exist/not-exist)?
-- Is `git status` clean? (Should be — prior task was committed in Step 3.) If not clean, something went wrong. Ask user before proceeding.
+- Is `git status` clean? (Must be — prior task was committed in Step 3.) If not clean, something went wrong. Pause (blocking — wait for user response) before proceeding.
 - If `blockedBy` lists tasks that aren't DONE, skip and report.
 - If `execution-state.json`'s `executionNotes` has a BLOCKED note for this task, show it to the user and ask whether to proceed.
 
@@ -148,15 +148,15 @@ If assumptions violated, ask the user.
 
 #### Step 2: Implement
 
-Dispatch the `code-implementor` agent. Pass these items in this order (the agent reads top-down, so frontload what constrains behavior):
+Dispatch the `code-implementor` agent using the Agent tool with `subagent_type: "code-implementor"`. Override `maxTurns` and `model` to match the task's complexity tier. Pass these items in this order (the agent reads top-down, so frontload what constrains behavior):
 
 1. **Plan constraints** verbatim — global boundaries the agent must not violate
-2. **Task `doNot`** verbatim — task-specific boundaries
-3. **Task JSON path** — the full spec (acceptanceCriteria, reference, files, etc.)
-4. **Plan JSON path** — for broader context
-5. **`dependencyChain`** verbatim — prevents cross-file reference errors
-6. **Test baseline** — known failures to ignore
-7. **Instruction**: "Re-read `doNot` and plan constraints before your verification step" (counters instruction fade-out)
+2. **Task JSON path** — the full spec (acceptanceCriteria, reference, files, doNot, dependencyChain, etc.)
+3. **Plan JSON path** — for broader context
+4. **Test baseline** — known failures to ignore
+5. **Instruction**: "Re-read `doNot` and plan constraints before your verification step" (counters instruction fade-out)
+
+The agent reads `doNot` and `dependencyChain` from the task JSON directly — do not duplicate them verbatim in the prompt.
 
 If STOPPED: mark `BLOCKED`, record in `executionNotes[task_id]`, ask user.
 
@@ -170,7 +170,7 @@ If any check fails: one retry, then `BLOCKED`. On the retry, include the specifi
 
 #### Step 3: Commit
 
-Commit with message `task_{N}: {task title}`. Do not push.
+Commit the agent's uncommitted changes with message `task_{N}: {task title}`. Do not push.
 
 #### Step 4: Handoff Check
 
@@ -180,9 +180,9 @@ On BLOCKED: record in `executionNotes[dependent_task_id]`, warn user. Skip entir
 
 #### Step 5: Size & Drift
 
-- **Task >200 lines**: note in `executionNotes`, inform user. Recommend: if remaining tasks depend on this one, continue but flag the size for review. If remaining tasks are independent, offer to pause for user review before continuing.
-- **Cumulative slice >500 lines**: warn, ask to continue or split. If splitting, the current slice should be finalized (post-implementation, tests, commit) before starting the next.
-- **Agent used >80% maxTurns**: flag possible drift. If the task is DONE despite high turn count, note it but continue. If the next task is in the same concern group, consider promoting it one complexity tier (the high turn count suggests the area is harder than estimated).
+- **Task >200 lines**: note in `executionNotes`, inform user. If remaining tasks depend on this one, continue but flag the size for review. If remaining tasks are independent, pause for user review before continuing (blocking — wait for response).
+- **Cumulative slice >500 lines**: warn and pause (blocking — wait for response). Ask to continue or split. If splitting, finalize the current slice (post-implementation, tests, commit) before starting the next.
+- **Agent used >80% maxTurns**: flag possible drift. If the task is DONE despite high turn count, note it but continue. If the next task shares any entry in its `files` array with this task, promote it one complexity tier (the high turn count suggests the area is harder than estimated).
 
 #### Step 6: Update Status & Mask
 

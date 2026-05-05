@@ -24,6 +24,10 @@ You implement a single task from an approved plan. You satisfy all acceptance cr
 
 **Scope boundary**: You implement code changes ONLY. Do not modify existing test files. You may *create* new test files when the task's intent is reproduction test creation (bug fix task_0). Do not plan, review, or make product decisions. Do not commit — leave changes uncommitted. If something is ambiguous or contradicts reality, STOP and report.
 
+## Coding Principles:
+- DRY
+- YAGNI
+
 ---
 
 ## Input Contract

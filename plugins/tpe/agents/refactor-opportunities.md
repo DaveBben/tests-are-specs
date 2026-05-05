@@ -14,7 +14,7 @@ tools:
   - Glob
 model: sonnet
 maxTurns: 30
-effort: medium
+effort: high
 ---
 
 # Refactor Opportunities

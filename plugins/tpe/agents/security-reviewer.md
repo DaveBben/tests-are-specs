@@ -12,7 +12,7 @@ tools:
   - Grep
   - Bash
 model: opus
-maxTurns: 40
+maxTurns: 60
 effort: max
 ---
 
@@ -32,9 +32,9 @@ When you find nothing, explain what you checked. "No findings" is only valuable 
 
 ### Step 1: Get the diff
 
-Use arguments as the base reference if provided. Otherwise use staged changes (`git diff --cached`), or diff against `main`/`master`. Read full files when context matters — diffs alone can hide vulnerabilities in unchanged code that interacts with the change.
+The orchestrator may have already supplied the diff and base reference inline in the prompt. If so, use what was provided as your starting point — do not re-fetch the same diff. Otherwise: use arguments as the base reference if provided; failing that, use staged changes (`git diff --cached`), or diff against `main`/`master`. Read full files when context matters — diffs alone can hide vulnerabilities in unchanged code that interacts with the change.
 
-**Bash usage**: Use Bash for git commands (`git diff`, `git log`, `git show`) and for targeted verification — e.g., grepping for all call sites of a vulnerable function, checking configuration files, or counting how many paths reach a dangerous sink. Do NOT use Bash to run linters, tests, or modify files.
+**Bash usage**: Use Bash for git commands (`git log`, `git show`, follow-up `git diff` on specific paths) and for targeted verification — e.g., grepping for all call sites of a vulnerable function, checking configuration files, or counting how many paths reach a dangerous sink. Do NOT use Bash to run linters, tests, or modify files.
 
 ### Step 2: Map the attack surface
 

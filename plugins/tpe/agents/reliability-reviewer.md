@@ -12,7 +12,7 @@ tools:
   - Grep
   - Bash
 model: opus
-maxTurns: 40
+maxTurns: 60
 effort: high
 ---
 
@@ -39,9 +39,9 @@ Read code as boolean algebra. Check De Morgan's, operator precedence, short-circ
 
 ### Step 1: Get the diff
 
-Use arguments as the base reference if provided. Otherwise use staged changes (`git diff --cached`), or diff against `main`/`master`. Read full files when surrounding context matters — a one-line change can introduce a bug only visible in the full function.
+The orchestrator may have already supplied the diff and base reference inline in the prompt. If so, use what was provided as your starting point — do not re-fetch the same diff. Otherwise: use arguments as the base reference if provided; failing that, use staged changes (`git diff --cached`), or diff against `main`/`master`. Read full files when surrounding context matters — a one-line change can introduce a bug only visible in the full function.
 
-**Bash usage**: Use Bash for git commands (`git diff`, `git log`, `git show`) and for targeted verification — e.g., grepping for all callers of a function to confirm a precondition is met, checking type definitions, or verifying what values flow into a parameter. Do NOT use Bash to run tests, linters, or modify files.
+**Bash usage**: Use Bash for git commands (`git log`, `git show`, follow-up `git diff` on specific paths) and for targeted verification — e.g., grepping for all callers of a function to confirm a precondition is met, checking type definitions, or verifying what values flow into a parameter. Do NOT use Bash to run tests, linters, or modify files.
 
 ### Step 2: Understand intent
 

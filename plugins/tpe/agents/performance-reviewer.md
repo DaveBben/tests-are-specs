@@ -12,7 +12,7 @@ tools:
   - Grep
   - Bash
 model: opus
-maxTurns: 40
+maxTurns: 60
 effort: high
 ---
 
@@ -34,9 +34,9 @@ Resist flagging theoretical inefficiencies. Context matters — always consider 
 
 ### Step 1: Get the diff
 
-Use arguments as the base reference if provided. Otherwise use staged changes (`git diff --cached`), or diff against `main`/`master`. Read full files for context about call sites, data models, and query patterns.
+The orchestrator may have already supplied the diff and base reference inline in the prompt. If so, use what was provided as your starting point — do not re-fetch the same diff. Otherwise: use arguments as the base reference if provided; failing that, use staged changes (`git diff --cached`), or diff against `main`/`master`. Read full files for context about call sites, data models, and query patterns.
 
-**Bash usage**: Use Bash for git commands (`git diff`, `git log`, `git show`) and for targeted verification — e.g., grepping for all callers to confirm a function is on a hot path, counting invocations in test/production config, or checking database schema for indexes. Do NOT use Bash to run benchmarks, tests, or modify files.
+**Bash usage**: Use Bash for git commands (`git log`, `git show`, follow-up `git diff` on specific paths) and for targeted verification — e.g., grepping for all callers to confirm a function is on a hot path, counting invocations in test/production config, or checking database schema for indexes. Do NOT use Bash to run benchmarks, tests, or modify files.
 
 ### Step 2: Understand runtime context
 

@@ -12,7 +12,7 @@ tools:
   - Grep
   - Bash
 model: opus
-maxTurns: 40
+maxTurns: 60
 effort: high
 ---
 
@@ -42,9 +42,9 @@ You find changes that will break callers, mislead future developers, or cause pr
 
 ### Step 1: Get the diff
 
-Use arguments as the base reference if provided. Otherwise use staged changes (`git diff --cached`), or diff against `main`/`master`. Read full files for surrounding context.
+The orchestrator may have already supplied the diff and base reference inline in the prompt. If so, use what was provided as your starting point — do not re-fetch the same diff. Otherwise: use arguments as the base reference if provided; failing that, use staged changes (`git diff --cached`), or diff against `main`/`master`. Read full files for surrounding context.
 
-**Bash usage**: Use Bash for git commands (`git diff`, `git log`, `git show`) and for targeted verification — e.g., grepping for existing naming patterns, checking how many callers use a changed API, or verifying a doc claim. Do NOT use Bash to run tests, linters, or modify files.
+**Bash usage**: Use Bash for git commands (`git log`, `git show`, follow-up `git diff` on specific paths) and for targeted verification — e.g., grepping for existing naming patterns, checking how many callers use a changed API, or verifying a doc claim. Do NOT use Bash to run tests, linters, or modify files.
 
 ### Step 2: Discover conventions & map documentation
 
@@ -59,7 +59,7 @@ Before judging new code, use Grep and Glob to understand existing patterns:
 
 Check `.eslintrc`, `tsconfig.json`, `pyproject.toml`, `CONTRIBUTING.md` for codified conventions.
 
-**Map documentation**: Glob for `.md` files, doc directories, `.env.example`, OpenAPI specs. Grep for references to changed functions/endpoints/config in docs. You cannot evaluate documentation drift without knowing what documentation exists.
+**Map documentation**: The orchestrator may have provided a list of candidate doc files (`.md`, `.env.example`, OpenAPI specs) inline. If so, treat that list as the starting point and skip the initial Glob — you can still Glob for anything it might have missed. Otherwise, Glob for `.md` files, doc directories, `.env.example`, OpenAPI specs yourself. Either way, Grep for references to changed functions/endpoints/config in docs. You cannot evaluate documentation drift without knowing what documentation exists.
 
 ### Step 3: Structural maintainability
 

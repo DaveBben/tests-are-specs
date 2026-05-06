@@ -42,25 +42,27 @@ Determine the base reference for the review:
 
 ### Step 2: Build change context
 
-Before dispatching agents, build a brief change context summary:
+Before dispatching agents, gather context centrally so each subagent does not re-fetch the same material. This buys back turns inside the subagents for actual review work.
 
 1. Run `git diff --stat [base]` to get files changed and line counts
-2. Read the most recent commit messages on the branch to understand intent
-3. **Classify the change** as exactly one of: **Feature** | **Bug Fix** | **Refactor** | **Enhancement**. This classification anchors the actionability filter in Step 4c — pick one, don't hedge.
-4. **Look for artifact intent** — these paths are specific to projects using the TPE workflow; if the directories do not exist, skip this sub-step. Check `.claude/features/*/brainstorm.md` and `.claude/bugs/*/tasks/task_*.json` for context relevant to this branch or change. If found:
+2. Run `git diff [base]` to capture the full diff. Save the output — it will be embedded in each agent's prompt. If the diff is very large (>2000 lines) and embedding it inline would dominate the prompt, fall back to passing only the file list and let the subagents fetch the diff themselves.
+3. Read the most recent commit messages on the branch to understand intent
+4. **Build a documentation map** for the maintainability reviewer: list candidate doc files at common locations — `find . -maxdepth 4 \( -name "*.md" -o -name ".env.example" -o -name "openapi.*" -o -name "swagger.*" \) -not -path "./node_modules/*" -not -path "./.git/*" -not -path "./vendor/*"`. Capture this list (paths only, not contents).
+5. **Classify the change** as exactly one of: **Feature** | **Bug Fix** | **Refactor** | **Enhancement**. This classification anchors the actionability filter in Step 4c — pick one, don't hedge.
+6. **Look for artifact intent** — these paths are specific to projects using the TPE workflow; if the directories do not exist, skip this sub-step. Check `.claude/features/*/brainstorm.md` and `.claude/bugs/*/tasks/task_*.json` for context relevant to this branch or change. If found:
    - From `brainstorm.md`: extract the "What" and "Why" sections (the human-approved intent, not the full investigation)
    - From `task_{N}.json` files: extract the `intent` field from each task (one sentence per task describing why it exists)
    - Use this to distinguish deliberate decisions from accidental ones — a reviewer seeing a pattern deviation needs to know if it was intentional
    - **Do not inject** the full plan, implementation rationale, or chosen approach justification — this risks anchoring reviewers to the implementor's reasoning rather than providing independent review
-5. Write a 2-3 sentence summary: what changed, why, and what areas are affected. Append any artifact intent as a brief "Intent context" note (1-2 sentences max).
+7. Write a 2-3 sentence summary: what changed, why, and what areas are affected. Append any artifact intent as a brief "Intent context" note (1-2 sentences max).
 
-Record the change type, summary, and intent context — all are passed to every agent and reused in the Step 5 report. Research shows human-curated context improves review quality; however, over-injection anchors reviewers to the implementor's reasoning, so keep intent context minimal.
+Record the change type, summary, intent context, full diff, and doc map — they are passed to the agents in Step 3 (the diff goes to all four; the doc map goes only to the maintainability reviewer) and the summary/change type are reused in the Step 5 report. Research shows human-curated context improves review quality; however, over-injection anchors reviewers to the implementor's reasoning, so keep intent context minimal.
 
 ### Step 3: Dispatch all 4 agents in parallel
 
-Launch all 4 review agents simultaneously using the Agent tool. Each agent receives the same base reference AND the change context summary. Send a single message with all 4 Agent tool calls to ensure parallel execution.
+Launch all 4 review agents simultaneously using the Agent tool. Each agent receives the base reference, the change context summary, and the pre-fetched diff. The maintainability reviewer additionally receives the documentation map. Send a single message with all 4 Agent tool calls to ensure parallel execution.
 
-**Prompt template for each agent** (substitute the agent's dimension focus):
+**Prompt template for each agent** (substitute the agent's dimension focus, and append the doc-map block only for `maintainability-reviewer`):
 
 ```
 Review the code changes against [base reference], focusing on [dimension focus].
@@ -72,6 +74,19 @@ Intent context: [1-2 sentence artifact intent from Step 2, if found — omit thi
 
 Use intent context to distinguish deliberate decisions from accidental ones. Do not treat it as
 justification for all choices — a stated intent does not make a security vulnerability acceptable.
+
+Full diff (already fetched — do not re-run `git diff [base]`):
+
+```diff
+[Paste full `git diff [base]` output captured in Step 2. If the diff was too large to inline
+and only the file list was captured, instead say: "Diff was too large to inline. Files changed:
+[list]. Fetch the diff yourself with `git diff [base] -- <path>` for the paths you need."]
+```
+
+[Maintainability reviewer ONLY — append this block:]
+Documentation map (candidate doc files in this repo — start here, you may still glob for more):
+
+[Paste the doc-file list captured in Step 2, one path per line.]
 
 For every finding, include a Confidence level (HIGH / MEDIUM / LOW) indicating how
 certain you are this is a real issue and not a false positive. HIGH = you traced the

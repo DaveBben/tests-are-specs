@@ -89,6 +89,16 @@ Plan's job is to translate an approved approach, not to second-guess it — but 
 
 Write `.claude/features/{slug}/plan.md` using the [plan.md template](references/templates.md#planmd).
 
+**Audience model — write for a stranger who will make false assumptions.** The implementor agent has no prior context on this codebase. It has not read the files you read in Step 2. It will not infer your project's conventions. Where a symbol "obviously" behaves a certain way, it will assume it does — and act on that assumption without checking. Where two things share a similar name, it will conflate them. Where a pattern is implicit, it will invent its own.
+
+Plan as if every named symbol, path, and convention is something the implementor encounters cold. Concrete implications:
+
+- **Cite, don't reference.** Every named symbol must come with paste-ready code or a `file:line` pointer — never a bare name the implementor has to go find. If you mention `UserValidator`, show its signature.
+- **Disambiguate aggressively.** If two symbols/files share a basename, or if a name in your plan resembles a name the implementor will encounter elsewhere, qualify it (parent dir, role annotation). Naked basenames pattern-match to whatever the implementor saw last.
+- **State the non-obvious explicitly.** If the code looks like it should do X but actually does Y, say so. If a function's name suggests behavior it doesn't have, call that out. Silence reads as confirmation of the implementor's first guess.
+- **Show conventions, don't imply them.** Project-specific patterns (error handling, layering, naming, where logic lives) must be shown via the `Reference` pattern or pasted code. "Follow the existing pattern" is invisible to a stranger.
+- **Pre-empt the likely wrong move.** After drafting each section, ask: "What's the most plausible wrong thing a stranger could do here that still satisfies the words I wrote?" If the plan doesn't rule it out, add a constraint to `What NOT to Do` or sharpen the section.
+
 **Content rules:** real code (not pseudocode), omit empty sections, exhaustive impact table, max 2 pattern references, What NOT to Do copied verbatim from brainstorm.md's "Do NOT" section (if that section exists; if absent, write "None identified during brainstorm"). Under ~500 lines → single PR; over → vertical slices only. End with "Do not implement yet."
 
 **"Real code" means:** paste-ready signatures, type definitions, and structural code that would compile/parse as-is. A function signature with typed parameters and return type is real code. A function body with `// handle validation here` is pseudocode. When the exact body isn't known yet, show the signature and say "body implements [one sentence]" — do not invent placeholder logic.
@@ -110,6 +120,10 @@ After verification passes, write `tasks/plan.json` with `status: "PendingDecompo
 ### Re-anchor before decomposing
 
 Re-read from brainstorm.md: Chosen Approach, Do NOT, Constraints, At-Risk Tests. Re-read from plan.md: Impact table, What NOT to Do. These are the boundaries every task inherits. Do not proceed without re-reading — they degrade in attention over long sessions.
+
+### Audience model carries through
+
+The same stranger-will-make-false-assumptions posture from Step 3 applies harder here. Each task JSON is read in isolation by an implementor with no memory of plan.md or the other tasks. A bare path in `files`, a symbol in `dependencyChain`, or a one-line `intent` is all the context they get for that field. Anywhere a name could be misread or a constraint could be silently ignored, encode it explicitly in `doNot`, `scopeBoundaries`, or the acceptance criteria — do not rely on the task ordering, the slice number, or "they'll figure it out from the file."
 
 ### Explore alternative decompositions before committing
 

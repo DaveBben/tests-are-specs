@@ -275,8 +275,7 @@ from both Phase 1 and the investigation.}
 
 > The sections below are written for the implementing agent —
 > bullet-dense, identifier-rich, and deliberately redundant across
-> Constraints / Do NOT / Files that matter. Reviewers can stop
-> here; everything below is binding for the implementer.
+> Constraints / Do NOT / Files that matter.
 
 ## Approach
 {Single-area change: 1-3 sentences naming the approach and the key

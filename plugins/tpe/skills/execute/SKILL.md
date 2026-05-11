@@ -1,6 +1,8 @@
 ---
 name: execute
 disable-model-invocation: true
+model: opus
+effort: max
 argument-hint: "[path to spec file]"
 description: >
   Implements a spec produced by /tpe:spec. Reads the spec, creates a
@@ -42,8 +44,7 @@ Also read `CLAUDE.md` for project conventions and build/test commands.
 
 4. **Run linters and type checkers** if available (check CLAUDE.md
    for commands). Record baseline. These catch mechanical issues
-   for free — don't burn AI tokens on what deterministic tools
-   handle.
+   for free.
 
 ---
 
@@ -57,9 +58,10 @@ sections. These are your boundaries.
 - **Follow existing code conventions.** Read the files you're
   modifying before changing them. Match the style, patterns, and
   naming conventions already in the codebase.
-- **DRY and YAGNI.** Don't duplicate code that exists. Don't build
-  abstractions for hypothetical future needs. Do the simplest thing
-  that satisfies the spec.
+- **DRY and YAGNI.** Reuse existing logic rather than reimplementing
+  it. Don't build abstractions for hypothetical future needs — prefer
+  a little repetition over the wrong abstraction. Do the simplest
+  thing that satisfies the spec.
 - **Group related changes into commits that are easy to reverse.**
   One logical change per commit. If the spec involves multiple
   concerns, commit each separately.
@@ -85,59 +87,28 @@ approach didn't anticipate, stop and report rather than silently
 switching to a different approach.
 
 If the "Alternatives rejected" section lists an approach, do not
-use that approach — it was explicitly rejected during planning.
+use that approach it was explicitly rejected during planning.
 
 ---
 
 ## Review Each Commit
 
-**After each logical unit of work, run linters, then dispatch a
-review subagent before committing.** Do not self-review — models
-fail to correct their own errors 64.5% of the time.
+**After each logical unit of work, run linters, then dispatch the
+`commit-reviewer` agent before committing.** Do not self-review —
+models fail to correct their own errors 64.5% of the time.
 
 Run linters and type checkers first. Fix any mechanical issues so
 the reviewer focuses on logic and spec compliance, not style.
 
-Then launch a review subagent using the Agent tool with this prompt
-(fill in the spec path and diff):
+Then launch the `commit-reviewer` agent using the Agent tool with
+`subagent_type: "commit-reviewer"`. Pass:
+- `spec_path`: the spec file path
+- `diff`: the staged diff (output of `git diff --cached`)
 
-```
-Read the spec at {spec_path}. Read it in full — it is the ground
-truth for this review.
-
-Here is the diff to review:
-
-{paste git diff --cached output}
-
-Check these 5 things against the spec:
-
-1. **Spec compliance**: does the change match the Approach? Does
-   it violate any Constraints or Do NOT rules? Were any
-   "Alternatives rejected" approaches accidentally used?
-2. **Edge case coverage**: for each edge case in the spec, is it
-   handled in the code?
-3. **Error handling**: are error paths covered? AI-generated code
-   has 2x more error handling gaps — look specifically for missing
-   error paths.
-4. **Regression risk**: were files outside "Files that matter"
-   modified without justification?
-5. **Logic errors**: trace data flow through the changed code.
-   Off-by-one, null handling, race conditions.
-
-Do NOT review style, formatting, or naming — linters handle that.
-
-For every finding, include:
-- file:line location
-- Trace: the data flow or logic path
-- Severity: BLOCKING (will break production) or SHOULD_FIX
-- Fix: what specifically to change
-
-If no issues found, return PASS. Do not manufacture findings.
-False positives erode trust faster than false negatives.
-```
-
-If the subagent returns findings, fix them before committing. If
-PASS, commit with a clear message.
+If the agent returns BLOCKING findings, fix them before committing.
+Address SHOULD_FIX findings unless the spec or scope makes that
+unreasonable — if you skip one, note why in the commit message.
+If PASS, commit with a clear message.
 
 Keep commits under 400 changed lines — review effectiveness drops
 sharply beyond that threshold. If a logical change exceeds 400
@@ -173,21 +144,40 @@ After verification passes:
    to check for regressions beyond the spec's verification scope.
    Fix any regressions before finalizing.
 
-2. Update the spec's "Last updated" date if implementation revealed
-   new constraints or edge cases worth recording.
+2. **Compliance review.** Launch the `compliance-reviewer` agent
+   with `subagent_type: "compliance-reviewer"`. Pass:
+   - `spec_path`: the spec file path
+   - `diff`: the full feature diff (`git diff <base-branch>...HEAD`,
+     where `<base-branch>` is the branch this feature was cut from
+     — usually `main` or `master`).
 
-3. Flip the spec's `Status` from `Waiting Implementation` to
+   If the agent returns COMPLIANT, proceed. If NON_COMPLIANT, walk
+   through each deviation:
+   - If the spec is right and the code drifted: fix the code, then
+     re-run the compliance review.
+   - If the deviation is a reasonable amendment (an edge case the
+     spec missed, a constraint that turned out to be wrong, etc.):
+     update the spec to reflect what was built, then re-run.
+   - Do not finalize while uncorrected non-compliance remains.
+
+3. Update the spec's "Last updated" date if implementation revealed
+   new constraints or edge cases worth recording (or if the
+   compliance review prompted spec amendments).
+
+4. Flip the spec's `Status` from `Waiting Implementation` to
    `Implemented` — both in the spec file's header and in its row
    in the Spec Index (`docs/specs/spec.md`). If the spec lives
    under `docs/specs/bugs/`, update the Bugs table; otherwise
    update the Features table.
 
-4. Present a summary:
+5. Present a summary:
    - **Branch**: name and commit count
    - **What was done**: 2-3 sentences
    - **Verification**: pass/fail status
-   - **Review findings**: any issues caught and fixed during
+   - **Per-commit review findings**: issues caught and fixed during
      per-commit review
+   - **Compliance review**: COMPLIANT, or list of resolved
+     deviations
    - **Needs attention** (if any): anything unexpected, deviations
      from the spec, or issues the user should review
 

@@ -3,7 +3,7 @@ name: spec
 argument-hint: "[what you want to build or change]"
 disable-model-invocation: true
 model: opus
-effort: max
+effort: xhigh
 description: >
   Thinking partner + spec producer in one conversation. You describe
   a change, Claude reads the codebase, challenges your assumptions

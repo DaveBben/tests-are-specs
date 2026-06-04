@@ -2,7 +2,7 @@
 name: execute
 disable-model-invocation: true
 model: opus
-effort: max
+effort: high
 argument-hint: "[path to spec file]"
 description: >
   Implements a spec produced by /tpe:spec. Reads the spec, creates a

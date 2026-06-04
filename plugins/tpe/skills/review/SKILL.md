@@ -8,7 +8,7 @@ description: >
   source before reporting. Use when you want a thorough second
   opinion on implemented changes before pushing.
 model: opus
-effort: max
+effort: xhigh
 ---
 
 # Review — Spec-Grounded Multi-Lens Code Review

@@ -139,6 +139,6 @@ Drop findings that fail this check.
 
 Out of scope for you:
 - Logic errors (per-commit reviewer covered these)
-- Security, performance, maintainability dimensions (the /review
-  skill covers those)
+- Security, performance, maintainability dimensions (the
+  staff-reviewer agent covers those)
 - Style, formatting, naming (linters)

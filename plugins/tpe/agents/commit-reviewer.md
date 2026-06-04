@@ -6,8 +6,8 @@ description: >
   violations, and regression risk per commit. Used by /tpe:execute
   between commits. Returns PASS or structured BLOCKING/SHOULD_FIX
   findings. Do NOT use for full-feature compliance review
-  (compliance-reviewer handles that) or for dimension review of an
-  arbitrary diff (the /tpe:review skill handles that).
+  (compliance-reviewer handles that) or for multi-pass review of a
+  full diff (the staff-reviewer agent handles that).
 tools:
   - Read
   - Glob

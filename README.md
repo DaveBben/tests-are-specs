@@ -43,7 +43,7 @@ Ready to implement (you already have a spec or clear prompt)?
   └── Yes → Plan mode directly, or /tpe:execute
 
 Want a second set of eyes on what you're writing?
-  └── Yes → /tpe:review (four-agent parallel review — never writes code)
+  └── Yes → ask Claude to run the staff-reviewer agent (multi-pass review — never writes code)
 ```
 
 ---
@@ -56,7 +56,6 @@ Want a second set of eyes on what you're writing?
 | `/tpe:spec` | Thinking partner + spec producer — challenges your approach, then writes the spec | `docs/specs/features/{slug}/spec.md` |
 | `/tpe:execute` | Reads a spec, implements changes, reviews each commit against the spec, verifies | Branch, commits |
 | `/tpe:bug` | Investigates a bug symptom, traces root cause, produces a bug spec | `docs/specs/bugs/{slug}/spec.md` |
-| `/tpe:review` | Spec-grounded code review — checks changes against the spec that defined them | Review report |
 
 ---
 
@@ -97,19 +96,16 @@ Does not push or create PRs. Uses subagents for parallel work when the spec invo
 
 Bugs start from a symptom, not a change request. Claude reads the code, traces the root cause using dual-frame analysis (backward from symptom + forward from suspected cause), and produces a bug spec with intended/actual behavior, repro steps, root cause, and mitigation approach. Feeds into `/tpe:execute` the same way feature specs do.
 
-### `/tpe:review`
-
-Spec-grounded code review. One general reviewer (not 4 specialists — research shows 1 well-contexted agent outperforms a panel of same-model specialists). Reviews changes against the spec that defined them, checking for: spec compliance, missed edge cases, constraint violations, and logic errors. Linters and type checkers handle style and mechanical issues.
-
-Can be invoked standalone on any branch or diff.
-
 ---
 
 ## Agents
 
 | Agent | Role | Used by |
 |---|---|---|
-| `spec-reviewer` | Checks specs for 7 evidence-backed failure modes before presenting to user | `/tpe:spec` |
+| `spec-reviewer` | Checks specs for 7 evidence-backed failure modes before presenting to user | `/tpe:spec`, `/tpe:bug` |
+| `commit-reviewer` | Reviews each commit's staged diff against the spec (logic errors, edge cases, spec drift) | `/tpe:execute` |
+| `staff-reviewer` | Multi-pass staff-level review of the full diff (security → correctness → performance → reliability) | `/tpe:execute`, or standalone on any diff |
+| `compliance-reviewer` | End-of-feature check that the implementation matches the spec's contract | `/tpe:execute` |
 
 ---
 

@@ -151,18 +151,16 @@ failure to the user with details. Do not keep retrying in a loop.
 
 ## Staff Review
 
-Before finalizing, dispatch a subagent to review the entire feature
-diff with fresh eyes. Use the Agent tool with the general-purpose
-agent type and `model: "opus"` — this review needs strong reasoning,
-not throughput. Pass the full diff (`git diff <base-branch>...HEAD`)
-and the instruction:
+Before finalizing, launch the `staff-reviewer` agent to review the
+entire feature diff with fresh eyes. Use the Agent tool with
+`subagent_type: "staff-reviewer"`. Pass:
+- `diff`: the full feature diff (`git diff <base-branch>...HEAD`)
+- `spec_path`: the spec file path
 
-> Review this code as if you were a staff engineer preparing to
-> approve a PR.
-
-Fix all BLOCKING and high-value findings before moving on. Lower-
-value nits can be deferred or skipped if they're out of scope, but
-note any you skip and why.
+If the verdict is REQUEST CHANGES, fix all BLOCKING and SHOULD_FIX
+findings before moving on, then re-run the review. SUGGESTIONS can
+be deferred or skipped if they're out of scope, but note any you
+skip and why.
 
 ---
 

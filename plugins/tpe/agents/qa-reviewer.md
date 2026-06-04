@@ -16,7 +16,7 @@ tools:
   - Bash
 model: sonnet
 maxTurns: 30
-effort: high
+effort: xhigh
 ---
 
 # QA Reviewer

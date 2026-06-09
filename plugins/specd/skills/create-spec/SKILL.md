@@ -26,7 +26,7 @@ description: >
   thresholds will silently produce wrong results." (you read the
   code and found a real problem)
 
-**Read the code.** CLAUDE.md and spec.md give orientation, but you
+**Read the code.** CLAUDE.md, Agents.md and spec.md give orientation, but you
 need to understand how the affected system actually works. Read the
 files involved to understand:
 - How the current behavior is wired up
@@ -34,7 +34,7 @@ files involved to understand:
 - Where the branching or integration points are
 - What assumptions the existing code makes
 
-Cap at 8-10 files. Enough to understand, not enough to burn context.
+Stop once you have a thorough understanding.
 
 **Surface every ambiguity that materially changes the design** —
 grounded in what you found in the code. Usually that's 2-3 concerns,
@@ -197,8 +197,11 @@ lines, and verification commands.
 
 For each area the conversation identified:
 
-1. **Current behavior**: find the specific file:line and function
-   where the current logic lives. Quote it concisely.
+1. **Current behavior**: understand how the affected part works today
+   well enough to explain it in plain prose to someone new to the
+   codebase. Find the precise locations too — but those anchor "Files
+   that matter"; in "Current behavior" cite a `file:line` only where it
+   genuinely saves a human a search.
 
 2. **Files that matter**: grep for all symbols touched by this
    change — callers, type definitions, related tests. Target 6-10
@@ -322,7 +325,8 @@ The full template lives in `reference/spec-template.md` — read it when
 you reach "Write the draft spec" above. It serves two audiences with
 one document: above the "Implementation contract" divider is what a
 human reviewer needs to approve the approach (Why, Summary, Current
-behavior, Alternatives, Edge cases); below it is the binding,
-deliberately-redundant contract for the implementing agent (Approach,
-Constraints, Do NOT, Files that matter, Verification).
+behavior, Alternatives, Edge cases); below it is the binding contract
+for the implementing agent — Approach gives the direction, while
+Constraints, Do NOT, Files that matter, and Verification pin the
+specifics (deliberately redundant with each other).
 

@@ -77,8 +77,11 @@ Cross-read these section pairs for conflicts:
   touching something that's out of scope?
 - **Files that matter vs Do NOT**: is a file listed as needing changes
   but also listed as "do not modify"?
-- **Approach vs Files that matter**: does the Approach reference a
-  file that isn't in Files that matter, or vice versa?
+- **Approach vs Files that matter**: the Approach is intentionally
+  general and need not enumerate files. Only flag a contradiction: a
+  file the Approach *does* name that is missing from Files that matter
+  (or forbidden by Do NOT). The mere absence of file references in the
+  Approach is not a contradiction.
 
 **FAIL if any contradiction found.** Quote both conflicting statements.
 

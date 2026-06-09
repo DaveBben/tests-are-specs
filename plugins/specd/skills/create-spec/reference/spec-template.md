@@ -8,8 +8,9 @@ The spec serves two audiences with one document. Above the
 "Implementation contract" divider: motivation, summary, current
 state, alternatives, edge cases — what a human reviewer needs to
 approve the approach. Below: the binding contract for the
-implementing agent — Approach, Constraints, Do NOT, Files,
-Verification — deliberately redundant across sections.
+implementing agent — Approach gives the direction; Constraints, Do
+NOT, Files, and Verification pin the specifics, deliberately redundant
+with each other.
 
 ```
 {One-line summary of the change}
@@ -26,8 +27,13 @@ doing now.}
 Summary together is the reviewer's TLDR.}
 
 ## Current behavior
-{What the code does today. file:line, function name. Specific
-enough that the implementing agent doesn't need to search.}
+{How the affected part of the system works today, in plain prose,
+written for someone who has never seen this codebase. Explain the
+flow and the pieces this change touches — not the whole module. Cite a
+`symbol()` or `file:line` only where it genuinely saves a human a
+search (the one function they'll edit, a non-obvious branch); don't
+annotate prose that reads fine without it. Keep it short — a paragraph
+or two, not a tour.}
 
 {Optional domain sections — add 0+ sections here when a structured
 artifact aids review and doesn't fit elsewhere. Examples:
@@ -56,19 +62,31 @@ code and a test.}
 
 ## Implementation contract
 
-> The sections below are written for the implementing agent —
-> bullet-dense, identifier-rich, and deliberately redundant across
-> Constraints / Do NOT / Files that matter.
+> The sections below are written for the implementing agent. Approach
+> gives the direction in prose and leaves the mechanics to the
+> implementer; Constraints, Do NOT, and Files that matter are
+> bullet-dense, identifier-rich, and deliberately redundant with each
+> other.
 
 ## Approach
-{Single-area change: 1-3 sentences naming the approach and the key
-reason it was chosen. Multi-file change: numbered list keyed by
-file:
-1. **`path/to/file.py`** — what changes, what stays unchanged.
-2. **`other/file.py`** — what changes here.
-If the implementing agent hits a blocker the reasoning didn't
-anticipate, it should flag it rather than silently switching
-approaches.}
+{The strategy, not the keystrokes. Describe *what* needs to happen and
+*why* this direction — enough for a capable implementer to act on, but
+leave *how* to them; they know the best-practice mechanics for their
+stack. State the shape of the change and the order of work where order
+matters. Don't prescribe exact symbols, signatures, or line numbers —
+those live in Files that matter; naming them here just creates two
+places to keep in sync. A few sentences for a simple change; a short
+list of moves for a larger one.
+
+Close with **Things to consider** — a brief bulleted list of the
+non-obvious tradeoffs, gotchas, and decision points the implementer
+should weigh: the spots where a reasonable engineer could pick the
+wrong path, an interaction that isn't visible from the local code, a
+sequencing or compatibility concern. These guide judgment; hard
+requirements belong in Constraints.
+
+If the implementer hits a blocker the reasoning didn't anticipate, they
+should flag it rather than silently switching approaches.}
 
 ## Constraints
 {Bulleted. Specific numbers, not vague qualifiers. Each testable.

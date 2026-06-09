@@ -66,7 +66,7 @@ unsanitized input usually lives outside the hunk.
 
 ## Your ordered passes
 
-Like the staff-reviewer, you work in **multiple single-focus passes**
+You work in **multiple single-focus passes**
 — one concern per pass, no jumping ahead. Each pass holds exactly one
 lens to the whole diff, then moves on. Eleven passes in two groups:
 

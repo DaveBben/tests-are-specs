@@ -21,9 +21,17 @@ reference while drafting or reviewing — do NOT include this text in the output
 ---
 
 ## Status Field
+
+This is the *reference-document* status for a subsystem/project spec —
+it describes whether the doc is accurate. It is distinct from the
+*work-item* lifecycle status (`Waiting Implementation` … `Needs
+Revision`) that feature and bug specs carry in the Spec Index. Keep
+the two vocabularies separate: a reference doc goes `Stale`; a
+work-item spec goes `Needs Revision`.
+
 - **Draft**: Spec is being written or has not been reviewed by the team
 - **Active**: Spec is reviewed, accurate, and being used as a reference
-- **Needs Update**: A significant change (new feature, architectural shift, removed dependency) has made part of the spec stale — update before relying on it
+- **Stale**: A significant change (new feature, architectural shift, removed dependency) has made part of the spec out of date — update before relying on it
 
 ## Last Verified Date
 

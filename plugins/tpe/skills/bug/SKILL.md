@@ -169,15 +169,20 @@ entries use status `Waiting Implementation`:
 
 ```markdown
 ### Bugs
-| Spec | Path | Status | Description |
-|------|------|--------|-------------|
-| {title} | `docs/specs/bugs/{slug}/spec.md` | Waiting Implementation | {one-line description} |
+| Spec | Path | Status | Updated | Description |
+|------|------|--------|---------|-------------|
+| {title} | `docs/specs/bugs/{slug}/spec.md` | Waiting Implementation | {YYYY-MM-DD} | {one-line description} |
 ```
 
-Status values: `Waiting Implementation` | `Implemented` | `Removed`.
-`/tpe:execute` flips to `Implemented` when verification passes. If
-the bug is abandoned (e.g., turns out to be expected behavior), set
-status to `Removed` rather than deleting the row.
+Status values: `Waiting Implementation` | `Implemented` |
+`Superseded` | `Deprecated` | `Needs Revision`. The `Updated` column
+tracks the lifecycle — set it to today's date on every event:
+created (new row), updated (any edit or status change, e.g. to
+`Needs Revision`), or deleted (set status to `Superseded`/`Deprecated`
+and keep the row). `/tpe:execute` flips to `Implemented` when
+verification passes. If the bug is abandoned (e.g., turns out to be
+expected behavior), set status to `Deprecated` rather than deleting
+the row.
 
 ---
 

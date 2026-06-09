@@ -14,7 +14,7 @@ splitting or content belongs at root.
 # [Domain Name] — Domain Spec
 
 **Last verified**: [YYYY-MM-DD]
-**Status**: [Draft | Active | Needs Update]
+**Status**: [Draft | Active | Stale]
 **Root directory**: [path/to/domain/]
 
 > Domain-specific context only. For project-wide info, see the root spec.md.

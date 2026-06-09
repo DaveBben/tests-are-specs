@@ -117,7 +117,7 @@ at root. If it's domain-specific, it goes in the domain spec — not both.
 
 ### Status Field
 
-The header includes a Status field (`Draft | Active | Needs Update`). See
+The header includes a Status field (`Draft | Active | Stale`). See
 `spec-section-guidance.md` for definitions of each value.
 
 ---

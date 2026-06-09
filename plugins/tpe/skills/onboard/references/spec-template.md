@@ -29,7 +29,7 @@ boundaries) moves to `docs/specs/subsystems/{domain-slug}/spec.md`. See `domain-
 
 **Last updated**: [YYYY-MM-DD]
 **Last verified**: [YYYY-MM-DD]
-**Status**: [Draft | Active | Needs Update] <!-- See spec-section-guidance.md for status definitions -->
+**Status**: [Draft | Active | Stale] <!-- See spec-section-guidance.md for status definitions -->
 
 > This spec represents current state, not aspirational state. Update it whenever
 > implementation changes. The "Current State" section is the most important — keep it accurate.
@@ -217,14 +217,23 @@ Cross-cutting gotchas only; domain-specific gotchas go in domain specs. -->
 | [e.g., Billing] | `docs/specs/subsystems/billing/spec.md` | [e.g., "payment intents, refunds, Stripe integration"] |
 
 ### Features
-| Spec | Path | Status | Description |
-|------|------|--------|-------------|
+| Spec | Path | Status | Updated | Description |
+|------|------|--------|---------|-------------|
 
-Status values: `Waiting Implementation` | `Implemented` | `Removed`.
-`/tpe:spec` writes new entries as `Waiting Implementation`;
-`/tpe:execute` flips to `Implemented` when verification passes;
-abandoned or deleted features are marked `Removed` (row kept for
-audit trail).
+Status values: `Waiting Implementation` | `Implemented` |
+`Superseded` | `Deprecated` | `Needs Revision`.
+
+The `Updated` column tracks the spec lifecycle — it always holds the
+`YYYY-MM-DD` date of the most recent lifecycle event:
+- **Created**: `/tpe:spec` adds the row as `Waiting Implementation`,
+  `Updated` = creation date.
+- **Updated**: any edit refreshes `Updated`. `/tpe:execute` flips
+  status to `Implemented` when verification passes; a spec needing
+  changes before implementation is set to `Needs Revision`.
+- **Deleted**: never remove the row — set status to `Superseded`
+  (replaced by a newer spec) or `Deprecated` (abandoned or feature
+  removed) and refresh `Updated`. Keeping the row preserves the audit
+  trail.
 
 Subsystem specs contain: domain-specific current state, conventions,
 interface contracts, external deps, testing gaps, boundaries, known

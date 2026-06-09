@@ -40,6 +40,17 @@ Cap at 8-10 files. Enough to understand, not enough to burn context.
 code. Frame as "here's what worries me" not "have you considered
 X?" If the approach looks solid, say so, don't manufacture concerns.
 
+**Stay inside the commandments.** The approaches, alternatives, and
+constraints you propose must respect the engineering commandments
+`/tpe:execute` enforces — don't steer the design toward buffering
+unbounded data, swallowing base exceptions, regex over structured
+formats (HTML/XML/JSON), blocking an async loop with sync I/O, mutating
+global runtime state, or hand-rolling what a project standard already
+does. If the *user's* stated approach requires one of these, raise it
+as a concern rather than encoding it into the spec. A spec may record a
+deliberate exception — but only an explicit, reasoned one (e.g. "must
+buffer the whole payload to checksum it"), never an implied default.
+
 **This is one conversation, not a pipeline.** Don't force both
 phases if the user only needs one.
 
@@ -63,11 +74,16 @@ write spec files or update the Spec Index on main.
 Read `$ARGUMENTS`. Read `CLAUDE.md` and `spec.md` if they exist.
 
 **Check for existing specs.** If `docs/specs/spec.md` exists, read
-the Features table in the Spec Index. If an existing spec overlaps
-with this change, offer to update it or start fresh. When updating,
-read the existing spec, focus the conversation on what's changing,
-and update the existing file in Phase 2 (preserving unchanged
-sections, updating the "Last updated" date).
+the Features table in the Spec Index. If the requested change
+**closely matches an existing spec**, stop and ask the user whether
+they want to **modify that spec** or **create a new one** — don't
+decide for them.
+
+- **Modify**: read the existing spec and use its current content as
+  the starting point for the new version. Focus the conversation on
+  what's changing, and update the existing file in Phase 2
+  (preserving unchanged sections, updating the "Last updated" date).
+- **Create new**: proceed with a fresh spec as normal.
 
 Then read the source files relevant to this change — follow the
 path the user described.
@@ -110,12 +126,20 @@ consequences):
 > "This makes [X] easier, but [Y] gets harder later. Okay with
 > that tradeoff?"
 
-**Operational readiness** (when the user hasn't mentioned
-monitoring/error handling):
+**Operational readiness** (when the change touches I/O, external
+services, concurrency, or unbounded data):
 
-> "If this runs for a year, what do you wish you'd built in?
-> Agents won't add monitoring or error handling unless we specify
-> it."
+> "If this runs for a year against real conditions, what do you wish
+> you'd built in? Implementing agents default to the happy path —
+> they won't stream an unbounded input, time out a hanging call,
+> scope a thread pool, or fail loudly on bad data unless the spec
+> names the seam. Which inputs here are unbounded, which calls can
+> hang, and what should happen when they do?"
+
+The point isn't to lecture the agent on resilience — `/tpe:execute`
+already enforces those defaults. It's to pin the *specific* seams in
+*this* change so the agent applies the right primitive at the right
+`file:line`. Whatever you settle on lands in Constraints.
 
 **Scope** (when the change is growing):
 
@@ -140,13 +164,26 @@ For each area the conversation identified:
    change — callers, type definitions, related tests. Target 6-10
    files with specific symbols. Follow existing codebase patterns.
 
-3. **Tests**: find existing tests that must keep passing. Identify
-   new tests needed from the edge cases discussed in Phase 1.
+3. **Patterns to follow**: for anything new this change introduces —
+   validation, parsing, I/O, error handling, a utility, a test
+   fixture — name the library or pattern the codebase already uses
+   for that job (`file:line` of a live example), so the implementing
+   agent emulates it instead of inventing a parallel one. If there's
+   genuinely no precedent, say so. This belongs in the spec because
+   you just read the code; the implementing agent often won't look,
+   and a diff-scoped reviewer can't reliably catch the drift after.
 
-4. **Verification command**: the exact command to run, plus
-   specific assertions for new behavior.
+4. **Tests**: find existing tests that must keep passing. Identify
+   new tests needed from the edge cases discussed in Phase 1 — flag
+   any that need authentic/minimized fixtures (a real small file, an
+   in-memory DB) rather than mocked returns.
 
-5. **Optional domain sections**: judge whether the change has
+5. **Verification command**: the exact command to run, plus
+   specific assertions for new behavior, including at least one
+   error-path assertion where the change handles I/O or untrusted
+   input.
+
+6. **Optional domain sections**: judge whether the change has
    structured artifacts that aid review — new tool/schema
    definitions, state tables for in-flight dependencies, decision
    matrices, multi-phase migration plans. If present, add a custom
@@ -166,9 +203,11 @@ Create the directory if it doesn't exist.
 
 Then launch the `spec-reviewer` agent using the Agent tool with
 `subagent_type: "spec-reviewer"`. Pass the spec path. The reviewer
-checks for the seven evidence-backed failure modes: verbosity,
+checks eight failure modes: the seven evidence-backed ones (verbosity,
 contradictions, stale references, vague constraints, weak
-verification, untestable NFRs, and scope creep.
+verification, untestable NFRs, scope creep) plus commandment
+violations — a spec that prescribes an approach `/tpe:execute`'s
+engineering mandates forbid, without a stated reasoned exception.
 
 **If any check fails:** fix the spec before presenting it. Apply
 each fix the reviewer recommends. Don't ask the user to fix
@@ -200,18 +239,26 @@ update the entry in the Features table of `docs/specs/spec.md`. New
 specs use status `Waiting Implementation`:
 
 ```markdown
-| {Spec title} | `docs/specs/features/{slug}/spec.md` | Waiting Implementation | {one-line description} |
+| {Spec title} | `docs/specs/features/{slug}/spec.md` | Waiting Implementation | {YYYY-MM-DD} | {one-line description} |
 ```
 
 The status values are:
 - **Waiting Implementation** — spec written, not yet implemented
 - **Implemented** — `/tpe:execute` finished and verification passed
-- **Removed** — spec was abandoned or its feature was deleted
+- **Superseded** — replaced by a newer spec that covers this change
+- **Deprecated** — spec abandoned or its feature was removed
+- **Needs Revision** — spec needs changes before it can be implemented
 
-If updating an existing spec, update the description if the scope
-changed. If the user decided to abandon the spec, set its status to
-`Removed` rather than deleting the row — keeping the row preserves
-the audit trail so the decision isn't relitigated.
+The **Updated** column tracks the spec lifecycle — set it to today's
+date (`YYYY-MM-DD`) on every lifecycle event:
+- **Creating**: new row, status `Waiting Implementation`, Updated =
+  today.
+- **Updating**: refresh Updated whenever you edit the spec or change
+  its status (e.g. to `Needs Revision`). Update the description too if
+  the scope changed.
+- **Deleting**: never delete the row — set status to `Superseded` or
+  `Deprecated` and refresh Updated. Keeping the row preserves the
+  audit trail so the decision isn't relitigated.
 
 Tell the user:
 
@@ -267,7 +314,11 @@ Prevents the agent from relitigating settled decisions.}
 {Bulleted: "condition: expected behavior". Use a markdown table
 when the same case has parallel behaviors across multiple
 domains/callsites: `| Case | Domain A | Domain B |`. Include cases
-from both Phase 1 and the investigation.}
+from both Phase 1 and the investigation. Probe the categories
+happy-path specs leak: dependency failures (timeout, partial or
+malformed response), malformed/oversized input, and empty/boundary
+values — each as "condition: expected behavior" so it binds both the
+code and a test.}
 
 ---
 
@@ -290,7 +341,13 @@ approaches.}
 ## Constraints
 {Bulleted. Specific numbers, not vague qualifiers. Each testable.
 Deliberately overlaps Do NOT and Files that matter — redundancy is
-a feature in the implementation contract, not noise.}
+a feature in the implementation contract, not noise. Where the change
+touches unbounded data, calls that can hang, concurrency, or untrusted
+input, pin the decision as a named seam — "stream the download in
+`fetch.py`, never buffer the whole body"; "5s timeout on the X call,
+raise on timeout"; "reuse `FooValidator`, don't hand-roll validation"
+— never a generic "be robust" (the reviewer will flag that as a vague
+constraint).}
 
 ## Do NOT
 {Bulleted. Explicit scope boundaries. Name specific files,

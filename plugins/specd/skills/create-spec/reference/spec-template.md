@@ -1,7 +1,7 @@
 # Spec Template
 
 Read this when producing the spec in Phase 2. The implementing agent
-(`/tpe:execute`) consumes the result, so fill every section with the
+(`/specd:execute-spec`) consumes the result, so fill every section with the
 precision described in the placeholders.
 
 The spec serves two audiences with one document. Above the

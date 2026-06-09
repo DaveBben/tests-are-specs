@@ -10,11 +10,11 @@ description: >
   surfaces hidden decisions and asymmetric failure modes, sanity-checks with
   arithmetic and the user's actual files, and keeps the engineer as the
   decision-maker. Converges turn by turn and ends with a Design Brief whose
-  spec-seed paragraph pastes directly into /tpe:spec. Use when the user wants
+  spec-seed paragraph pastes directly into /specd:create-spec. Use when the user wants
   to "think through", "discuss", "design", or "architect" something, weigh
   approaches, or asks "what's the best way to build X" — BEFORE the change is
-  concrete enough for /tpe:spec. If the user already knows exactly what to
-  build in a known codebase, point them at /tpe:spec instead.
+  concrete enough for /specd:create-spec. If the user already knows exactly what to
+  build in a known codebase, point them at /specd:create-spec instead.
 ---
 
 # Ideate — Pair-Design Session
@@ -214,7 +214,7 @@ ascii diagram if the topology matters}
 **Open questions:**
 - {what's unresolved and what would resolve it}
 
-**Spec seed — paste into /tpe:spec:**
+**Spec seed — paste into /specd:create-spec:**
 > {ONE dense paragraph: what to build, the settled approach and key
 > decisions with their reasons, the alternatives already rejected (so spec
 > doesn't relitigate them), known risks, and the open questions spec should
@@ -222,7 +222,7 @@ ascii diagram if the topology matters}
 > human reader.}
 ```
 
-The spec seed is the contractual handoff: `/tpe:spec` takes it as
+The spec seed is the contractual handoff: `/specd:create-spec` takes it as
 `$ARGUMENTS`, and its Phase 1 ("challenge") should start from these settled
 decisions instead of rediscovering them. Compress accordingly — every
 settled decision stated as settled *with its reason*, every rejected

@@ -225,9 +225,9 @@ Status values: `Waiting Implementation` | `Implemented` |
 
 The `Updated` column tracks the spec lifecycle — it always holds the
 `YYYY-MM-DD` date of the most recent lifecycle event:
-- **Created**: `/tpe:spec` adds the row as `Waiting Implementation`,
+- **Created**: `/specd:create-spec` adds the row as `Waiting Implementation`,
   `Updated` = creation date.
-- **Updated**: any edit refreshes `Updated`. `/tpe:execute` flips
+- **Updated**: any edit refreshes `Updated`. `/specd:execute-spec` flips
   status to `Implemented` when verification passes; a spec needing
   changes before implementation is set to `Needs Revision`.
 - **Deleted**: never remove the row — set status to `Superseded`
@@ -238,7 +238,7 @@ The `Updated` column tracks the spec lifecycle — it always holds the
 Subsystem specs contain: domain-specific current state, conventions,
 interface contracts, external deps, testing gaps, boundaries, known
 issues, and gotchas. Loaded via `.claude/rules/` when working in
-that directory. Feature specs are created by `/tpe:spec` and document
+that directory. Feature specs are created by `/specd:create-spec` and document
 individual code changes.
 
 ---

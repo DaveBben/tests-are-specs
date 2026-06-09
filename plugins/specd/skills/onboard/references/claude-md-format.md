@@ -80,7 +80,7 @@ layout. This section helps Claude locate code and understand the toolchain.
 - Testing: unittest, coverage
 
 ### Directory Layout
-
+**Good:**
 - `infra/` — CDK infrastructure definitions
 - `src/functions/` — Lambda function handlers
 - `src/layers/python/` — Shared Lambda layers

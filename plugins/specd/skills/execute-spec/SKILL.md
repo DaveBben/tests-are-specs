@@ -1,5 +1,5 @@
 ---
-name: execute
+name: execute-spec
 disable-model-invocation: true
 model: opus
 effort: high
@@ -10,7 +10,7 @@ allowed-tools:
   - Grep
   - Bash
 description: >
-  Implements a spec produced by /tpe:spec. Reads the spec, creates a
+  Implements a spec produced by /specd:create-spec. Reads the spec, creates a
   feature branch, implements the changes, self-verifies, then runs
   parallel staff and QA reviews. Does not push or create PRs.
 ---
@@ -146,21 +146,21 @@ Before finalizing, launch four review agents **in parallel** — a
 single message with four Agent tool calls. Do not self-review —
 models fail to correct their own errors.
 
-1. **`staff-reviewer`** (`subagent_type: "staff-reviewer"`) —
+1. **`specd-staff-reviewer`** (`subagent_type: "specd-staff-reviewer"`) —
    multi-pass review of the code: security, correctness,
    performance, reliability.
-2. **`code-quality-reviewer`** (`subagent_type:
-   "code-quality-reviewer"`) — architectural hallucinations in
+2. **`specd-code-quality-reviewer`** (`subagent_type:
+   "specd-code-quality-reviewer"`) — architectural hallucinations in
    AI-generated code: where it will hang, OOM, deadlock, corrupt
    state, fail silently, or pull a fabricated/malicious dependency
    under real OS/network/concurrency conditions, plus craftsmanship
    gaps (schema-validation bypass, broad exception swallowing,
    double-encoding, protocol ignorance, over-engineering, and stub
    placeholders left in real code).
-3. **`qa-reviewer`** (`subagent_type: "qa-reviewer"`) — test
+3. **`specd-qa-reviewer`** (`subagent_type: "specd-qa-reviewer"`) — test
    quality, test coverage, and edge case handling.
-4. **`compliance-reviewer`** (`subagent_type:
-   "compliance-reviewer"`) — did we build what the spec said we'd
+4. **`specd-compliance-reviewer`** (`subagent_type:
+   "specd-compliance-reviewer"`) — did we build what the spec said we'd
    build?
 
 Pass all four the same inputs:

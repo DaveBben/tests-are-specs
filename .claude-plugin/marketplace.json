@@ -1,15 +1,15 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "tpe-marketplace",
+  "name": "specd-marketplace",
   "owner": {
     "name": "Dave"
   },
-  "description": "Think-Plan-Execute — the only skills you need to actually get work done",
+  "description": "Spec-driven development — the only skills you need to actually get work done",
   "plugins": [
     {
-      "name": "tpe",
-      "source": "./plugins/tpe",
-      "description": "Research-grounded pipeline: /tpe:think, /tpe:plan, /tpe:execute, /tpe:bug, /tpe:review, /tpe:onboard",
+      "name": "specd",
+      "source": "./plugins/specd",
+      "description": "Research-grounded spec-driven pipeline: /specd:onboard, /specd:ideate, /specd:create-spec, /specd:execute-spec, /specd:bug",
       "version": "1.0.0",
       "author": {
         "name": "Dave"

@@ -1,5 +1,5 @@
 ---
-name: spec
+name: create-spec
 argument-hint: "[what you want to build or change]"
 disable-model-invocation: true
 model: opus
@@ -45,7 +45,7 @@ solid, say so, don't manufacture concerns.
 
 **Stay inside the commandments.** The approaches, alternatives, and
 constraints you propose must respect the engineering commandments
-`/tpe:execute` enforces — don't steer the design toward buffering
+`/specd:execute-spec` enforces — don't steer the design toward buffering
 unbounded data, swallowing base exceptions, regex over structured
 formats (HTML/XML/JSON), blocking an async loop with sync I/O, mutating
 global runtime state, or hand-rolling what a project standard already
@@ -159,7 +159,7 @@ services, concurrency, or unbounded data):
 > names the seam. Which inputs here are unbounded, which calls can
 > hang, and what should happen when they do?"
 
-The point isn't to lecture the agent on resilience — `/tpe:execute`
+The point isn't to lecture the agent on resilience — `/specd:execute-spec`
 already enforces those defaults. It's to pin the *specific* seams in
 *this* change so the agent applies the right primitive at the right
 `file:line`. Whatever you settle on lands in Constraints.
@@ -247,12 +247,12 @@ Write the draft spec to `docs/specs/features/{slug}/spec.md`,
 following the structure in `reference/spec-template.md` (read it now if
 you haven't this session). Create the directory if it doesn't exist.
 
-Then launch the `spec-reviewer` agent using the Agent tool with
-`subagent_type: "spec-reviewer"`. Pass the spec path. The reviewer
+Then launch the `specd-spec-reviewer` agent using the Agent tool with
+`subagent_type: "specd-spec-reviewer"`. Pass the spec path. The reviewer
 checks eight failure modes: the seven evidence-backed ones (verbosity,
 contradictions, stale references, vague constraints, weak
 verification, untestable NFRs, scope creep) plus commandment
-violations — a spec that prescribes an approach `/tpe:execute`'s
+violations — a spec that prescribes an approach `/specd:execute-spec`'s
 engineering mandates forbid, without a stated reasoned exception.
 
 **If any check fails:** fix the spec before presenting it. Apply
@@ -294,7 +294,7 @@ judge how substantial the round of edits was:
   re-present for approval.
 - **Substantial** (multiple sections changed, scope shift, new
   edge cases or constraints, approach or alternatives revised):
-  re-run the `spec-reviewer` agent on the updated spec, fix any new
+  re-run the `specd-spec-reviewer` agent on the updated spec, fix any new
   findings, then re-present for approval.
 
 Loop until the user explicitly approves. Do not assume approval
@@ -312,7 +312,7 @@ Tell the user:
 > Spec Index updated in `docs/specs/spec.md`.
 >
 > Clear your context and run:
-> `/tpe:execute docs/specs/features/{slug}/spec.md`"
+> `/specd:execute-spec docs/specs/features/{slug}/spec.md`"
 
 ---
 

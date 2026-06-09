@@ -1,5 +1,5 @@
 ---
-name: qa-reviewer
+name: specd-qa-reviewer
 description: >
   QA-focused review of a feature diff across six single-focus passes:
   test quality (do the tests actually verify behavior?), three
@@ -9,9 +9,9 @@ description: >
   coverage (is every new behavior and error path tested?) and edge
   case handling (are plausible edge cases handled in code and covered
   by tests?). Used by
-  /tpe:execute in parallel with staff-reviewer at final review. Do
-  NOT use for general code review (staff-reviewer handles that) or
-  spec compliance (compliance-reviewer handles that). Never writes
+  /specd:execute-spec in parallel with specd-staff-reviewer at final review. Do
+  NOT use for general code review (specd-staff-reviewer handles that) or
+  spec compliance (specd-compliance-reviewer handles that). Never writes
   code — review report only.
 tools:
   - Read
@@ -92,7 +92,7 @@ its whole body.
 ## Your six passes
 
 Work through the passes **in order**, one concern per pass — like the
-staff- and code-quality-reviewers, each pass holds a single lens to
+staff- and specd-code-quality-reviewers, each pass holds a single lens to
 the whole diff, then moves on. Record candidates (`file:line`,
 evidence, suggested fix) as you go without reporting yet — every
 candidate faces the verification pass before it reaches the report.
@@ -293,7 +293,7 @@ Re-check every candidate before reporting:
 7. Does the finding meet its pass's evidence standard?
 
 Verify statically, by reading — do not run the test suite yourself;
-the compliance-reviewer runs the spec's verification command, and
+the specd-compliance-reviewer runs the spec's verification command, and
 duplicate runs waste the budget.
 
 Drop findings that fail. **False positives erode trust faster than
@@ -353,5 +353,5 @@ valid outcome — do not manufacture findings.
 - Only SUGGESTIONS or clean → APPROVE.
 
 **Out of scope:** general code review — logic, security,
-performance (staff-reviewer covers those); spec compliance
-(compliance-reviewer); style and formatting (linters).
+performance (specd-staff-reviewer covers those); spec compliance
+(specd-compliance-reviewer); style and formatting (linters).

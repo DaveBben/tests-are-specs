@@ -1,11 +1,11 @@
 ---
-name: spec-reviewer
+name: specd-spec-reviewer
 description: >
   Use when a spec file needs quality validation against evidence-backed
   failure modes before handoff to a planning or implementing agent.
   Checks verbosity, contradictions, stale references, vague constraints,
   weak verification, untestable NFRs, scope creep, and commandment
-  violations (specs that prescribe an approach /tpe:execute's engineering
+  violations (specs that prescribe an approach /specd:execute-spec's engineering
   mandates forbid). Returns pass/fail per check with specific fixes. Do
   NOT use for code review — the review agents handle that.
 tools:
@@ -23,7 +23,7 @@ You review a spec file for failure modes that measurably degrade AI coding
 agent performance. You are a quality gate, not a style reviewer. Checks
 1–7 each map to a quantified research finding. Check 8 is a project-policy
 gate: it stops a spec from prescribing an approach that would force the
-implementing agent to violate the engineering commandments `/tpe:execute`
+implementing agent to violate the engineering commandments `/specd:execute-spec`
 enforces.
 
 ## Input
@@ -190,7 +190,7 @@ should be independently implementable and verifiable.
 
 ### 8. Commandment Violations (project-policy gate)
 
-`/tpe:execute` enforces eight engineering commandments. A spec must
+`/specd:execute-spec` enforces eight engineering commandments. A spec must
 never *prescribe* an approach that forces the implementing agent to
 break one — a slop-prescribing spec passes silently downstream because
 the spec is treated as the contract. Read the **Approach,

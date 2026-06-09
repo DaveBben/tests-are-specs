@@ -1,12 +1,12 @@
 ---
-name: compliance-reviewer
+name: specd-compliance-reviewer
 description: >
   End-of-feature spec compliance review. Reads the whole feature
   diff against the spec's binding contract (Approach, Constraints,
   Do NOT, Alternatives rejected, Edge cases coverage, Files scope,
-  Verification command). Used by /tpe:execute at final review, in
-  parallel with staff-reviewer and qa-reviewer. Does NOT review for
-  logic errors — the staff-reviewer covers that. Returns COMPLIANT
+  Verification command). Used by /specd:execute-spec at final review, in
+  parallel with specd-staff-reviewer and specd-qa-reviewer. Does NOT review for
+  logic errors — the specd-staff-reviewer covers that. Returns COMPLIANT
   or structured deviations.
 tools:
   - Read
@@ -22,7 +22,7 @@ effort: high
 
 You verify that an implementation matches its spec. You read the
 whole feature diff against the spec's binding contract. You are
-not a bug finder — the staff-reviewer already covered logic
+not a bug finder — the specd-staff-reviewer already covered logic
 errors. Your job is: did we build what the spec said we'd build?
 
 ## Input
@@ -140,7 +140,7 @@ Drop findings that fail this check.
 
 Out of scope for you:
 - Logic errors, security, performance, maintainability (the
-  staff-reviewer agent covers those)
-- Test quality and edge-case testing (the qa-reviewer agent
+  specd-staff-reviewer agent covers those)
+- Test quality and edge-case testing (the specd-qa-reviewer agent
   covers those)
 - Style, formatting, naming (linters)

@@ -611,9 +611,9 @@ The optimal workflow for agentic coding is not a framework. It's:
 - Breaking a 3-file change into three 1-file changes is overhead, not improvement
 - Breaking a 15-file feature into five 3-file tasks with fresh contexts is the architecture that wins
 
-**Where the spec skill fits:**
+**Where the create-spec skill fits:**
 - For changes where you already know the files, constraints, and verification → write the prompt directly using the template
-- For changes where you know *what* but need codebase investigation to find *where* → the spec skill finds the files, symbols, and current behavior
+- For changes where you know *what* but need codebase investigation to find *where* → the create-spec skill finds the files, symbols, and current behavior
 
 **The human's irreplaceable role:**
 The design work — understanding tradeoffs, choosing the right approach, identifying edge cases, decomposing into the right pieces — is the part that has no benchmarks and can't be automated. Every benchmark measures the *implementation* step, not the *thinking* step. The value of the human is in producing the specification that makes implementation tractable.
@@ -1007,28 +1007,28 @@ Based on all measured findings:
 Based on all research findings, the TPE pipeline was simplified from 7 skills + 9 agents to 5 skills + 1 agent:
 
 ```
-/tpe:onboard → docs/specs/spec.md (project spec + Spec Index)
+/specd:onboard → docs/specs/spec.md (project spec + Spec Index)
                 docs/specs/subsystems/{slug}/spec.md (if multi-domain)
 
-/tpe:spec    → docs/specs/features/{slug}/spec.md (feature/change spec)
-                Checked by spec-reviewer agent before presenting
+/specd:create-spec    → docs/specs/features/{slug}/spec.md (feature/change spec)
+                Checked by specd-spec-reviewer agent before presenting
 
-/tpe:execute → Reads spec, implements, reviews each commit via
+/specd:execute-spec → Reads spec, implements, reviews each commit via
                 subagent against the spec, verifies, commits
 
-/tpe:review  → Standalone spec-grounded review for ad-hoc use
+/specd:review  → Standalone spec-grounded review for ad-hoc use
 
-/tpe:bug     → Bug investigation (retained from original pipeline)
+/specd:bug     → Bug investigation (retained from original pipeline)
 ```
 
 ### What was removed and why
 
 | Removed | Research justification |
 |---------|----------------------|
-| `/tpe:think` (242 lines) | Merged into `/tpe:spec` — artificial separation dissolved when both need to read code |
-| `/tpe:plan` (266 lines) | Replaced by spec + plan mode — no benchmark shows multi-phase outperforms a well-crafted prompt |
-| `plan-verifier` agent | Replaced by `spec-reviewer` — same function, grounded in the new spec format |
-| `code-implementor` agent | Execute skill implements directly or uses generic subagents — no need for a dedicated agent |
+| `/specd:think` (242 lines) | Merged into `/specd:create-spec` — artificial separation dissolved when both need to read code |
+| `/specd:plan` (266 lines) | Replaced by spec + plan mode — no benchmark shows multi-phase outperforms a well-crafted prompt |
+| `plan-verifier` agent | Replaced by `specd-spec-reviewer` — same function, grounded in the new spec format |
+| `code-implementor` agent | execute-spec skill implements directly or uses generic subagents — no need for a dedicated agent |
 | `task-handoff-checker` agent | No task decomposition = no handoffs |
 | `refactor-opportunities` agent | Augment Code found separate "fix regressions" agents did not help |
 | 4 specialized review agents | 1 general reviewer — Microsoft Azure SRE, ICML 2025 correlated errors, 4-220x token waste |
@@ -1039,10 +1039,10 @@ Based on all research findings, the TPE pipeline was simplified from 7 skills + 
 docs/specs/
   spec.md                     ← Project-level (onboard), contains Spec Index
   subsystems/{slug}/spec.md   ← Subsystem specs (onboard, if multi-domain)
-  features/{slug}/spec.md     ← Feature/change specs (spec skill)
+  features/{slug}/spec.md     ← Feature/change specs (create-spec skill)
 ```
 
-The Spec Index in the root spec.md is the discovery mechanism. The spec skill reads it to find related specs and updates it after creating/modifying specs.
+The Spec Index in the root spec.md is the discovery mechanism. The create-spec skill reads it to find related specs and updates it after creating/modifying specs.
 
 ### Design principles (evidence-mapped)
 

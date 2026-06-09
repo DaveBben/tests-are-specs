@@ -40,7 +40,7 @@ matches reality. Update it whenever you review the spec for accuracy —
 even if no content changed.
 
 **Staleness threshold**: If `Last verified` is more than 30 days old,
-tools that consume the spec (e.g., `/tpe:execute` pre-flight) should
+tools that consume the spec (e.g., `/specd:execute-spec` pre-flight) should
 warn that the spec may be stale. The Codified Context research found
 that specification staleness is a silent failure mode — agents trust
 documentation absolutely, so outdated specs cause them to generate

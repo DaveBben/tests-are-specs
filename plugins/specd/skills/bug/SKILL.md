@@ -5,9 +5,9 @@ argument-hint: "[bug symptom]"
 description: >
   Bug investigation and spec producer. You describe a symptom, Claude
   reads the code, traces the root cause, and produces a bug spec ready
-  for /tpe:execute. Use when something is broken and you need to
+  for /specd:execute-spec. Use when something is broken and you need to
   understand why before fixing it. Do NOT use for features (use
-  /tpe:spec). Do NOT use for trivial one-line fixes.
+  /specd:create-spec). Do NOT use for trivial one-line fixes.
 ---
 
 # Bug — Symptom to Spec
@@ -16,7 +16,7 @@ description: >
 > step is understanding the root cause — not jumping to a fix.
 
 ```
-/tpe:bug {symptom}
+/specd:bug {symptom}
   → Understand the symptom
   → Read the code, trace the root cause
   → Confirm findings with user
@@ -132,7 +132,7 @@ Wait for confirmation.
 **Complexity gate:** If investigation revealed >4 files affected or
 the fix requires changing a shared interface, recommend escalating:
 
-> "This is larger than a typical bug fix. Consider using /tpe:spec
+> "This is larger than a typical bug fix. Consider using /specd:create-spec
 > instead — it'll help think through the approach more carefully.
 > I can pass the findings. Escalate or continue?"
 
@@ -152,8 +152,8 @@ branch. If on `main`/`master`, create and switch to
 this is where they want the spec committed. Never write spec files
 on main.
 
-Then launch the `spec-reviewer` agent using the Agent tool with
-`subagent_type: "spec-reviewer"`. Pass the spec path. Fix any
+Then launch the `specd-spec-reviewer` agent using the Agent tool with
+`subagent_type: "specd-spec-reviewer"`. Pass the spec path. Fix any
 failures before presenting.
 
 After the reviewer passes, present the spec and ask:
@@ -161,7 +161,7 @@ After the reviewer passes, present the spec and ask:
 > "Bug spec saved to `docs/specs/bugs/{slug}/spec.md`.
 >
 > Clear your context and run:
-> `/tpe:execute docs/specs/bugs/{slug}/spec.md`"
+> `/specd:execute-spec docs/specs/bugs/{slug}/spec.md`"
 
 Update the Spec Index in `docs/specs/spec.md` — add or update the
 entry in a Bugs table (create the table if it doesn't exist). New
@@ -179,7 +179,7 @@ Status values: `Waiting Implementation` | `Implemented` |
 tracks the lifecycle — set it to today's date on every event:
 created (new row), updated (any edit or status change, e.g. to
 `Needs Revision`), or deleted (set status to `Superseded`/`Deprecated`
-and keep the row). `/tpe:execute` flips to `Implemented` when
+and keep the row). `/specd:execute-spec` flips to `Implemented` when
 verification passes. If the bug is abandoned (e.g., turns out to be
 expected behavior), set status to `Deprecated` rather than deleting
 the row.

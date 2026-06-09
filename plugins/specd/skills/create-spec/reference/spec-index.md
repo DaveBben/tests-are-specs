@@ -15,7 +15,7 @@ New specs use status `Waiting Implementation`:
 ## Status values
 
 - **Waiting Implementation** — spec written, not yet implemented
-- **Implemented** — `/tpe:execute` finished and verification passed
+- **Implemented** — `/specd:execute-spec` finished and verification passed
 - **Superseded** — replaced by a newer spec that covers this change
 - **Deprecated** — spec abandoned or its feature was removed
 - **Needs Revision** — spec needs changes before it can be implemented

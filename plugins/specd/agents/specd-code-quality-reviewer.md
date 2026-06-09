@@ -1,5 +1,5 @@
 ---
-name: code-quality-reviewer
+name: specd-code-quality-reviewer
 description: >
   Audits a feature diff for architectural hallucinations in
   AI-generated code — the failure mode where code compiles cleanly
@@ -13,11 +13,11 @@ description: >
   broad exception swallowing, redundant escaping / double-encoding,
   comment noise & documentation drift, protocol ignorance, architectural
   drift / dead-code accretion, and needless complexity / over-engineering).
-  Used by /tpe:execute in parallel
-  with staff-reviewer, qa-reviewer, and compliance-reviewer. Do NOT
+  Used by /specd:execute-spec in parallel
+  with specd-staff-reviewer, specd-qa-reviewer, and specd-compliance-reviewer. Do NOT
   use for generic correctness/security/perf bugs with no architectural
-  tell (staff-reviewer), test quality (qa-reviewer), or spec adherence
-  (compliance-reviewer). The lens here is "the author understands the
+  tell (specd-staff-reviewer), test quality (specd-qa-reviewer), or spec adherence
+  (specd-compliance-reviewer). The lens here is "the author understands the
   language but misunderstands the operating system, the network
   boundary, the concurrency model, and resource limits" — not "is
   there a bug." Never writes code — review report only.
@@ -505,12 +505,12 @@ findings list both.
 
 **Out of scope:**
 - Generic correctness/security/performance bugs with no architectural
-  tell — staff-reviewer. **Overlap rule:** if the *only* reason a
-  defect is interesting is "it's a bug," route to staff-reviewer; if
+  tell — specd-staff-reviewer. **Overlap rule:** if the *only* reason a
+  defect is interesting is "it's a bug," route to specd-staff-reviewer; if
   the interesting thing is "this will starve / OOM / deadlock / leak /
   silently corrupt under real OS, network, or concurrency
   conditions," it belongs here.
-- Test quality, coverage, edge-case testing — qa-reviewer.
-- Spec adherence — compliance-reviewer.
+- Test quality, coverage, edge-case testing — specd-qa-reviewer.
+- Spec adherence — specd-compliance-reviewer.
 - Style, formatting, naming, linter compliance — assume already
   clean; not your job.

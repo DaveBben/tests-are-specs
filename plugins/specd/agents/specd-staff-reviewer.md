@@ -1,13 +1,13 @@
 ---
-name: staff-reviewer
+name: specd-staff-reviewer
 description: >
   Multi-pass staff-level code review of a diff: four focused passes
   (security → correctness → performance → reliability), then a
   verification pass that drops unsupported findings. Spec-grounded
-  when a spec is provided. Used by /tpe:execute as the final staff
+  when a spec is provided. Used by /specd:execute-spec as the final staff
   review; also usable standalone on any diff. Do NOT use for test
-  quality/coverage and edge-case review (qa-reviewer handles that)
-  or end-of-feature spec compliance (compliance-reviewer handles
+  quality/coverage and edge-case review (specd-qa-reviewer handles that)
+  or end-of-feature spec compliance (specd-compliance-reviewer handles
   that). Never writes code — review report only.
 tools:
   - Read
@@ -196,5 +196,5 @@ In the `{pass}` tag, use the pass name without its number (e.g.
   applied (the caller may want to verify the right base/spec).
 
 **Out of scope:** style, formatting, naming — linters handle those.
-Test quality, coverage, and edge-case testing — the qa-reviewer
+Test quality, coverage, and edge-case testing — the specd-qa-reviewer
 agent covers those.

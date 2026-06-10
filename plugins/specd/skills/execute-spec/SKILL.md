@@ -72,26 +72,30 @@ sections. These are your boundaries.
   simplest thing that satisfies the spec.
 - One logical change per commit. If the spec involves multiple
   concerns, commit each separately.
-- **Determine how to split up the work.** You may spawn up to 10
-  implementation subagents in parallel (prefer Haiku agents for
-  simple file edits). Each subagent must apply the engineering
-  mandates (see below), plus the spec file path and a targeted
-  description of the change it needs to make. Merge their work and
-  verify the combined result.
+- **Default to parallelizing independent work.** When the spec's
+  concerns touch non-overlapping files, dispatch them as concurrent
+  implementation subagents (up to 10; prefer sonnet agents for simple
+  file edits) rather than editing sequentially. Only stay
+  single-threaded when the changes are genuinely interdependent. Each
+  subagent must apply the engineering mandates (see below), plus the
+  spec file path and a targeted description of the change it needs to
+  make. Merge their work and verify the combined result.
 
 ### Engineering mandates
 
-Invoke the `specd:engineering-mandates` skill so its full text loads
-into context. These mandates define how to write code well — concurrency,
-streaming, parsing, error handling, testing, consistency, deletion, and
-documentation. Internalize them before writing any code.
+You must invoke the `specd:engineering-mandates` skill so its full text loads
+into context. These ten mandates define how to write code well and where you have
+particular blindspots to — concurrency, streaming, parsing, error handling, testing, consistency, deletion,
+documentation, dependency integrity, and simplicity. Internalize them
+before writing any code.
 
-Every implementation subagent you dispatch **must also have the
-mandates in its context**. The reliable way is to dispatch a subagent
-whose definition preloads them via `skills: [engineering-mandates]`
-frontmatter; for an ad-hoc subagent, instruct it to invoke the
-`specd:engineering-mandates` skill before writing any code. Do not
-dispatch an implementation subagent without the mandates.
+Every implementation subagent you dispatch **must also load the
+mandates before it writes any code** — they run in a fresh context and
+do not inherit yours. These are ad-hoc subagents, so this is on you to
+enforce: make the **first instruction** in every subagent's prompt
+"Invoke the `specd:engineering-mandates` skill and internalize it
+before making any change." A subagent prompt that omits this line is
+incomplete — do not dispatch it.
 
 ### Doing the work
 

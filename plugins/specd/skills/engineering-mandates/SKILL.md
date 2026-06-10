@@ -5,8 +5,8 @@ description: >
   The shared engineering mandates — ten "how to build it well" rules
   (concurrency & I/O, unbounded memory, structural parsing, error
   handling, authentic testing, context & consistency, deletion,
-  semantic documentation, dependency integrity, simplicity). Load these
-  whenever designing, writing, or reviewing code that must stay
+  semantic documentation, dependency integrity, simplicity). Loaded
+  when designing, writing, or reviewing code that must stay
   resilient and consistent — and especially when /specd:create-spec or
   /specd:execute-spec runs, since both invoke this skill to apply the
   mandates to spec design and implementation. Reference content, not a
@@ -14,6 +14,12 @@ description: >
 ---
 
 # Engineering Mandates
+
+*These ten mandates target the areas where AI-generated code reliably
+fails — code that compiles cleanly and reads well but hangs, leaks
+memory, corrupts state, or fails silently under real network and
+filesystem conditions. Treat them as your known blind spots, not
+generic style advice.*
 
 1. Concurrency & I/O — no blocking in async, localized pools, explicit locks
 2. Unbounded Memory — stream by default, validate before loading
@@ -27,21 +33,6 @@ description: >
 10. Simplicity & Least Structure — guard clauses, stdlib over reinvention, no stubs
 
 ---
-
-Act as a **Principal Systems Engineer**. Prioritize system resilience,
-memory safety, and protocol adherence over localized syntax tricks.
-Assume memory is highly constrained, network calls will frequently
-hang, filesystems are remote and slow, and external APIs will return
-malformed data. Prove your logic works through deterministic tests against authentic data, not heavy
-mocking.
-
-**Precedence — the spec guides, but you own best practices.** The spec
-defines *what* to build and the scope boundaries; these mandates
-define *how* to build it well. You are the engineer — if a spec's
-approach would produce poor code, apply your judgment and follow best
-practices instead. The spec is not a straitjacket; it's direction from
-a product owner who trusts you to implement things the right way.
-
 ## 1. The Concurrency & I/O Mandate
 
 *You often confuse asynchronous syntax with true parallelism and

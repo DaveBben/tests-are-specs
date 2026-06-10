@@ -60,15 +60,7 @@ solid, say so, don't manufacture concerns.
 **Stay inside the mandates.** Invoke the `specd:engineering-mandates`
 skill so its full text loads into context — these are the same mandates
 `/specd:execute-spec` enforces during implementation, and the
-approaches, alternatives, and constraints you propose must respect them. Don't steer the design toward buffering
-unbounded data, swallowing base exceptions, regex over structured
-formats (HTML/XML/JSON), blocking an async loop with sync I/O, mutating
-global runtime state, or hand-rolling what a project standard already
-does — those are the common pitfalls; the skill is the full list. If
-the *user's* stated approach requires one of these, raise it as a
-concern rather than encoding it into the spec. A spec may record a
-deliberate exception — but only an explicit, reasoned one (e.g. "must
-buffer the whole payload to checksum it"), never an implied default.
+approaches, alternatives, and constraints you propose must respect them. 
 
 **This is one conversation, not a pipeline.** Don't force both
 phases if the user only needs one.
@@ -108,7 +100,8 @@ Then read the source files relevant to this change — follow the
 path the user described.
 
 Reflect back what you understand in 2-3 sentences. Then immediately
-raise your **top concern** — grounded in what you found in the code.
+raise your **top concerns** — grounded in what you found in the code. 
+Before continuing, allow the user to reply back their own response to your top concerns.
 
 Don't ask questions you can answer from the code. Start with
 substance.
@@ -183,8 +176,11 @@ For each area the conversation identified:
 1. **Current behavior**: understand how the affected part works today
    well enough to explain it in plain prose to someone new to the
    codebase. Find the precise locations too — but those anchor "Files
-   that matter"; in "Current behavior" cite a `file:line` only where it
-   genuinely saves a human a search.
+   that matter," not this section. Write "Current behavior" as prose a
+   human reads top to bottom, not a code-annotated walkthrough: default
+   to plain words and spend only a sparing handful of `file:line`
+   anchors across the whole section, reserved for spots a reader would
+   otherwise have to grep.
 
 2. **Files that matter**: grep for all symbols touched by this
    change — callers, type definitions, related tests. Target 6-10
@@ -195,9 +191,7 @@ For each area the conversation identified:
    fixture — name the library or pattern the codebase already uses
    for that job (`file:line` of a live example), so the implementing
    agent emulates it instead of inventing a parallel one. If there's
-   genuinely no precedent, say so. This belongs in the spec because
-   you just read the code; the implementing agent often won't look,
-   and a diff-scoped reviewer can't reliably catch the drift after.
+   genuinely no precedent, say so.
 
 4. **Tests**: find existing tests that must keep passing. Identify
    new tests needed from the edge cases discussed in Phase 1 — flag
@@ -209,10 +203,12 @@ For each area the conversation identified:
    handful of enumerated examples — and name the property, not just the
    function under test.
 
-5. **Verification command**: the exact command to run, plus
-   specific assertions for new behavior, including at least one
-   error-path assertion where the change handles I/O or untrusted
-   input.
+5. **Verification command**: the exact command to run, then a
+   plain-English bulleted checklist of what to test and the expected
+   output — Given/When/Then for user-facing behavior, plain "what we
+   test → expected result" bullets for everything else. Include at
+   least one error-path bullet where the change handles I/O or
+   untrusted input. Describe the behavior, not the assertion code.
 
 6. **Optional domain sections**: judge whether the change has
    structured artifacts that aid review — new tool/schema
@@ -307,9 +303,10 @@ Tell the user:
 The full template lives in `reference/spec-template.md` — read it when
 you reach "Write the draft spec" above. It serves two audiences with
 one document: above the "Implementation contract" divider is what a
-human reviewer needs to approve the approach (Why, Summary, Current
-behavior, Alternatives, Edge cases); below it is the binding contract
-for the implementing agent — Approach gives the direction, while
-Constraints, Do NOT, Files that matter, and Verification pin the
-specifics (deliberately redundant with each other).
+human reviewer needs to understand and approve the approach (Why,
+Summary, Current behavior, Alternatives, Edge cases, and the Approach
+itself — prose strategy, the hinge the reviewer signs off on); below it
+is the binding contract that pins that strategy to specifics —
+Constraints, Do NOT, Files that matter, and Verification (deliberately
+redundant with each other).
 

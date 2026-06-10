@@ -5,12 +5,13 @@ Read this when producing the spec in Phase 2. The implementing agent
 precision described in the placeholders.
 
 The spec serves two audiences with one document. Above the
-"Implementation contract" divider: motivation, summary, current
-state, alternatives, edge cases — what a human reviewer needs to
-approve the approach. Below: the binding contract for the
-implementing agent — Approach gives the direction; Constraints, Do
-NOT, Files, and Verification pin the specifics, deliberately redundant
-with each other.
+"Implementation contract" divider: motivation, summary, current state,
+alternatives, edge cases, and the Approach — everything a human
+reviewer needs to understand and approve *how* the change will be made.
+The Approach is the hinge: prose strategy the reviewer signs off on and
+the direction the implementer then executes. Below the divider: the
+binding contract that pins that strategy to specifics — Constraints, Do
+NOT, Files, and Verification, deliberately redundant with each other.
 
 ```
 {One-line summary of the change}
@@ -29,11 +30,27 @@ Summary together is the reviewer's TLDR.}
 ## Current behavior
 {How the affected part of the system works today, in plain prose,
 written for someone who has never seen this codebase. Explain the
-flow and the pieces this change touches — not the whole module. Cite a
-`symbol()` or `file:line` only where it genuinely saves a human a
-search (the one function they'll edit, a non-obvious branch); don't
-annotate prose that reads fine without it. Keep it short — a paragraph
-or two, not a tour.}
+flow and the pieces this change touches — not the whole module.
+
+Write it as prose a human reads top to bottom, NOT a code-annotated
+walkthrough. Default to naming things in words ("the persist step,"
+"the write lock," "the classified-record schema") rather than
+`symbol()`. Spend a small, deliberate budget of `file:line` anchors —
+a handful across the whole section, reserved for the one or two spots
+where a reader would otherwise have to grep (the exact function they'll
+edit, a non-obvious branch). If a sentence reads fine without the
+citation, drop it; the precise locations already live in "Files that
+matter." Keep it short — a paragraph or two, not a tour.
+
+Over-cited (avoid): "The worker calls `_persist` (`__main__.py:219`),
+which builds a `ClassifiedRecord` (`output.py:12`) and, under
+`_write_lock` via `asyncio.to_thread`, calls `append_record`
+(`output.py:54`) before appending to `seen.guids`."
+Readable (prefer): "When a worker gets a verdict it writes the record,
+then marks the article seen — in that order, so a crash can never drop
+an article. The write happens under a single lock and off the event
+loop. The persist step (`__main__.py:219`) is the function this change
+edits."}
 
 {Optional domain sections — add 0+ sections here when a structured
 artifact aids review and doesn't fit elsewhere. Examples:
@@ -58,25 +75,34 @@ malformed response), malformed/oversized input, and empty/boundary
 values — each as "condition: expected behavior" so it binds both the
 code and a test.}
 
----
-
-## Implementation contract
-
-> The sections below are written for the implementing agent. Approach
-> gives the direction in prose and leaves the mechanics to the
-> implementer; Constraints, Do NOT, and Files that matter are
-> bullet-dense, identifier-rich, and deliberately redundant with each
-> other.
-
 ## Approach
-{The strategy, not the keystrokes. Describe *what* needs to happen and
-*why* this direction — enough for a capable implementer to act on, but
-leave *how* to them; they know the best-practice mechanics for their
-stack. State the shape of the change and the order of work where order
-matters. Don't prescribe exact symbols, signatures, or line numbers —
-those live in Files that matter; naming them here just creates two
-places to keep in sync. A few sentences for a simple change; a short
-list of moves for a larger one.
+{The strategy, not the keystrokes — written so a human reviewer can
+approve *how* you'll make the change. Describe *what* needs to happen
+and *why* this direction; leave *how* to the implementer, who knows the
+best-practice mechanics for their stack. State the shape of the change
+and the order of work where order matters. A few sentences for a simple
+change; a short list of moves for a larger one.
+
+You MAY name a new component this change introduces — a module, a
+class, a setting — so the rest of the spec shares a vocabulary ("add a
+`DynamoDBWriter`"). You may NOT specify its mechanics: no method
+signatures, no method bodies, no library-call sequences, no "construct
+X with config Y, then call Z" recipes. Name the *role* and the
+*behavior*, not the implementation. Don't restate exact existing
+symbols or line numbers either — those live in Files that matter.
+
+Telling the implementer how to do their job (avoid): "Add
+`src/.../dynamo.py` exposing a `DynamoDBWriter` built from `Settings`.
+It constructs a boto3 resource with `Config(retries={...})`, holds the
+`Table`, and offers `put(record: ClassifiedRecord)` that writes
+`record.model_dump(mode='json')` via `put_item`, plus a reachability
+check that calls `table.load()`."
+Telling the implementer what we want (prefer): "Add a DynamoDB writer
+the run builds once and reuses, with two behaviors: a startup
+reachability check that fails the run loud — before any LLM call — if
+the table, credentials, or region are wrong; and a put that persists a
+classified record. Wrap its failures in the existing `OutputError` so
+the abort-all path is unchanged."
 
 Close with **Things to consider** — a brief bulleted list of the
 non-obvious tradeoffs, gotchas, and decision points the implementer
@@ -87,6 +113,15 @@ requirements belong in Constraints.
 
 If the implementer hits a blocker the reasoning didn't anticipate, they
 should flag it rather than silently switching approaches.}
+
+---
+
+## Implementation contract
+
+> The sections below are written for the implementing agent. They take
+> the Approach above and pin it to specifics: Constraints, Do NOT, and
+> Files that matter are bullet-dense, identifier-rich, and deliberately
+> redundant with each other.
 
 ## Constraints
 {Bulleted. Specific numbers, not vague qualifiers. Each testable.
@@ -115,15 +150,23 @@ Multiple anchors per file:
   docstring (`:start-end`).}
 
 ## Verification
-{Exact command to run, then specific assertions. Group with bold
-subheaders when verification covers multiple surfaces:
+{Open with the exact command to run (`uv run pytest`, etc.). Then list
+what to test as a plain-English bulleted checklist — one behavior per
+bullet, each naming its expected output. Group with bold subheaders
+when verification spans multiple surfaces. Two styles, by audience:
 
-**{Surface — symbol or feature name}**
-- {assertion: expected input → expected output}
-- {assertion}
+- **User-facing behavior** — write as Given/When/Then so a test drops
+  straight out of it: "Given [state], when [action], then [observable
+  outcome]."
+- **Everything else** (internal functions, data shapes, error paths) —
+  plain "what we test → expected result" bullets: "store a record with
+  no url → it reads back as null"; "put the same id twice → one item,
+  latest value wins." Don't name the test function or assertion API;
+  state what must be true and let the implementer write the check.
 
-**{Other surface}**
-- {assertion}
+Cover at least one error/failure path wherever the change touches I/O
+or untrusted input. Keep every bullet readable — describe the behavior,
+not the code that verifies it.
 
 **Manual sanity check (not a test):** {any non-automated check —
 deploys, integration runs, dashboards — explicitly called out as

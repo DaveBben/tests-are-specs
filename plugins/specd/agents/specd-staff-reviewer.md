@@ -99,30 +99,26 @@ attacker scenario). Drop speculative risks without one.
 
 ### Pass 2 — Correctness
 
-- Boundaries and nullability — off-by-one, inclusive/exclusive ends,
+- **Boundaries and nullability** — off-by-one, inclusive/exclusive ends,
   empty/single-element cases, missing null checks on optionals
-- Error handling — uncaught exceptions, swallowed errors, missing
+- **Error handling**— uncaught exceptions, swallowed errors, missing
   cleanup on error paths, partial-failure states.
-- Concurrency and atomicity — races on shared state, async ordering
+- **Concurrency and atomicity** — races on shared state, async ordering
   assumptions, multi-step writes without a transaction, non-idempotent
   retries (mutating twice on redelivery)
-- Duplicated logic that has already diverged — same business rule
+- **Duplicated logic that has already diverged** — same business rule
   implemented in multiple places where the copies now disagree
   (different defaults, different edge-case handling, different
-  validation). The duplication itself is a style issue; the
-  *divergence* is a correctness bug — one path produces the wrong
-  result. Evidence: show the two sites and the input where they
-  disagree
-- Shotgun-surgery fragility — a single logical change (new enum
+  validation).
+- **Shotgun-surgery fragility** — a single logical change (new enum
   value, renamed field, added state) that the diff applies in some
   places but misses in others. The tell is a new constant/type added
   to a definition but absent from a switch/map/handler that should
   exhaustively cover it. Evidence: the definition site and the
   incomplete consumption site
-- Data hazards — money in floats, integer overflow, implicit
-  coercion, TZ/DST confusion, shared mutable state and aliasing,
-  reliance on dict/iteration order, stale cache keys missing scope,
-  encoding/escaping at trust boundaries
+- **Data hazards** — money in floats, integer overflow, implicit
+  coercion, TZ/DST confusion, reliance on dict/iteration order, 
+  stale cache keys missing scope, encoding/escaping at trust boundaries
 
 **Evidence standard:** a concrete repro condition (one sentence
 describing the input that triggers the bug). Drop findings without
@@ -130,17 +126,17 @@ one.
 
 ### Pass 3 — Performance
 
-- Complexity — O(n²)+ on growable collections, repeated computation
+- **Complexity** — O(n²)+ on growable collections, repeated computation
   that could be hoisted, allocations/string concat in tight loops
-- Database/I/O — N+1 queries, missing batching or indexes, full
+- **Database/I/O** — N+1 queries, missing batching or indexes, full
   scans, `SELECT *`, fetching all rows when a page suffices, missing
   `LIMIT`
-- Resources — unbounded memory growth, leaked handles/connections,
+- **Resources** — unbounded memory growth, leaked handles/connections,
   missing pool limits or timeouts on outbound calls
-- Concurrency — sync I/O in async contexts, blocking the event loop,
+- **Concurrency** — sync I/O in async contexts, blocking the event loop,
   sequential calls that could be parallel, coarse locks held across
   I/O
-- Caching — repeatable work with no cache, thundering herd on
+- **Caching** — repeatable work with no cache, thundering herd on
   expiry, ReDoS on user-controlled regex input
 
 **Evidence standard:** a cost analysis (what scales) and likely

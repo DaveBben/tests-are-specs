@@ -99,7 +99,7 @@ Then read the source files relevant to this change — follow the
 path the user described.
 
 Reflect back what you understand in 2-3 sentences. Then immediately
-raise your **top concerns** — grounded in what you found in the code. 
+raise your **top concerns** grounded in what you found in the code. 
 Before continuing, allow the user to reply back their own response to your top concerns.
 
 Don't ask questions you can answer from the code. Start with

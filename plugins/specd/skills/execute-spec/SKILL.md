@@ -20,7 +20,7 @@ description: >
 
 # Execute — Implement a Spec
 
-Read the spec. Do the work. Review against the spec. Verify. Commit.
+Read the spec. Do the work.
 
 ---
 
@@ -117,12 +117,12 @@ what's there before changing it.
 Implement the changes described in the spec. Use the "Current
 behavior" section to find the starting point. Use "Constraints" and
 "Edge cases" to guide the implementation. Use "Do NOT" to stay in
-scope. Follow the "Approach" — if you encounter a blocker the
+scope. Follow the "Approach". If you encounter a blocker the
 approach didn't anticipate, stop and report rather than silently
 switching to a different approach.
 
 If the "Alternatives rejected" section lists an approach, do not
-use that approach it was explicitly rejected during planning.
+use that approach, it was explicitly rejected during planning.
 
 ---
 
@@ -190,12 +190,7 @@ their own errors.
    performance, reliability.
 2. **`specd-code-quality-reviewer`** (`subagent_type:
    "specd-code-quality-reviewer"`) — architectural hallucinations in
-   AI-generated code: where it will hang, OOM, deadlock, corrupt
-   state, fail silently, or pull a fabricated/malicious dependency
-   under real OS/network/concurrency conditions, plus craftsmanship
-   gaps (schema-validation bypass, broad exception swallowing,
-   double-encoding, protocol ignorance, over-engineering, and stub
-   placeholders left in real code).
+   AI-generated code
 3. **`specd-qa-reviewer`** (`subagent_type: "specd-qa-reviewer"`) — test
    quality, test coverage, and edge case handling.
 4. **`specd-compliance-reviewer`** (`subagent_type:

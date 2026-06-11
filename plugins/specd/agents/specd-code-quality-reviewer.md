@@ -80,8 +80,7 @@ Flag blocking ops (sync file/DB I/O, blocking network, heavy CPU loops)
 on an event loop, a coroutine, a UI main thread, or any bounded
 worker pool. Flag relying on single-thread "uninterruptibility" instead
 of real synchronization. AI assumes async *syntax* makes OS calls
-non-blocking → starvation under load, a frozen UI, or a wedged pool
-when a blocking call hangs.
+non-blocking.
 
 ### 2 — Eager loading (streaming fallacy)
 Size/memory/pagination limits must be enforced *during* stream

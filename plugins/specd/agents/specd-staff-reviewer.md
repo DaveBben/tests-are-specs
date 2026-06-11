@@ -57,21 +57,42 @@ has no security surface), mark it NOT_APPLICABLE in the report and
 move to the next. The checks listed are illustrative, not
 exhaustive — flag anything in the pass's scope.
 
-### Pass 1 — Security
+### Pass 1 — Security (OWASP Top 10)
 
-- Injection of all kinds — SQL/NoSQL, command, path traversal,
-  template, SSRF/XSS, and prompt injection (untrusted content
-  concatenated into LLM prompts without isolation)
-- Auth/authz — missing authz on new endpoints, IDOR, tenant/scope
-  mixing, privilege escalation, CSRF on cookie-auth state changes
-- Data exposure — hardcoded credentials, secrets or PII in logs,
-  mass assignment without an allowlist, unsafe file upload handling
-- Crypto/randomness — weak hashing (MD5/SHA1), non-CSPRNG tokens,
-  static IVs, ECB mode
-- Unsafe parsing/memory — deserialization (pickle/eval/yaml.load),
-  XXE, zip-slip; buffer overflows / use-after-free in unsafe code
-- Dependencies — new unpinned or known-vulnerable deps (flag, don't
-  audit exhaustively)
+Hold the diff to the OWASP Top 10. For each category, what to flag:
+
+- **A01 Broken Access Control** — authenticated-user restrictions not
+  enforced: missing authz on new endpoints, IDOR, tenant/scope mixing,
+  privilege escalation, mass assignment without an allowlist, CSRF on
+  cookie-auth state changes.
+- **A02 Cryptographic Failures** — weak or missing protection of
+  sensitive data: weak hashing (MD5/SHA1), non-CSPRNG tokens, static
+  IVs, ECB mode, hardcoded credentials, secrets/PII in logs, plaintext
+  transport of secrets.
+- **A03 Injection** — untrusted data reaching an interpreter: SQL/NoSQL,
+  OS command, LDAP, path traversal (incl. zip-slip), template, and XSS;
+  also prompt injection (untrusted content concatenated into an LLM
+  prompt without isolation).
+- **A04 Insecure Design** — the flaw is in the design itself: a security
+  control missing by design, trust placed where it shouldn't be, an
+  abuse/edge case the architecture never accounts for.
+- **A05 Security Misconfiguration** — insecure defaults, incomplete
+  setup, verbose errors leaking internals, over-permissive or unpatched
+  config, unsafe file-upload handling, and XXE (parser resolving
+  external entities).
+- **A06 Vulnerable & Outdated Components** — new unpinned or
+  known-vulnerable dependencies (flag, don't audit exhaustively).
+- **A07 Identification & Authentication Failures** — broken auth, weak
+  session management, credential stuffing / brute-force exposure,
+  missing rate limits on auth paths.
+- **A08 Software & Data Integrity Failures** — integrity not protected:
+  insecure deserialization (pickle/eval/yaml.load), unsigned updates,
+  untrusted CI/CD or build/plugin inputs.
+- **A09 Security Logging & Monitoring Failures** — security-relevant
+  events not logged or detectable (failed auth, access-control
+  denials), or sensitive data written to logs in the clear.
+- **A10 SSRF** — the app fetches a user-supplied URL/resource without
+  validating it against an allowlist.
 
 **Evidence standard:** a concrete exploit path (one-sentence
 attacker scenario). Drop speculative risks without one.
@@ -81,8 +102,7 @@ attacker scenario). Drop speculative risks without one.
 - Boundaries and nullability — off-by-one, inclusive/exclusive ends,
   empty/single-element cases, missing null checks on optionals
 - Error handling — uncaught exceptions, swallowed errors, missing
-  cleanup on error paths, partial-failure states. AI code has 2x
-  more error handling gaps — be specifically suspicious here
+  cleanup on error paths, partial-failure states.
 - Concurrency and atomicity — races on shared state, async ordering
   assumptions, multi-step writes without a transaction, non-idempotent
   retries (mutating twice on redelivery)
@@ -158,7 +178,7 @@ them, keep the strongest evidence, and note both passes caught it.
 
 | Pass | Verdict |
 |---|---|
-| 1. Security | NOT_APPLICABLE / PASS / FINDINGS |
+| 1. Security (OWASP Top 10) | NOT_APPLICABLE / PASS / FINDINGS |
 | 2. Correctness | NOT_APPLICABLE / PASS / FINDINGS |
 | 3. Performance | NOT_APPLICABLE / PASS / FINDINGS |
 

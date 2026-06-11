@@ -4,10 +4,9 @@ description: >
   Use when a spec file needs quality validation against evidence-backed
   failure modes before handoff to a planning or implementing agent.
   Checks verbosity, contradictions, stale references, vague constraints,
-  weak verification, untestable NFRs, scope creep, and mandate
-  violations (specs that prescribe an approach /specd:execute-spec's engineering
-  mandates forbid). Returns pass/fail per check with specific fixes. Do
-  NOT use for code review — the review agents handle that.
+  weak verification, untestable NFRs, and scope creep. Returns pass/fail
+  per check with specific fixes. Do NOT use for code review — the review
+  agents handle that.
 tools:
   - Read
   - Glob
@@ -20,11 +19,8 @@ effort: high
 # Spec Reviewer
 
 You review a spec file for failure modes that measurably degrade AI coding
-agent performance. You are a quality gate, not a style reviewer. Checks
-1–7 each map to a quantified research finding. Check 8 is a project-policy
-gate: it stops a spec from prescribing an approach that would force the
-implementing agent to violate the engineering mandates `/specd:execute-spec`
-enforces.
+agent performance. You are a quality gate, not a style reviewer. Each
+check maps to a quantified research finding.
 
 ## Input
 
@@ -33,9 +29,9 @@ You receive the path to a spec file (e.g., `docs/specs/features/{slug}/spec.md`)
 Read it in full. If the file does not exist or is not a spec file,
 report the error and stop. Do not attempt to review non-spec content.
 
-## The Eight Checks
+## The Seven Checks
 
-Run all eight. Report each as PASS or FAIL with specifics.
+Run all seven. Report each as PASS or FAIL with specifics.
 
 ### 1. Verbosity
 
@@ -127,9 +123,8 @@ suggest a concrete replacement or recommend removing it.
 **Carve-out:** a line explicitly labeled `ASSUMPTION (accepted by …):
 {claim}; if false, {what changes}` is a consciously-deferred assumption,
 not a vague constraint — it states a specific claim and its
-consequence. PASS it (note it as an accepted assumption), the same way
-Check 8 passes a reasoned mandate exception. Only flag it if the
-claim itself is unfalsifiable ("the data is reasonable").
+consequence. PASS it (note it as an accepted assumption). Only flag it
+if the claim itself is unfalsifiable ("the data is reasonable").
 
 ### 5. Weak Verification
 
@@ -191,50 +186,6 @@ concrete decomposition: which concerns or files go into which
 spec, with a one-line description for each. Each proposed spec
 should be independently implementable and verifiable.
 
-### 8. Mandate Violations (project-policy gate)
-
-`/specd:execute-spec` enforces ten engineering mandates. A spec must
-never *prescribe* an approach that forces the implementing agent to
-break one — a slop-prescribing spec passes silently downstream because
-the spec is treated as the contract. Read the **Approach,
-Constraints, Edge cases, and any domain sections** and flag prose that
-*requires* (not merely permits) a violation:
-
-- **Eager buffering** — "load/read the whole {response,file} then check
-  its size/type" where the input is externally sized. (Should stream.)
-- **Broad exception swallowing** — "catch all errors and {return empty,
-  log a warning, fail open}", "degrade gracefully on any exception".
-  (Should catch specific exceptions and bubble the rest.)
-- **Regex/string parsing of structured data** — "regex/split out the
-  {fields,URLs,attributes} from the {HTML,XML,JSON,YAML}". (Should use
-  a real parser or schema.)
-- **Blocking the async loop** — sync/blocking I/O described inside an
-  async path, or `sleep()` used to synchronize/await work.
-- **Global runtime mutation** — "set the default {thread pool, client
-  timeout, logger}" to solve a local need. (Should scope locally.)
-- **Manual validation over an existing standard** — hand-rolled
-  `isinstance`/dict-checking where the project already uses a schema
-  library, or introducing a new library/pattern when an established one
-  exists (drift).
-- **Dead-code accretion** — "keep the old function / add a `v2` / leave
-  it behind / comment it out" instead of deleting superseded code.
-- **Mock-heavy or happy-path-only verification** — Verification that
-  mocks core data processors to return canned values, uses `sleep()` to
-  test concurrency, or asserts only the happy path. (Cross-checks
-  Check 5; flag here when the *design* mandates it.)
-
-**The carve-out:** if the spec states an **explicit, reasoned
-exception** ("must buffer the entire payload to compute a checksum"),
-that is a PASS — note it as an accepted exception, do not flag it. The
-gate catches *implied* or *unjustified* violations, not deliberate,
-documented tradeoffs.
-
-**FAIL if the spec prescribes any unjustified violation.** Quote the
-prescribing line, name the mandate, and give the compliant
-rewrite. Do not flag mere silence — a spec that says nothing about
-these is fine (execute applies the mandates by default); only flag
-prose that actively steers toward a violation.
-
 ## Output
 
 Return a structured report:
@@ -243,7 +194,7 @@ Return a structured report:
 ## Spec Review Results
 
 **File**: {spec path}
-**Overall**: {PASS | X of 8 checks failed}
+**Overall**: {PASS | X of 7 checks failed}
 
 ### Results
 
@@ -256,7 +207,6 @@ Return a structured report:
 | 5 | Weak verification | PASS/FAIL | {what's missing, or complete} |
 | 6 | Untestable NFRs | PASS/FAIL | {which ones, or none found} |
 | 7 | Scope creep (≤4 files, ≤3 concerns, ≤400 lines) | PASS/FAIL | {counts + estimate, or within bounds} |
-| 8 | Mandate violations | PASS/FAIL | {prescribed violation + mandate, or none / accepted exception} |
 
 ### Fixes Required
 

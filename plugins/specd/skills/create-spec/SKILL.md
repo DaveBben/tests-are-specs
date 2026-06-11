@@ -49,18 +49,20 @@ files involved to understand:
 - Where the branching or integration points are
 - What assumptions the existing code makes
 
-Stop once you have a thorough understanding.
+Stop once you have a thorough understanding — and put a ceiling on the
+search. Failing runs are marked by endless file-reading with no signal
+to abandon exploration. If you've read more than ~15 files and still
+can't articulate the current behavior, treat that as the signal to
+stop: say what remains unclear and ask, rather than reading further.
+Dispatch broad greps and fan-out searches to subagents (e.g. the
+`Explore` agent) so raw exploration noise stays out of the context the
+spec gets written in.
 
 **Surface every ambiguity that materially changes the design** —
 grounded in what you found in the code. Usually that's 2-3 concerns,
 but a genuinely ambiguous change has more; don't drop a material one to
 hit a number, or pad a clear change to reach one. If the approach looks
 solid, say so, don't manufacture concerns.
-
-**Stay inside the mandates.** Invoke the `specd:engineering-mandates`
-skill so its full text loads into context — these are the same mandates
-`/specd:execute-spec` enforces during implementation, and the
-approaches, alternatives, and constraints you propose must respect them. 
 
 **This is one conversation, not a pipeline.** Don't force both
 phases if the user only needs one.
@@ -165,6 +167,37 @@ agent will otherwise take.
 
 ## Phase 2 — Produce the Spec
 
+### Engineering principles
+
+The approach, constraints, and alternatives you write must respect these
+principles . Apply them as you shape the spec:
+
+- **Verify, don't predict.** Every import, package, and API method must
+  exist in the version this project pins — check the lockfile or
+  installed source before using it.
+- **Fail loud.** Catch only the specific exceptions the code can raise;
+  never catch base exception classes; never ship a stub that fakes
+  success. Both hide brokenness behind plausible-looking success.
+- **Match this codebase.** Before writing anything new, find how this
+  project already solves similar problems and follow that pattern;
+  consolidate near-duplicates instead of adding parallel
+  implementations.
+- **Least code that works.** No speculative abstractions, no indirection
+  for single callers, stdlib over hand-rolling; delete dead code
+  outright
+- **Test real behavior.** Realistic inputs through real libraries,
+  deterministic sync (no sleeps), fixtures with real-world mess. Never
+  modify a test to make it pass — flag it instead.
+
+### Decomposition check (before producing)
+
+Before producing the spec, size the change. Task horizon is the
+strongest predictor of implementation failure. If this change would 
+**modify more than 4 files**, span **more than 3
+independent concerns**, or run past **~400 lines of change**, propose
+splitting it into multiple specs with an explicit ordering (which ships
+first, what each depends on) and let the user decide.
+
 When the thinking is done, shift to investigation mode. Now you're
 reading code for **precision** — finding the exact files, symbols,
 lines, and verification commands.
@@ -173,49 +206,39 @@ lines, and verification commands.
 
 For each area the conversation identified:
 
-1. **Current behavior**: understand how the affected part works today
-   well enough to explain it in plain prose to someone new to the
-   codebase. Find the precise locations too — but those anchor "Files
-   that matter," not this section. Write "Current behavior" as prose a
-   human reads top to bottom, not a code-annotated walkthrough: default
-   to plain words and spend only a sparing handful of `file:line`
-   anchors across the whole section, reserved for spots a reader would
-   otherwise have to grep.
+1. **Current behavior**: plain prose a newcomer can read top to bottom,
+   explaining how the affected part works today. Precise locations
+   belong in "Files that matter," not here — spend only a sparing
+   handful of `file:line` anchors, for spots a reader would otherwise
+   have to grep.
 
-2. **Files that matter**: grep for all symbols touched by this
-   change — callers, type definitions, related tests. Target 6-10
-   files with specific symbols. Follow existing codebase patterns.
+2. **Files that matter**: grep every symbol the change touches —
+   callers, type definitions, related tests. Target 6-10 files, each
+   with its specific symbols.
 
-3. **Patterns to follow**: for anything new this change introduces —
-   validation, parsing, I/O, error handling, a utility, a test
-   fixture — name the library or pattern the codebase already uses
-   for that job (`file:line` of a live example), so the implementing
-   agent emulates it instead of inventing a parallel one. If there's
-   genuinely no precedent, say so.
+3. **Patterns to follow**: for anything new (validation, parsing, I/O,
+   error handling, a utility, a fixture), name the existing
+   library/pattern for that job with a `file:line` example, so the
+   implementing agent emulates it instead of inventing a parallel one.
+   Say so if there's no precedent.
 
-4. **Tests**: find existing tests that must keep passing. Identify
-   new tests needed from the edge cases discussed in Phase 1 — flag
-   any that need authentic/minimized fixtures (a real small file, an
-   in-memory DB) rather than mocked returns. Where a behavior is
-   really a *property* that should hold across many inputs
-   (idempotence, round-trips, an invariant, a bound that must never be
-   exceeded), call for a property-based test (e.g. Hypothesis) over a
-   handful of enumerated examples — and name the property, not just the
-   function under test.
+4. **Tests**: list existing tests that must keep passing and new tests
+   for the Phase 1 edge cases. Flag any needing authentic/minimized
+   fixtures (a real small file, an in-memory DB) over mocked returns.
+   For a behavior that's really a *property* (idempotence, round-trips,
+   an invariant, a bound that must never be exceeded), call for a
+   property-based test (e.g. Hypothesis) and name the property.
 
-5. **Verification command**: the exact command to run, then a
-   plain-English bulleted checklist of what to test and the expected
-   output — Given/When/Then for user-facing behavior, plain "what we
-   test → expected result" bullets for everything else. Include at
-   least one error-path bullet where the change handles I/O or
-   untrusted input. Describe the behavior, not the assertion code.
+5. **Verification command**: the exact command, then a plain-English
+   checklist of what to test → expected output — Given/When/Then for
+   user-facing behavior, plain bullets otherwise. Include at least one
+   error-path bullet wherever the change handles I/O or untrusted input.
+   Describe behavior, not assertion code.
 
-6. **Optional domain sections**: judge whether the change has
-   structured artifacts that aid review — new tool/schema
-   definitions, state tables for in-flight dependencies, decision
-   matrices, multi-phase migration plans. If present, add a custom
-   section between "Current behavior" and "Alternatives rejected"
-   in the spec. Skip if the change is straightforward.
+6. **Optional domain sections**: if the change has structured artifacts
+   that aid review (tool/schema definitions, state tables, decision
+   matrices, migration plans), add a custom section between "Current
+   behavior" and "Alternatives rejected." Skip if straightforward.
 
 ### Review and confirm
 
@@ -231,11 +254,9 @@ you haven't this session). Create the directory if it doesn't exist.
 
 Then launch the `specd-spec-reviewer` agent using the Agent tool with
 `subagent_type: "specd-spec-reviewer"`. Pass the spec path. The reviewer
-checks eight failure modes: the seven evidence-backed ones (verbosity,
-contradictions, stale references, vague constraints, weak
-verification, untestable NFRs, scope creep) plus mandate
-violations — a spec that prescribes an approach `/specd:execute-spec`'s
-engineering mandates forbid, without a stated reasoned exception.
+checks seven evidence-backed failure modes: verbosity, contradictions,
+stale references, vague constraints, weak verification, untestable
+NFRs, and scope creep.
 
 **If any check fails:** fix the spec before presenting it. Apply
 each fix the reviewer recommends. Don't ask the user to fix
@@ -265,9 +286,8 @@ Don't gate on this — surface it and let the user decide (this skill is
 a thinking partner, not a checkpoint). If the user consciously accepts
 an assumption rather than resolving it, record it inline in the spec
 (Constraints or Approach) as `ASSUMPTION (accepted by {who}): {claim};
-if false, {what changes}` — the same explicit, reasoned-exception
-pattern the mandate gate uses, so the deferred ambiguity stays
-visible in the contract instead of traveling silently into the build.
+if false, {what changes}`, so the deferred ambiguity stays visible in
+the contract instead of traveling silently into the build.
 
 **If the user requests changes:** apply them to the spec file, then
 judge how substantial the round of edits was:
@@ -308,5 +328,9 @@ Summary, Current behavior, Alternatives, Edge cases, and the Approach
 itself — prose strategy, the hinge the reviewer signs off on); below it
 is the binding contract that pins that strategy to specifics —
 Constraints, Do NOT, Files that matter, and Verification (deliberately
-redundant with each other).
+redundant with each other — keep it that way). A constraint repeated
+across these sections is exactly what survives context compaction and
+mid-context attention loss during a long implementation; this is one of
+the few places where saying something twice is the research-backed move,
+not bloat. If a reviewer flags the repetition, defend it.
 

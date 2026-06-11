@@ -49,8 +49,13 @@ if it exists.
    another branch, confirm with user. Never execute on main.
 
 2. **Test baseline**: run the verification command from the spec.
-   Record current pass/fail state. If tests already fail, warn the
-   user before proceeding.
+   Record the pass/fail state, including the **exact names of any
+   already-failing tests**. If tests already fail, warn the user before
+   proceeding, and treat precisely those named tests as the
+   pre-existing-failure set. Those are excluded from the must-pass set;
+   every other test must pass and no currently-passing test may
+   regress. Do not expand this set later to excuse a failure you
+   introduced.
 
 3. **Validate the spec**: verify that files listed in "Files that
    matter" exist on disk. If any are missing, stop and report.
@@ -76,26 +81,33 @@ sections. These are your boundaries.
   concerns touch non-overlapping files, dispatch them as concurrent
   implementation subagents (up to 10; prefer sonnet agents for simple
   file edits) rather than editing sequentially. Only stay
-  single-threaded when the changes are genuinely interdependent. Each
-  subagent must apply the engineering mandates (see below), plus the
-  spec file path and a targeted description of the change it needs to
-  make. Merge their work and verify the combined result.
+  single-threaded when the changes are genuinely interdependent. Pass
+  each subagent these principles, the spec file path, and a targeted
+  description of the change it needs to make; each must apply the
+  principles in its work. Merge their output and verify the combined
+  result **before any commit** — never commit unmerged or unverified
+  subagent work.
+- **Verify, don't predict.** Every import, package, and API method must
+  exist in the version this project pins — check the lockfile or
+  installed source before using it.
+- **Fail loud.** Catch only the specific exceptions the code can raise;
+  never catch base exception classes; never ship a stub that fakes
+  success (`return True  # in a real implementation...`). Both hide
+  brokenness behind plausible-looking success.
+- **Match this codebase.** Before writing anything new, find how this
+  project already solves similar problems and follow that pattern;
+  consolidate near-duplicates instead of adding parallel
+  implementations.
+- **Least code that works.** No speculative abstractions, no indirection
+  for single callers, stdlib over hand-rolling; delete dead code
+  outright — git is the backup.
+- **Comments explain why, never what.** If a comment restates the code,
+  delete it. Update adjacent comments when behavior changes.
+- **Test real behavior.** Realistic inputs through real libraries,
+  deterministic sync (no sleeps), fixtures with real-world mess. Never
+  modify a test to make it pass — flag it instead.
 
-### Engineering mandates
 
-You must invoke the `specd:engineering-mandates` skill so its full text loads
-into context. These ten mandates define how to write code well and where you have
-particular blindspots to — concurrency, streaming, parsing, error handling, testing, consistency, deletion,
-documentation, dependency integrity, and simplicity. Internalize them
-before writing any code.
-
-Every implementation subagent you dispatch **must also load the
-mandates before it writes any code** — they run in a fresh context and
-do not inherit yours. These are ad-hoc subagents, so this is on you to
-enforce: make the **first instruction** in every subagent's prompt
-"Invoke the `specd:engineering-mandates` skill and internalize it
-before making any change." A subagent prompt that omits this line is
-incomplete — do not dispatch it.
 
 ### Doing the work
 
@@ -122,6 +134,13 @@ After each logical unit of work, before committing:
 2. **Run the tests relevant to the change** (at minimum, the scope
    of the spec's verification command). All must pass — never
    commit on a red state you introduced.
+3. **Diff the tests.** Run `git diff` (and `git status`) against the
+   test directories specifically. For every test file the change
+   modified, deleted, or skipped, confirm the change is justified by
+   the spec — not a weakened or removed assertion that papers over a
+   failure. Record each touched test file and its justification for the
+   summary. If a test was changed only to make it pass, revert it and
+   fix the code instead.
 
 Then commit with a clear message. Keep commits under 400 changed
 lines — review effectiveness drops sharply beyond that threshold.
@@ -145,16 +164,26 @@ introduced by your changes.
 Do not commit until verification passes. Do not rely on your own
 judgment that the code is correct — run the actual commands.
 
-If verification fails after five fix attempts, stop and report the
-failure to the user with details. Do not keep retrying in a loop.
+If verification fails after five fix attempts, **or if you find
+yourself re-applying a substantially similar fix**, stop and report the
+failure to the user with details. Five genuinely different hypotheses
+is healthy debugging; repeating the same fix is a stuck agent — the
+loop signal is repetition, not just the count.
 
 ---
 
 ## Final Review
 
-Before finalizing, launch four review agents **in parallel** — a
-single message with four Agent tool calls. Do not self-review —
-models fail to correct their own errors.
+**First, re-read the spec's Constraints, Edge cases, and Do NOT
+sections.** This command runs long — implementation, four reviewers,
+and up to three fix-and-re-review rounds — which is exactly the session
+length where context compaction silently drops constraints. Re-anchor
+on the contract before reviewing, rather than trusting a compaction
+summary to have preserved it.
+
+Then launch four review agents **in parallel** — a single message with
+four Agent tool calls. Do not self-review — models fail to correct
+their own errors.
 
 1. **`specd-staff-reviewer`** (`subagent_type: "specd-staff-reviewer"`) —
    multi-pass review of the code: security, correctness,
@@ -179,6 +208,7 @@ Pass all four the same inputs:
   usually `main` or `master`)
 - `spec_path`: the spec file path
 
+
 When all four return, merge their findings (deduplicate any
 overlap), then resolve them:
 
@@ -186,13 +216,19 @@ overlap), then resolve them:
   SUGGESTIONS can be deferred or skipped if they're out of scope,
   but note any you skip and why.
 - **Compliance deviations** (NON_COMPLIANT): for each — if the spec
-  is right and the code drifted, fix the code. If the deviation is
-  a reasonable amendment (an edge case the spec missed, a
-  constraint that turned out to be wrong), update the spec to
-  reflect what was built (e.g., the spec said "retry 3 times" but
-  you implemented exponential backoff with 5 retries — update the
-  spec if the change was a justified improvement). Do not finalize
-  while uncorrected non-compliance remains.
+  is right and the code drifted, fix the code. A deviation may instead
+  be a reasonable amendment (an edge case the spec missed, a constraint
+  that turned out to be wrong — e.g. the spec said "retry 3 times" but
+  exponential backoff with 5 retries is better). **You may *propose* an
+  amendment; you may not unilaterally decide one and stamp yourself
+  compliant.** The spec is the contract you are judged against — quietly
+  rewriting it to match the code is how non-compliance gets laundered
+  into compliance. So: never silently absorb an amendment. List every
+  proposed amendment under **Needs attention** in the summary (not just
+  "resolved deviations"), and if the spec was modified during execution,
+  get explicit user confirmation before flipping `Status` to
+  `Implemented`. Do not finalize while uncorrected non-compliance
+  remains.
 
 After fixing, re-run each reviewer whose findings you addressed (or
 whose scope your fixes touched) until staff, code-quality, and QA
@@ -219,17 +255,24 @@ After verification passes:
    in the Spec Index (`docs/specs/spec.md`). Also refresh that row's
    `Updated` column to today's date (matching the spec file's "Last
    updated"). If the spec lives under `docs/specs/bugs/`, update the
-   Bugs table; otherwise update the Features table.
+   Bugs table; otherwise update the Features table. **If the spec was
+   amended during execution, do not flip to `Implemented` without
+   explicit user confirmation** — present the amendments first (step 4)
+   and wait.
 
 4. Present a summary:
    - **Branch**: name and commit count
    - **What was done**: 2-3 sentences
-   - **Verification**: pass/fail status
+   - **Verification**: pass/fail status, and the pre-existing-failure
+     set excluded at baseline
    - **Final review findings**: issues caught and fixed by the
      staff, code-quality, and QA reviews
+   - **Tests touched**: every test file modified, deleted, or skipped,
+     each with its spec justification (or "none")
    - **Compliance review**: COMPLIANT, or list of resolved
      deviations
-   - **Needs attention** (if any): anything unexpected, deviations
-     from the spec, or issues the user should review
+   - **Needs attention** (if any): every spec amendment proposed or made
+     during execution, plus anything unexpected or that the user should
+     review
 
 **Do NOT push or create a PR.** The user handles this.

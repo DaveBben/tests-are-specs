@@ -16,7 +16,6 @@ tools:
   - Bash
 model: haiku
 maxTurns: 20
-effort: medium
 ---
 
 # Reference Linter

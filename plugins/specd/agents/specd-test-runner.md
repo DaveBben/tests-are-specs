@@ -15,7 +15,6 @@ tools:
   - Grep
 model: haiku
 maxTurns: 12
-effort: low
 ---
 
 # Test Runner

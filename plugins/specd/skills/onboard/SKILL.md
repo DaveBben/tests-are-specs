@@ -29,6 +29,14 @@ effort: high
 
 ---
 
+**Write the prose to be read on one pass.** When you draft the prose in
+these docs — Current State, Architecture overview, Gotchas, Project
+Identity — follow the readable style in `references/writing-style.md` (read
+it when you reach Phase 3 and Phase 4). It shapes sentences only. It
+complements — it does not loosen — the density rules in
+`references/quality-guide.md` and `references/spec-standards.md` (semantic
+density, named lists, exact commands, "Not yet implemented" lists).
+
 ## Workflow
 
 ### Phase 1: Unified Discovery
@@ -160,7 +168,7 @@ Fix any issues found. One pass only.
 
 ### Phase 4: Draft spec.md
 
-Draft using [spec-template.md](references/spec-template.md) for structure, [spec-standards.md](references/spec-standards.md) for principles, and [spec-section-guidance.md](references/spec-section-guidance.md) for section guidance.
+Draft using [spec-template.md](references/spec-template.md) for structure, [spec-standards.md](references/spec-standards.md) for principles, [spec-section-guidance.md](references/spec-section-guidance.md) for section guidance, and [writing-style.md](references/writing-style.md) for the prose style of every narrative section. Read writing-style.md now if you haven't this session.
 
 **Include a `## Table of Contents` after the header block** (title, dates, status, blurb) listing all sections with anchor links. Omit entries for sections you didn't include (e.g., Technical Domain Specs for single-technical-domain projects).
 

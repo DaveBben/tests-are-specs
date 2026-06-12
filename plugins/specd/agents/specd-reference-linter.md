@@ -15,7 +15,7 @@ tools:
   - Grep
   - Bash
 model: haiku
-maxTurns: 20
+maxTurns: 40
 ---
 
 # Reference Linter

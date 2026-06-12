@@ -14,6 +14,14 @@ the direction the implementer then executes. Below the divider: the
 binding contract that pins that strategy to specifics — Constraints, Do
 NOT, Files, and Verification, deliberately redundant with each other.
 
+**Writing style.** The prose sections — Why, Summary, Current behavior,
+Approach, Things to consider, and the Edge-case descriptions — follow the
+readable style in `writing-style.md` (this directory): one idea per
+sentence, actor-first, caveats split into their own sentence, conclusion
+first. The implementation-contract sections below the divider are exempt —
+there, identifier density and redundancy are load-bearing, so keep them
+dense.
+
 ```
 {One-line summary of the change}
 

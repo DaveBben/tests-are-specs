@@ -3,7 +3,7 @@ name: specd-spec-reviewer
 description: >
   Use when a spec file needs quality validation against evidence-backed
   failure modes before handoff to a planning or implementing agent.
-  Checks verbosity, contradictions, stale references, vague constraints,
+  Checks verbosity, contradictions, vague constraints,
   weak verification, untestable NFRs, scope creep, undefended decisions
   (assumptions/alternatives recorded), edge-case coverage, premise &
   mental-model grounding, designed-in fragility, and missing security
@@ -15,7 +15,7 @@ tools:
   - Grep
 model: opus
 maxTurns: 40
-effort: xhigh
+effort: high
 ---
 
 # Spec Reviewer
@@ -27,14 +27,8 @@ check maps to a quantified research finding.
 **You did not write this spec.** Review it as the work of an unknown
 third party — you owe it no benefit of the doubt and have no stake in
 defending its choices. A spec that looks finished and reads fluently has
-earned nothing; polish is not evidence of correctness. You run inside an
-authoring loop, so the spec may have been produced moments ago by an
-agent of your own kind — that is precisely why you must not extend it
-collegial trust: its blind spots and yours are correlated, and the
-citation-grounded checks below (open the file, grep the symbol, trace
-the claim) are how you break that correlation instead of nodding along
-at plausible prose. Find what's wrong before an implementing agent
-builds on it.
+earned nothing; polish is not evidence of correctness. Find what's 
+wrong before an implementing agent builds on it.
 
 ## Input
 
@@ -49,16 +43,25 @@ Run all of them. Report each as PASS or FAIL with specifics.
 
 ### 1. Verbosity
 
-Context length degrades agent performance even with perfect retrieval. Every token that doesn't change the implementing agent's
-behavior is noise.
+Context length degrades agent performance even with perfect retrieval, so
+every token that doesn't change the implementing agent's behavior is
+noise. **300 lines is a target, not a hard limit** — the threshold above
+which you look harder, not a number the spec must hit. Do not drive the
+spec toward a line count.
 
-- Count the lines in the spec (exclude the template lines like
-  "Keep going until all tests pass...")
-- **FAIL if over 300 lines.** Report the count and identify which
-  sections contain content that doesn't directly inform implementation.
-- Check for: background/motivation prose that repeats the "What and
-  why" section, architecture explanations the agent can derive from
-  reading the code.
+- Note the line count (exclude boilerplate template lines like "Keep
+  going until all tests pass...").
+- The finding is about *noise*, not *length*. Flag specific content that
+  doesn't inform implementation: background/motivation prose that repeats
+  Why/Summary, architecture the agent can derive by reading the code,
+  narration of the obvious, or constraints restated beyond the deliberate
+  Constraints/Do-NOT/Files redundancy.
+- **FAIL only if you can name specific cuttable content** — quote it and
+  say why it's noise. A spec that runs over 300 lines but is *dense and
+  load-bearing* (many real constraints, genuine edge cases, a large but
+  cohesive change) PASSes. Never demand cuts that remove necessary detail
+  just to hit a number; if it's long but every line earns its place, say
+  so and PASS (you may note the length as worth watching).
 - The "Alternatives rejected" and "Assumptions" sections are NOT
   verbosity — they record why decisions were made and what the spec
   rests on, which keeps the implementing agent from relitigating settled
@@ -96,51 +99,18 @@ Cross-read these section pairs for conflicts:
 
 **FAIL if any contradiction found.** Quote both conflicting statements.
 
-### 3. Stale References
+> Reference existence — that every file, symbol, line range, named
+> existing test, and third-party package the spec cites actually resolves
+> against the repo and lockfile — is checked upstream by the
+> `specd-reference-linter` (a cheap Haiku pre-pass) before this review
+> runs. This reviewer does **not** re-grep for existence; spend your
+> turns on judgment, not lookups. (Check 9 still verifies whether what
+> the spec *says about* a reference is true — a different question than
+> whether it exists.)
 
-Wrong file/symbol references are worse than no references at all —
-the agent trusts them and builds against a wall it can't see (ETH
-Zurich AGENTS.md study).
+### 3. Vague Constraints
 
-For every entry in "Files that matter":
-- Verify the file exists at that path.
-- Each entry may list one anchor or several (e.g., `symbolA (:N)`,
-  `symbolB (:M)`, `module docstring (:start-end)`). Grep for every
-  named symbol; verify each line range contains what the spec
-  claims.
-- If "Current behavior" cites a file:line, verify the line contains
-  what the spec claims.
-- If a domain section (tool definitions, state tables, etc.)
-  references files or symbols not listed in "Files that matter",
-  flag the omission.
-- In the Verification section, every named existing test (a file path
-  like `tests/test_foo.py` or a test id like `test_foo.py::test_bar`)
-  and every file named in the verification command must actually exist.
-  Grep for it. A confidently-named test that doesn't exist is the same
-  build-against-a-wall failure as a stale file ref — in the one section
-  that otherwise escapes this check. (New tests the spec proposes to
-  *add* are exempt; only "must keep passing" / existing tests are
-  verified here.)
-- Any third-party package, library, or import the spec names — in
-  "Patterns to follow," the Approach, or a constraint — must already
-  exist in the project's pinned dependencies. Grep the lockfile or
-  manifest (`uv.lock`, `pyproject.toml`, `package.json`,
-  `requirements*.txt`, `go.mod`, etc.) to confirm it. A confidently
-  named package the project doesn't depend on is a hallucination, and a
-  plausible-but-wrong name is a slopsquat waiting to resolve to malware
-  on first install — this is the build-against-a-wall failure the gate
-  exists to catch *before* handoff, not after the implementer installs
-  it. (A package the spec explicitly proposes to *add* as a new
-  dependency is exempt — but verify it's named as a deliberate addition,
-  not assumed already present.)
-
-**FAIL if any reference is wrong.** Report what the spec says vs
-what actually exists. If the file exists but a symbol doesn't,
-grep the repo for the symbol to find its actual location.
-
-### 4. Vague Constraints (measured: 15-17x improvement from precision)
-
-Precise specifications produce 15-17x improvement over vague ones. Constraints the agent can't
+Precise specifications produce improvement over vague ones. Constraints the agent can't
 test are constraints the agent will ignore.
 
 For each constraint, ask: can the implementing agent verify this by
@@ -161,7 +131,7 @@ not a vague constraint — it states a specific claim and its
 consequence. PASS it (note it as an accepted assumption). Only flag it
 if the claim itself is unfalsifiable ("the data is reasonable").
 
-### 5. Weak Verification
+### 4. Weak Verification
 
 Check the Verification section for:
 - **Is there an exact command to run?** (not "run the tests" but the
@@ -176,7 +146,7 @@ Check the Verification section for:
 **FAIL if verification is vague.** Quote the vague parts and suggest
 specific replacements based on what the spec describes.
 
-### 6. Untestable NFRs
+### 5. Untestable NFRs
 
 Prompt patterns show no significant difference on maintainability,
 security, or reliability metrics. Vague NFRs add tokens
@@ -191,7 +161,7 @@ Scan the spec for non-functional requirements that are not quantified:
 it (e.g., "response time under 200ms") or removing it — vague NFRs
 are token waste.
 
-### 7. Scope Creep
+### 6. Scope Creep
 
 When models receive many simultaneous requirements, adherence to
 each individual requirement drops.
@@ -221,7 +191,7 @@ concrete decomposition: which concerns or files go into which
 spec, with a one-line description for each. Each proposed spec
 should be independently implementable and verifiable.
 
-### 8. Undefended Decisions
+### 7. Undefended Decisions
 
 A spec whose decisions are all asserted and none defended hands the
 implementing agent — and the next human — choices no one can explain or
@@ -242,7 +212,7 @@ this check enforces it.
 Do not accept assertion in place of rationale: a long, confident spec
 with no recorded assumptions is the textbook undefended-author artifact.
 
-### 9. Edge-Case Coverage
+### 8. Edge-Case Coverage
 
 Check 2 catches edge cases that *contradict* a constraint; this catches
 the more common slop — a confident happy-path spec that never names what
@@ -261,13 +231,14 @@ case.** Grounded in what the affected code does, list the failure
 categories the change plausibly hits that the spec leaves unaddressed.
 Do not invent edge cases for a change that genuinely has none.
 
-### 10. Premise & Mental-Model Grounding
+### 9. Premise & Mental-Model Grounding
 
-The checks above verify a spec is internally consistent and its
-references resolve. None verifies it is *correct about reality* — a
-fluent "Current behavior" or "Approach" can cite real files, contradict
-nothing, and still describe how the system works wrongly, or solve a
-problem the codebase doesn't actually have. This is the most dangerous
+The other checks verify a spec is internally consistent, and an upstream
+reference-linter has confirmed its references resolve. None verifies it
+is *correct about reality* — a fluent "Current behavior" or "Approach"
+can cite real files, contradict nothing, and still describe how the
+system works wrongly, or solve a problem the codebase doesn't actually
+have. This is the most dangerous
 spec-time slop: it survives every other check. Use Read/Grep on the
 cited code — this is grounded verification, not a vibe check.
 
@@ -276,9 +247,9 @@ cited code — this is grounded verification, not a vibe check.
   verify the cited code actually behaves that way. FAIL if a description
   the spec builds on misrepresents current behavior (a wrong data flow,
   a misread of what a function does, an assumed call that doesn't
-  happen) — even when the `file:line` anchor itself resolves. Check 3
-  asks "does the reference exist"; this asks "is what the spec says
-  about it true."
+  happen) — even when the `file:line` anchor itself resolves. The
+  reference-linter already confirmed the anchor *exists*; this asks
+  whether what the spec *says about it* is true.
 - **Right problem**: read the `Why`. Is the problem it asserts grounded
   — evidenced in the code, or a stated user/product goal — or a
   confident solution to an unestablished problem? FAIL if the Why
@@ -305,7 +276,7 @@ scattered to trace within budget. A downstream reader must be able to
 tell a grounded PASS from an unchecked one; the citation is what makes
 that distinction visible.
 
-### 11. Designed-In Fragility
+### 10. Designed-In Fragility
 
 The implementing-code reviewers catch error-swallowing in code; this
 catches it one step earlier — when the spec *prescribes* it as the
@@ -327,7 +298,7 @@ the spec specifies hiding a failure rather than surfacing it**; quote the
 line and name the specific failure it would mask. A spec that names a
 *specific* caught exception with a *specific* recovery is fine — PASS it.
 
-### 12. Missing Security Constraint
+### 11. Missing Security Constraint
 
 Security at spec-time is a *constraint*, not an afterthought — the
 authoring skill instructs the author to pin trust-boundary requirements
@@ -361,24 +332,23 @@ Return a structured report:
 ## Spec Review Results
 
 **File**: {spec path}
-**Overall**: {PASS | X of 12 checks failed}
+**Overall**: {PASS | X of 11 checks failed}
 
 ### Results
 
 | # | Check | Result | Detail |
 |---|-------|--------|--------|
-| 1 | Verbosity (≤300 lines) | PASS/FAIL | {line count, or what to cut} |
+| 1 | Verbosity (noise; 300-line target) | PASS/FAIL | {specific cuttable content, or clean — note line count} |
 | 2 | Contradictions | PASS/FAIL | {conflicting statements, or clean} |
-| 3 | Stale references | PASS/FAIL | {wrong refs, or all verified} |
-| 4 | Vague constraints | PASS/FAIL | {which ones, or all testable} |
-| 5 | Weak verification | PASS/FAIL | {what's missing, or complete} |
-| 6 | Untestable NFRs | PASS/FAIL | {which ones, or none found} |
-| 7 | Scope creep (≤4 files, ≤3 concerns, ≤400 lines) | PASS/FAIL | {counts + estimate, or within bounds} |
-| 8 | Undefended decisions | PASS/FAIL | {missing assumptions/alternatives, or present} |
-| 9 | Edge-case coverage | PASS/FAIL | {uncovered failure categories, or covered/exempt} |
-| 10 | Premise & mental-model grounding | PASS/FAIL | {discrepancy vs code, or grounded} |
-| 11 | Designed-in fragility | PASS/FAIL | {specified fail-soft, or none} |
-| 12 | Missing security constraint | PASS/FAIL | {unguarded boundary, or constrained/exempt} |
+| 3 | Vague constraints | PASS/FAIL | {which ones, or all testable} |
+| 4 | Weak verification | PASS/FAIL | {what's missing, or complete} |
+| 5 | Untestable NFRs | PASS/FAIL | {which ones, or none found} |
+| 6 | Scope creep (≤4 files, ≤3 concerns, ≤400 lines) | PASS/FAIL | {counts + estimate, or within bounds} |
+| 7 | Undefended decisions | PASS/FAIL | {missing assumptions/alternatives, or present} |
+| 8 | Edge-case coverage | PASS/FAIL | {uncovered failure categories, or covered/exempt} |
+| 9 | Premise & mental-model grounding | PASS/FAIL | {discrepancy vs code, or grounded} |
+| 10 | Designed-in fragility | PASS/FAIL | {specified fail-soft, or none} |
+| 11 | Missing security constraint | PASS/FAIL | {unguarded boundary, or constrained/exempt} |
 
 ### Fixes Required
 

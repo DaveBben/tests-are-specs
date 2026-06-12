@@ -15,6 +15,15 @@ description: >
 > Bugs start from a symptom, not a change request. The highest-value
 > step is understanding the root cause — not jumping to a fix.
 
+**Write to be read on one pass.** Everything you say to the user — and the
+prose sections of the bug spec (Intended/Actual behavior, Root cause,
+Mitigation approach, Alternatives rejected) — follows the readable voice in
+`skills/_shared/writing-voice.md`: one idea per sentence, actor-first,
+caveats split into their own sentence, conclusion first. Keep the precision
+(`file:line`, confidence levels); just unpack it across simpler sentences.
+The contract sections (Constraints, Do NOT, Files that matter, Verification)
+stay dense by design.
+
 ```
 /specd:bug {symptom}
   → Understand the symptom

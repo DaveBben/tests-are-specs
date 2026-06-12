@@ -57,29 +57,18 @@ if it exists.
 ## Running tests and checks (always delegate)
 
 **Never run a test suite, linter, or type-checker inline.** Their output
-is large and noisy — progress lines, passing-test spam, coverage tables
-— and it lands in your expensive, long-lived context where it crowds out
-the contract across a session that already runs long. Instead, **every
-time** you need to run the verification command, the test suite, a
-linter, or a type-checker — at baseline, before each commit, in the
+is large and noisy. Instead, **every time** you need to run the verification command, 
+the test suite, a linter, or a type-checker — at baseline, before each commit, in the
 verification fix-loop, and at finalize — dispatch the `specd-test-runner`
-agent (`subagent_type: "specd-test-runner"`, a cheap Haiku model). Pass
+agent (`subagent_type: "specd-test-runner"`). Pass
 it the exact command and the repo root.
 
-It returns a compact digest: exit code, pass/fail counts, the **exact**
-failing/errored test IDs verbatim, and the runner's own failure detail
-(tracebacks, assertion diffs, lint violation lines) copied verbatim —
-noise stripped, signal intact. You keep the digest; the raw stdout stays
-out of your window.
+It returns a compact digest. The runner only runs and reports. 
+**You** make every judgment: which failures matter and what to fix, 
 
-The runner only runs and reports. **You** make every judgment: which
-failures matter, what to fix, whether a baseline failure is pre-existing.
-Treat the failing-test IDs it returns as authoritative and verbatim —
-they define the pre-existing-failure set you must not later expand. If a
-digest's failure detail isn't enough to debug a specific failure, ask the
+If a digest's failure detail isn't enough to debug a specific failure, ask the
 runner to re-run that one test with more verbosity (e.g. `-vv`), rather
-than running the whole suite inline. (This delegation is for *running*
-checks only — the "Diff the tests" judgment below stays yours.)
+than running the whole suite inline. 
 
 ---
 
@@ -98,11 +87,10 @@ checks only — the "Diff the tests" judgment below stays yours.)
    introduced.
 
 3. **Validate the spec**: dispatch the `specd-reference-linter` agent
-   (`subagent_type: "specd-reference-linter"`) with the spec path. It's
-   a cheap Haiku pass that checks — against the *current* repo and
-   lockfile — that the files, symbols, named existing tests, and
-   dependencies the spec references still exist (the spec may have been
-   authored against an older state of the repo, then drifted). If it
+   (`subagent_type: "specd-reference-linter"`) with the spec path. It
+   checks against the *current* repo and verifies that the files, symbols, 
+   named existing tests, and dependencies the spec references still exist 
+   (the spec may have been authored against an older state of the repo, then drifted). If it
    reports any MISSING or MISLOCATED references, stop and report to the
    user before implementing: a spec pointing at code that has since moved
    or vanished is a stale contract, not a starting point. (Glance at
@@ -127,17 +115,12 @@ sections. These are your boundaries.
   concerns, commit each separately.
 - **Default to parallelizing independent work.** When the spec's
   concerns touch non-overlapping files, dispatch them as concurrent
-  implementation subagents (up to 10; prefer sonnet agents for simple
-  file edits) rather than editing sequentially. Only stay
-  single-threaded when the changes are genuinely interdependent. Pass
-  each subagent these principles, the spec file path, and a targeted
-  description of the change it needs to make; each must apply the
-  principles in its work. Merge their output and verify the combined
-  result **before any commit** — never commit unmerged or unverified
-  subagent work.
-- **Verify, don't predict.** Every import, package, and API method must
-  exist in the version this project pins — check the lockfile or
-  installed source before using it.
+  implementation subagents Only stay single-threaded when the changes 
+  are genuinely interdependent. Pass each subagent these principles, 
+  the spec file path, and a targeted description of the change it needs 
+  to make; each must apply the principles in its work. 
+  Merge their output and verify the combined result **before any commit** — 
+  never commit unmerged or unverifiedsubagent work.
 - **Fail loud.** Catch only the specific exceptions the code can raise;
   never catch base exception classes; never ship a stub that fakes
   success (`return True  # in a real implementation...`). Both hide

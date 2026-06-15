@@ -27,7 +27,7 @@ Resolve `$ARGUMENTS` to a spec file:
 
 1. **Full path** (`docs/specs/features/{slug}/spec.md`): use directly
 2. **Slug**: try `docs/specs/features/{slug}/spec.md`
-3. **No input**: build the menu with a single shell pass — don't read every spec into your context just to filter it (that's mechanical I/O burning the expensive window). Grep for the waiting status across both spec roots, e.g.:
+3. **No input**: build the menu with a single shell pass — don't read every spec into your context just to filter it. Grep for the waiting status across both spec roots, e.g.:
 
    ```bash
    grep -lE '(\*\*)?Status(\*\*)?:[[:space:]]*Waiting Implementation' \
@@ -38,17 +38,15 @@ Resolve `$ARGUMENTS` to a spec file:
 
 Read the spec in full. This is your contract.
 
-Also read `CLAUDE.md` for project conventions and build/test commands, if it exists.
+Also read `CLAUDE.md`, and `AGENTS.md` for project conventions and build/test commands, if it exists.
 
 ---
 
 ## Running tests and checks (always delegate)
 
-**Never run a test suite, linter, or type-checker inline.** Their output is large and noisy. Instead, **every time** you need to run the verification command, the test suite, a linter, or a type-checker — at baseline, before each commit, in the verification fix-loop, and at finalize — dispatch the `specd-test-runner` agent (`subagent_type: "specd-test-runner"`). Pass it the exact command and the repo root.
+**Never run a test suite, linter, or type-checker inline** (their output is large and noisy). **Every time** you need to run one (the verification command, at baseline, before each commit, in the fix-loop, at finalize), dispatch the `specd-test-runner` agent (`subagent_type: "specd-test-runner"`) with the exact command and repo root.
 
-It returns a compact digest. The runner only runs and reports. **You** make every judgment: which failures matter and what to fix.
-
-If a digest's failure detail isn't enough to debug a specific failure, ask the runner to re-run that one test with more verbosity (e.g. `-vv`), rather than running the whole suite inline.
+It returns a compact digest and only runs and reports. **You** judge which failures matter and what to fix. If a digest lacks the detail to debug a specific failure, ask the runner to re-run that one test with more verbosity (e.g. `-vv`), not the whole suite inline.
 
 ---
 
@@ -56,11 +54,11 @@ If a digest's failure detail isn't enough to debug a specific failure, ask the r
 
 1. **Branch**: if on `main`/`master`, create `feature/{slug}`. If on another branch, confirm with user. Never execute on main.
 
-2. **Test baseline**: have the test-runner run the verification command from the spec (see *Running tests and checks*). Record the pass/fail state, including the **exact names of any already-failing tests**. If tests already fail, warn the user before proceeding, and treat precisely those named tests as the pre-existing-failure set. Those are excluded from the must-pass set; every other test must pass and no currently-passing test may regress. Do not expand this set later to excuse a failure you introduced.
+2. **Test baseline**: have the test-runner run the spec's verification command. Record the pass/fail state and the **exact names of any already-failing tests**. If tests already fail, warn the user and treat precisely those tests as the pre-existing-failure set: excluded from the must-pass set, while every other test must pass and none may regress. Don't expand this set later to excuse a failure you introduced.
 
-3. **Validate the spec**: dispatch the `specd-reference-linter` agent (`subagent_type: "specd-reference-linter"`) with the spec path. It checks against the *current* repo and verifies that the files, symbols, named existing tests, and dependencies the spec references still exist (the spec may have been authored against an older state of the repo, then drifted). If it reports any MISSING or MISLOCATED references, stop and report to the user before implementing: a spec pointing at code that has since moved or vanished is a stale contract, not a starting point. (Glance at REVIEW rows — they're usually new things the spec intends to create.)
+3. **Validate the spec**: dispatch the `specd-reference-linter` agent (`subagent_type: "specd-reference-linter"`) with the spec path. It verifies the files, symbols, named tests, and dependencies the spec references still exist in the *current* repo (the spec may have drifted since it was authored). On any MISSING or MISLOCATED reference, stop and report before implementing: a spec pointing at moved or vanished code is a stale contract. (REVIEW rows are usually new things the spec intends to create.)
 
-4. **Run linters and type checkers** if available (check CLAUDE.md for commands) — via the test-runner. Record baseline. These catch mechanical issues for free.
+4. **Run linters and type checkers** if available (check CLAUDE.md, AGENTS.md), via the test-runner. Record baseline.
 
 ---
 
@@ -71,13 +69,13 @@ Read the spec's Approach, Constraints, Edge cases, and Do NOT sections. These ar
 ### Principles
 
 - Prefer a little repetition over the wrong abstraction. Do the simplest thing that satisfies the spec.
-- One logical change per commit. If the spec involves multiple concerns, commit each separately.
-- **Default to parallelizing independent work.** When the spec's concerns touch non-overlapping files, dispatch them as concurrent implementation subagents. Only stay single-threaded when the changes are genuinely interdependent. Pass each subagent these principles, the spec file path, and a targeted description of the change it needs to make; each must apply the principles in its work. Merge their output and verify the combined result **before any commit** — never commit unmerged or unverified subagent work.
-- **Fail loud.** Catch only the specific exceptions the code can raise; never catch base exception classes; never ship a stub that fakes success (`return True  # in a real implementation...`). Both hide brokenness behind plausible-looking success.
-- **Match this codebase.** Before writing anything new, find how this project already solves similar problems and follow that pattern; consolidate near-duplicates instead of adding parallel implementations.
-- **Least code that works.** No speculative abstractions, no indirection for single callers, stdlib over hand-rolling; delete dead code outright — git is the backup.
-- **Comments explain why, never what.** If a comment restates the code, delete it. Update adjacent comments when behavior changes.
-- **Test real behavior.** Realistic inputs through real libraries, deterministic sync (no sleeps), fixtures with real-world mess. Never modify a test to make it pass — flag it instead.
+- One logical change per commit. Commit each concern separately.
+- **Default to parallelizing independent work.** When the spec's concerns touch non-overlapping files, dispatch them as concurrent implementation subagents; stay single-threaded only when the changes are interdependent. Pass each subagent these principles, the spec path, and a targeted description of its change. Merge and verify the combined result **before any commit**; never commit unmerged or unverified subagent work.
+- **Fail loud.** Catch only the specific exceptions the code can raise; never catch base exception classes; never ship a stub that fakes success (`return True  # in a real implementation...`). Both hide brokenness behind plausible success.
+- **Match this codebase.** Find how this project already solves similar problems and follow that pattern; consolidate near-duplicates instead of adding parallel implementations.
+- **Least code that works.** No speculative abstractions, no indirection for single callers, stdlib over hand-rolling; delete dead code outright (git is the backup).
+- **Comments explain why, never what.** Delete a comment that restates the code. Update adjacent comments when behavior changes.
+- **Test real behavior.** Realistic inputs through real libraries, deterministic sync (no sleeps), fixtures with real-world mess. Never modify a test to make it pass; flag it instead.
 
 
 ### Doing the work
@@ -95,10 +93,10 @@ If the "Alternatives rejected" section lists an approach, do not use that approa
 After each logical unit of work, before committing:
 
 1. **Run linters and type checkers** (via the test-runner). Fix any new violations.
-2. **Run the tests relevant to the change** (via the test-runner; at minimum, the scope of the spec's verification command). All must pass — never commit on a red state you introduced.
-3. **Diff the tests.** Run `git diff` (and `git status`) against the test directories specifically. For every test file the change modified, deleted, or skipped, confirm the change is justified by the spec — not a weakened or removed assertion that papers over a failure. Record each touched test file and its justification for the summary. If a test was changed only to make it pass, revert it and fix the code instead.
+2. **Run the tests relevant to the change** via the `specd-test-runner` agent (`subagent_type: "specd-test-runner"`); at minimum the scope of the spec's verification command. All must pass; never commit on a red state you introduced.
+3. **Diff the tests.** Run `git diff` and `git status` against the test directories. For every test file the change modified, deleted, or skipped, confirm the spec justifies it, not a weakened assertion papering over a failure. Record each touched test file and its justification for the summary. If a test was changed only to make it pass, revert it and fix the code.
 
-Then commit with a clear message. Keep commits under 400 changed lines — review effectiveness drops sharply beyond that threshold. If a logical change exceeds 400 lines, split it into smaller commits.
+Then commit with a clear message. Keep commits under 400 changed lines (review effectiveness drops sharply beyond that); split a larger logical change into smaller commits.
 
 ---
 
@@ -106,41 +104,38 @@ Then commit with a clear message. Keep commits under 400 changed lines — revie
 
 **You are not done until the spec's verification criteria pass.**
 
-Have the test-runner run the verification command from the spec. Check every assertion:
-- All existing tests listed must still pass
-- All new behaviors described must be verified
-- If any check fails, fix it and re-verify (re-run via the test-runner)
+Have the `specd-test-runner` agent run the spec's verification command. Check every assertion:
+- All existing tests listed must still pass.
+- All new behaviors described must be verified.
+- On any failure, fix it and re-verify (re-run via the test-runner).
 
-Run linters and type checkers again (via the test-runner). Fix any new violations introduced by your changes.
+Run linters and type checkers again (via the test-runner); fix any new violations. Don't commit until verification passes, and don't trust your own judgment that the code is correct: run the actual commands.
 
-Do not commit until verification passes. Do not rely on your own judgment that the code is correct — run the actual commands.
-
-If verification fails after five fix attempts, **or if you find yourself re-applying a substantially similar fix**, stop and report the failure to the user with details. Five genuinely different hypotheses is healthy debugging; repeating the same fix is a stuck agent — the loop signal is repetition, not just the count.
+If verification fails after five fix attempts, **or you find yourself re-applying a substantially similar fix**, stop and report to the user with details. Five different hypotheses is healthy debugging; repeating the same fix is a stuck agent. The loop signal is repetition, not just the count.
 
 ---
 
 ## Final Review
 
-**First, re-read the spec's Constraints, Edge cases, and Do NOT sections.** This command runs long — implementation, four reviewers, and up to three fix-and-re-review rounds — which is exactly the session length where context compaction silently drops constraints. Re-anchor on the contract before reviewing, rather than trusting a compaction summary to have preserved it.
+**First, re-read the spec's Constraints, Edge cases, and Do NOT sections.** This command runs long (implementation, four reviewers, up to three fix-and-re-review rounds), exactly the session length where context compaction silently drops constraints. Re-anchor on the contract rather than trust a compaction summary to have preserved it.
 
-Then launch four review agents **in parallel** — a single message with four Agent tool calls. Do not self-review — models fail to correct their own errors.
+Then launch four review agents **in parallel** (one message, four Agent calls). Don't self-review; models fail to correct their own errors.
 
-1. **`specd-staff-reviewer`** (`subagent_type: "specd-staff-reviewer"`) — multi-pass review of the code: security, correctness, performance, reliability.
-2. **`specd-code-quality-reviewer`** (`subagent_type: "specd-code-quality-reviewer"`) — architectural hallucinations in AI-generated code
-3. **`specd-qa-reviewer`** (`subagent_type: "specd-qa-reviewer"`) — test quality, test coverage, and edge case handling.
-4. **`specd-compliance-reviewer`** (`subagent_type: "specd-compliance-reviewer"`) — did we build what the spec said we'd build?
+1. **`specd-staff-reviewer`** (`subagent_type: "specd-staff-reviewer"`): security, correctness, performance, reliability.
+2. **`specd-code-quality-reviewer`** (`subagent_type: "specd-code-quality-reviewer"`): architectural hallucinations in AI-generated code.
+3. **`specd-qa-reviewer`** (`subagent_type: "specd-qa-reviewer"`): test quality, coverage, edge-case handling.
+4. **`specd-compliance-reviewer`** (`subagent_type: "specd-compliance-reviewer"`): did we build what the spec said?
 
 Pass all four the same inputs:
-- `diff`: the full feature diff (`git diff <base-branch>...HEAD`, where `<base-branch>` is the branch this feature was cut from — usually `main` or `master`)
+- `diff`: the full feature diff (`git diff <base-branch>...HEAD`, where `<base-branch>` is the branch this feature was cut from, usually `main` or `master`)
 - `spec_path`: the spec file path
 
+When all four return, merge their findings (deduplicate overlap), then resolve:
 
-When all four return, merge their findings (deduplicate any overlap), then resolve them:
+- **Staff / QA / code-quality findings**: fix all BLOCKING and SHOULD_FIX. SUGGESTIONS may be deferred or skipped if out of scope; note any you skip and why.
+- **Compliance deviations** (NON_COMPLIANT): if the spec is right and the code drifted, fix the code. A deviation may instead be a reasonable amendment (an edge case the spec missed, a constraint that turned out wrong, e.g. spec said "retry 3 times" but exponential backoff with 5 retries is better). **You may *propose* an amendment; you may not unilaterally decide one and stamp yourself compliant.** Quietly rewriting the contract to match the code is how non-compliance gets laundered into compliance. So: list every proposed amendment under **Needs attention** in the summary (not just "resolved deviations"), and if the spec was modified during execution, get explicit user confirmation before flipping `Status` to `Implemented`. Do not finalize while uncorrected non-compliance remains.
 
-- **Staff / QA / code-quality findings**: fix all BLOCKING and SHOULD_FIX findings. SUGGESTIONS can be deferred or skipped if they're out of scope, but note any you skip and why.
-- **Compliance deviations** (NON_COMPLIANT): for each — if the spec is right and the code drifted, fix the code. A deviation may instead be a reasonable amendment (an edge case the spec missed, a constraint that turned out to be wrong — e.g. the spec said "retry 3 times" but exponential backoff with 5 retries is better). **You may *propose* an amendment; you may not unilaterally decide one and stamp yourself compliant.** The spec is the contract you are judged against — quietly rewriting it to match the code is how non-compliance gets laundered into compliance. So: never silently absorb an amendment. List every proposed amendment under **Needs attention** in the summary (not just "resolved deviations"), and if the spec was modified during execution, get explicit user confirmation before flipping `Status` to `Implemented`. Do not finalize while uncorrected non-compliance remains.
-
-After fixing, re-run each reviewer whose findings you addressed (or whose scope your fixes touched) until staff, code-quality, and QA all return APPROVE and compliance returns COMPLIANT. If reviewers still return BLOCKING findings after three review rounds, stop and report the open findings to the user rather than looping further.
+After fixing, re-run each reviewer whose findings you addressed (or whose scope your fixes touched) until staff, code-quality, and QA return APPROVE and compliance returns COMPLIANT. If BLOCKING findings remain after three rounds, stop and report the open findings rather than looping further.
 
 ---
 

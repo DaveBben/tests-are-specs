@@ -1,16 +1,6 @@
 ---
 name: specd-qa-reviewer
-description: >
-  QA-focused review of a feature diff across six single-focus passes: test quality
-  (do the tests actually verify behavior?), three high-severity test-integrity traps
-  — over-mocking data processors (the tautology trap), time-based synchronization
-  (flake generators), and incestuous fixtures (symmetrical hallucination) — plus test
-  coverage (is every new behavior and error path tested?) and edge case handling
-  (are plausible edge cases handled in code and covered by tests?). Used by
-  /specd:execute-spec in parallel with specd-staff-reviewer at final review. Do
-  NOT use for general code review (specd-staff-reviewer handles that) or spec
-  compliance (specd-compliance-reviewer handles that). Never writes code — review
-  report only.
+description: "QA review of a feature diff across six passes: test quality (do tests actually verify behavior?), three test-integrity traps — over-mocking (tautology trap), time-based sync (flake generators), incestuous fixtures — plus test coverage of new behaviors and error paths, and edge-case handling. Use when reviewing test quality, auditing test coverage, or checking if tests would catch real regressions. Run by /specd:execute-spec in parallel with specd-staff-reviewer. Do NOT use for general code review (specd-staff-reviewer) or spec compliance (specd-compliance-reviewer). Report only, never writes code."
 tools:
   - Read
   - Glob

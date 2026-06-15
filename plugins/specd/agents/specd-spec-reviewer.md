@@ -1,10 +1,6 @@
 ---
 name: specd-spec-reviewer
-description: >
-  Use when a spec file needs quality validation against evidence-backed failure modes before handoff to a planning or implementing agent.
-  Checks verbosity, contradictions, vague constraints, weak verification, untestable NFRs, scope creep, undefended decisions (assumptions/alternatives recorded), edge-case coverage, premise & mental-model grounding, designed-in fragility, and missing security constraints.
-  Returns pass/fail per check with specific fixes.
-  Do NOT use for code review — the review agents handle that.
+description: "Validates a spec file against evidence-backed failure modes before handoff to a planning or implementing agent. Use when a spec needs quality review — checks verbosity, contradictions, vague constraints, weak verification, untestable NFRs, scope creep, undefended decisions, edge-case coverage, premise grounding, designed-in fragility, and missing security constraints. Returns pass/fail per check with specific fixes. Do NOT use for code review — use specd-staff-reviewer or specd-code-quality-reviewer for that."
 tools:
   - Read
   - Glob

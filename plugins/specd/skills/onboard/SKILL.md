@@ -1,7 +1,6 @@
 ---
 name: onboard
-description: >
-  Use when onboarding a new or existing repository. Creates CLAUDE.md (quick-reference context), spec.md (living project specification), and .claude/rules/ files (spec maintenance and technical domain-scoped context loading). For multi-technical-domain projects, also creates technical domain-scoped spec.md files.
+description: "Use when onboarding a new or existing repository — setting up, initializing, or documenting a repo for the first time. Creates CLAUDE.md (quick-reference context), spec.md (living project specification), and .claude/rules/ files (spec maintenance and domain-scoped context loading). For multi-domain projects, also creates technical domain-scoped spec.md files."
 disable-model-invocation: true
 argument-hint: "[output-path]"
 model: opus

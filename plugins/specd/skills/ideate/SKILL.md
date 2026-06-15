@@ -4,18 +4,7 @@ argument-hint: "[the problem or idea you want to think through]"
 disable-model-invocation: true
 model: opus
 effort: xhigh
-description: >
-  Pair-design ideation session for engineering problems whose shape isn't settled yet.
-  Claude acts as a design partner: names the patterns in play, surfaces hidden decisions
-  and asymmetric failure modes, sanity-checks with arithmetic and the user's actual files,
-  and keeps the engineer as the decision-maker.
-  Converges turn by turn and ends with a Design Brief whose spec-seed paragraph pastes
-  directly into /specd:create-spec.
-  Use when the user wants to "think through", "discuss", "design", or "architect"
-  something, weigh approaches, or asks "what's the best way to build X" — BEFORE the
-  change is concrete enough for /specd:create-spec.
-  If the user already knows exactly what to build in a known codebase, point them at
-  /specd:create-spec instead.
+description: "Pair-design ideation session for engineering problems whose shape is not settled yet. Use when the user wants to think through, discuss, design, or architect something; weigh approaches; or asks what is the best way to build X — before the change is concrete enough for /specd:create-spec. Converges to a Design Brief whose spec-seed paragraph pastes directly into /specd:create-spec. If the user already knows exactly what to build in a known codebase, point them to /specd:create-spec instead."
 ---
 
 # Ideate — Pair-Design Session

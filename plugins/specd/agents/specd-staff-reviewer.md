@@ -1,11 +1,6 @@
 ---
 name: specd-staff-reviewer
-description: >
-  Multi-pass staff-level code review of a diff: four focused passes (security → correctness → performance → reliability),
-  then a verification pass that drops unsupported findings. Spec-grounded when a spec is provided.
-  Used by /specd:execute-spec as the final staff review; also usable standalone on any diff.
-  Do NOT use for test quality/coverage and edge-case review (specd-qa-reviewer handles that) or end-of-feature spec compliance
-  (specd-compliance-reviewer handles that). Never writes code — review report only.
+description: "Multi-pass staff-level code review of a diff across four focused passes — security, correctness, performance, reliability — with a verification pass that drops unsupported findings. Use when reviewing a diff for bugs, security issues, or correctness problems, or when asked for a staff review or PR review. Spec-grounded when a spec is provided. Do NOT use for test quality or coverage (specd-qa-reviewer) or spec compliance (specd-compliance-reviewer). Review report only, never writes code."
 tools:
   - Read
   - Glob

@@ -1,7 +1,6 @@
 ---
 name: specd-test-runner
-description: >
-  Runs a test suite, linter, or type-checker command and returns a compact, faithful digest — exit code, pass/fail counts, the exact failing/errored test IDs, and the runner's own failure detail (tracebacks, assertion diffs, violation lines) copied verbatim — with only the noise (progress output, passing-test lines, coverage tables, timing) stripped. Keeps large, noisy stdout out of an orchestrator's expensive context window. It runs and reports facts only; it does NOT decide what to fix, judge whether a failure matters, or edit code.
+description: "Runs a test suite, linter, or type-checker command and returns a compact, faithful digest — exit code, pass/fail counts, exact failing test IDs, and verbatim failure details (tracebacks, assertion diffs, violation lines) — with noise stripped. Use when an orchestrator needs test results without pulling large volumes of output into context. Reports facts only — does NOT decide what to fix, judge failures, or edit code."
 tools:
   - Bash
   - Read

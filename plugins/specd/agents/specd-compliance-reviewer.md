@@ -1,7 +1,6 @@
 ---
 name: specd-compliance-reviewer
-description: >
-  End-of-feature spec compliance review. Reads the whole feature diff against the spec's binding contract (Approach, Constraints, Do NOT, Alternatives rejected, Edge cases coverage, Files scope, Verification command). Used by /specd:execute-spec at final review, in parallel with specd-staff-reviewer and specd-qa-reviewer. Does NOT review for logic errors — the specd-staff-reviewer covers that. Returns COMPLIANT or structured deviations.
+description: "Checks whether a feature implementation matches its spec's binding contract — Approach, Constraints, Do NOT, Alternatives rejected, Edge cases, Files scope, and Verification command. Use when verifying spec compliance at the end of a feature. Run by /specd:execute-spec at final review in parallel with specd-staff-reviewer and specd-qa-reviewer. Does NOT check logic errors — specd-staff-reviewer covers that. Returns COMPLIANT or structured deviations with evidence."
 tools:
   - Read
   - Glob

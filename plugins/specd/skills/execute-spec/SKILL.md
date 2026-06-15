@@ -12,8 +12,7 @@ allowed-tools:
   - Edit
   - Write
   - Task
-description: >
-  Implements a spec produced by /specd:create-spec. Reads the spec, creates a feature branch, implements the changes, self-verifies, then runs parallel staff and QA reviews. Does not push or create PRs.
+description: "Implements a spec produced by /specd:create-spec. Reads the spec, creates a feature branch, implements the changes with self-verification, then runs parallel staff and QA reviews. Does not push or create PRs."
 ---
 
 # Execute — Implement a Spec

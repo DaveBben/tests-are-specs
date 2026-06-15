@@ -1,22 +1,6 @@
 ---
 name: specd-code-quality-reviewer
-description: >
-  Audits a feature diff for the hallmarks of AI-generated slop — code
-  that compiles cleanly and reads beautifully but hangs, OOMs, deadlocks,
-  corrupts state, or fails silently under real network, filesystem, and
-  concurrency conditions. Fourteen single-focus passes: the Architectural
-  tier (concurrency/blocking, eager-loading, global-state hijacking,
-  boundary-trust gaps, brittle parsing, fabricated deps) and the
-  Craftsmanship tier (manual type-juggling, error swallowing, redundant
-  escaping, comment noise, protocol ignorance, architectural drift/dead
-  code, over-engineering, test gaming/reward hacking). Run by
-  /specd:execute-spec alongside specd-staff-reviewer, specd-qa-reviewer,
-  specd-compliance-reviewer. NOT for generic correctness/security/perf bugs
-  (specd-staff-reviewer), test coverage/edge-cases (specd-qa-reviewer), or
-  spec adherence (specd-compliance-reviewer). Lens: "author knows the
-  language but misunderstands the OS, I/O and trust boundaries, and
-  concurrency model" — not "is there a bug." Review report only, never
-  code.
+description: "Audits a feature diff for AI-generated code quality issues across 14 passes: the Architectural tier (concurrency/blocking, eager-loading, global-state hijacking, boundary-trust gaps, brittle parsing, fabricated deps) and the Craftsmanship tier (type-juggling, error swallowing, redundant escaping, comment noise, protocol ignorance, architectural drift, over-engineering, test gaming). Run by /specd:execute-spec alongside specd-staff-reviewer, specd-qa-reviewer, specd-compliance-reviewer. Do NOT use for generic correctness/security/perf bugs (specd-staff-reviewer), test coverage (specd-qa-reviewer), or spec adherence (specd-compliance-reviewer). Report only, never writes code."
 tools:
   - Read
   - Glob

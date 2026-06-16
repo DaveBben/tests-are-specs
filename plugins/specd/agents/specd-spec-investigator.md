@@ -7,7 +7,7 @@ tools:
   - Grep
   - Bash
 model: sonnet
-maxTurns: 25
+maxTurns: 40
 effort: high
 ---
 

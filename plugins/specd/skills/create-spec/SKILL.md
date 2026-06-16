@@ -29,7 +29,7 @@ Precision stays (names, numbers) — unpack across sentences, don't drop detail.
 - **Frame the tradeoff**: "This makes [X] easier, but [Y] gets harder. Okay with that?"
 - **Offer a concrete alternative** only when you have a better path: "[alt] trades [X] for [Y] but avoids [problem]."
 
-**Read the code.** CLAUDE.md, Agents.md, and spec.md give orientation; read the relevant files to understand current behavior, downstream consumers, branching points, and existing assumptions. Agressively dispatch broad sweeps to `Explore` subagents.
+**Read the code.** CLAUDE.md, Agents.md, and spec.md give orientation; read the relevant files to understand current behavior, downstream consumers, branching points, and existing assumptions.
 
 **Surface every ambiguity that materially changes the design**, grounded in what you found. If the approach looks solid, say so; don't manufacture concerns.
 

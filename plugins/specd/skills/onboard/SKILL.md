@@ -164,7 +164,7 @@ Do not include tech stack, directory structure, or dev commands — those belong
 
 ### Phase 5: Self-Review
 
-Before presenting to the user, review the spec.md draft against these checks from [references/spec-standards.md](references/spec-standards.md):
+Before presenting to the user, review the whole spec.md draft against these checks from [references/spec-standards.md](references/spec-standards.md) — apply each check to every section, not just the first:
 
 **Required sections present:**
 - [ ] Current State (most critical — must be section #1, must describe what is implemented today)
@@ -230,11 +230,11 @@ Each question must reference the specific file, pattern, or discovery that promp
 |------|------|-------------|
 
 ### Features
-| Spec | Path | Description |
-|------|------|-------------|
+| Feature | Path | Status | Updated | Description |
+|---------|------|--------|---------|-------------|
 ```
 
-This index is the discovery mechanism for all specs in the project. The `/specd:create-spec` skill reads this table to find related specs and appends to it when creating new feature specs.
+This index is the discovery mechanism for all specs in the project. The `/specd:create-spec` skill reads this table to find related features and appends one rollup row per feature when creating one — the Path points at the feature's `index.md`, and the Status rolls up across that feature's slices.
 
 ### Phase 7: Review with User
 
@@ -256,7 +256,7 @@ Iterate — applying their feedback as edits to the files. End each round of cha
 
 **When to push back on feedback:** if user feedback would violate a quality principle (CLAUDE.md over 200 lines, adding linter rules, duplicating spec.md content, adding future-tense items to Current State), flag the conflict:
 > "That would [specific violation]. The quality guide recommends [alternative]. Want to proceed anyway, or adjust?"
-Do not silently apply feedback that degrades the file. Maximum 3 revision rounds — after that, suggest approving and iterating in a future session.
+When feedback would degrade the file, flag the conflict and ask before applying it — as shown above. Cap revision at 3 rounds; after that, suggest approving and iterating in a future session.
 
 Once the user replies "approved", update the **Status** field in spec.md (and any technical domain specs) from `Draft` to `Active`, and update the **Last verified** date to today.
 

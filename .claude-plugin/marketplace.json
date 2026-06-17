@@ -9,7 +9,7 @@
     {
       "name": "spec-monkey",
       "source": "./plugins/spec-monkey",
-      "description": "Research-grounded spec-driven pipeline: /spec-monkey:onboard, /spec-monkey:ideate, /spec-monkey:create-spec, /spec-monkey:execute-spec, /spec-monkey:bug",
+      "description": "spec-driven development pipeline",
       "version": "1.0.0",
       "author": {
         "name": "Dave"

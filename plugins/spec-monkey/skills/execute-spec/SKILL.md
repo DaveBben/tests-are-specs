@@ -12,7 +12,7 @@ allowed-tools:
   - Edit
   - Write
   - Task
-description: "Implements a spec produced by /specd:create-spec. Reads the spec, creates a feature branch, implements the changes with self-verification, then runs parallel staff and QA reviews. Does not push or create PRs."
+description: "Implements a spec produced by /spec-monkey:create-spec. Reads the spec, creates a feature branch, implements the changes with self-verification, then runs parallel staff and QA reviews. Does not push or create PRs."
 ---
 
 # Execute — Implement a Spec
@@ -46,7 +46,7 @@ Also read `CLAUDE.md`, and `AGENTS.md` for project conventions and build/test co
 
 ## Running tests and checks (always delegate)
 
-**Never run a test suite, linter, or type-checker inline** (their output is large and noisy). **Every time** you need to run one (the verification command, at baseline, before each commit, in the fix-loop, at finalize), dispatch the `specd-test-runner` agent (`subagent_type: "specd-test-runner"`) with the exact command and repo root.
+**Never run a test suite, linter, or type-checker inline** (their output is large and noisy). **Every time** you need to run one (the verification command, at baseline, before each commit, in the fix-loop, at finalize), dispatch the `spec-monkey-test-runner` agent (`subagent_type: "spec-monkey-test-runner"`) with the exact command and repo root.
 
 It returns a compact digest and only runs and reports. **You** judge which failures matter and what to fix. If a digest lacks the detail to debug a specific failure, ask the runner to re-run that one test with more verbosity (e.g. `-vv`), not the whole suite inline.
 
@@ -62,7 +62,7 @@ It returns a compact digest and only runs and reports. **You** judge which failu
 
 3. **Test baseline**: have the test-runner run the slice's verification command. Record the pass/fail state and the **exact names of any already-failing tests**. If tests already fail, warn the user and treat precisely those tests as the pre-existing-failure set: excluded from the must-pass set, while every other test must pass and none may regress. Don't expand this set later to excuse a failure you introduced.
 
-4. **Validate the spec**: dispatch the `specd-reference-linter` agent (`subagent_type: "specd-reference-linter"`) with the slice path. It verifies the files, symbols, named tests, and dependencies the slice references still exist in the *current* repo (the slice may have drifted since it was authored), and that any `depends_on` resolves to a sibling slice in the same folder. On any MISSING or MISLOCATED reference, stop and report before implementing: a slice pointing at moved or vanished code is a stale contract. (REVIEW rows are usually new things the slice intends to create.)
+4. **Validate the spec**: dispatch the `spec-monkey-reference-linter` agent (`subagent_type: "spec-monkey-reference-linter"`) with the slice path. It verifies the files, symbols, named tests, and dependencies the slice references still exist in the *current* repo (the slice may have drifted since it was authored), and that any `depends_on` resolves to a sibling slice in the same folder. On any MISSING or MISLOCATED reference, stop and report before implementing: a slice pointing at moved or vanished code is a stale contract. (REVIEW rows are usually new things the slice intends to create.)
 
 5. **Run linters and type checkers** if available (check CLAUDE.md, AGENTS.md), via the test-runner. Record baseline.
 
@@ -101,7 +101,7 @@ If the "Alternatives rejected" section lists an approach, do not use that approa
 After each logical unit of work, before committing:
 
 1. **Run linters and type checkers** (via the test-runner). Fix any new violations.
-2. **Run the tests relevant to the change** via the `specd-test-runner` agent (`subagent_type: "specd-test-runner"`); at minimum the scope of the spec's verification command. All must pass; never commit on a red state you introduced.
+2. **Run the tests relevant to the change** via the `spec-monkey-test-runner` agent (`subagent_type: "spec-monkey-test-runner"`); at minimum the scope of the spec's verification command. All must pass; never commit on a red state you introduced.
 3. **Diff the tests.** Run `git diff` and `git status` against the test directories. For every test file the change modified, deleted, or skipped, confirm the spec justifies it, not a weakened assertion papering over a failure. Record each touched test file and its justification for the summary. If a test was changed only to make it pass, revert it and fix the code.
 
 Then commit with a clear message. Keep commits under 400 changed lines (review effectiveness drops sharply beyond that); split a larger logical change into smaller commits.
@@ -112,7 +112,7 @@ Then commit with a clear message. Keep commits under 400 changed lines (review e
 
 **You are not done until the spec's verification criteria pass.**
 
-Have the `specd-test-runner` agent run the spec's verification command. Check every assertion:
+Have the `spec-monkey-test-runner` agent run the spec's verification command. Check every assertion:
 - All existing tests listed must still pass.
 - All new behaviors described must be verified.
 - On any failure, fix it and re-verify (re-run via the test-runner).
@@ -129,10 +129,10 @@ Stop and report to the user with details when either holds: verification has fai
 
 Then launch four review agents **in parallel** (one message, four Agent calls). Delegate every review to these agents; do not review your own diff, since models fail to correct their own errors.
 
-1. **`specd-staff-reviewer`** (`subagent_type: "specd-staff-reviewer"`): security, correctness, performance, reliability.
-2. **`specd-code-quality-reviewer`** (`subagent_type: "specd-code-quality-reviewer"`): architectural hallucinations in AI-generated code.
-3. **`specd-qa-reviewer`** (`subagent_type: "specd-qa-reviewer"`): test quality, coverage, edge-case handling.
-4. **`specd-compliance-reviewer`** (`subagent_type: "specd-compliance-reviewer"`): did we build what the spec said?
+1. **`spec-monkey-staff-reviewer`** (`subagent_type: "spec-monkey-staff-reviewer"`): security, correctness, performance, reliability.
+2. **`spec-monkey-code-quality-reviewer`** (`subagent_type: "spec-monkey-code-quality-reviewer"`): architectural hallucinations in AI-generated code.
+3. **`spec-monkey-qa-reviewer`** (`subagent_type: "spec-monkey-qa-reviewer"`): test quality, coverage, edge-case handling.
+4. **`spec-monkey-compliance-reviewer`** (`subagent_type: "spec-monkey-compliance-reviewer"`): did we build what the spec said?
 
 Pass all four the same inputs:
 - `diff`: this slice's diff (`git diff <base-branch>...HEAD`, where `<base-branch>` is `main`/`master`, the branch this slice was cut from)

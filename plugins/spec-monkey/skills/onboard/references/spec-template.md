@@ -221,11 +221,11 @@ Cross-cutting gotchas only; domain-specific gotchas go in domain specs. -->
 Status values: `Waiting Implementation` | `Implemented` | `Superseded` | `Deprecated` | `Needs Revision`.
 
 The `Updated` column tracks the spec lifecycle — it always holds the `YYYY-MM-DD` date of the most recent lifecycle event:
-- **Created**: `/specd:create-spec` adds the row as `Waiting Implementation`, `Updated` = creation date.
-- **Updated**: any edit refreshes `Updated`. `/specd:execute-spec` flips status to `Implemented` when verification passes; a spec needing changes before implementation is set to `Needs Revision`.
+- **Created**: `/spec-monkey:create-spec` adds the row as `Waiting Implementation`, `Updated` = creation date.
+- **Updated**: any edit refreshes `Updated`. `/spec-monkey:execute-spec` flips status to `Implemented` when verification passes; a spec needing changes before implementation is set to `Needs Revision`.
 - **Deleted**: never remove the row — set status to `Superseded` (replaced by a newer spec) or `Deprecated` (abandoned or feature removed) and refresh `Updated`. Keeping the row preserves the audit trail.
 
-Subsystem specs contain: domain-specific current state, conventions, interface contracts, external deps, testing gaps, boundaries, known issues, and gotchas. Loaded via `.claude/rules/` when working in that directory. Feature specs are created by `/specd:create-spec` and document individual code changes.
+Subsystem specs contain: domain-specific current state, conventions, interface contracts, external deps, testing gaps, boundaries, known issues, and gotchas. Loaded via `.claude/rules/` when working in that directory. Feature specs are created by `/spec-monkey:create-spec` and document individual code changes.
 
 ---
 

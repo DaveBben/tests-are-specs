@@ -1007,27 +1007,27 @@ Based on all measured findings:
 Based on all research findings, the TPE pipeline was simplified from 7 skills + 9 agents to 5 skills + 1 agent:
 
 ```
-/specd:onboard → docs/specs/spec.md (project spec + Spec Index)
+/spec-monkey:onboard → docs/specs/spec.md (project spec + Spec Index)
                 docs/specs/subsystems/{slug}/spec.md (if multi-domain)
 
-/specd:create-spec    → docs/specs/features/{slug}/spec.md (feature/change spec)
-                Checked by specd-spec-reviewer agent before presenting
+/spec-monkey:create-spec    → docs/specs/features/{slug}/spec.md (feature/change spec)
+                Checked by spec-monkey-spec-reviewer agent before presenting
 
-/specd:execute-spec → Reads spec, implements, reviews each commit via
+/spec-monkey:execute-spec → Reads spec, implements, reviews each commit via
                 subagent against the spec, verifies, commits
 
-/specd:review  → Standalone spec-grounded review for ad-hoc use
+/spec-monkey:review  → Standalone spec-grounded review for ad-hoc use
 
-/specd:bug     → Bug investigation (retained from original pipeline)
+/spec-monkey:bug     → Bug investigation (retained from original pipeline)
 ```
 
 ### What was removed and why
 
 | Removed | Research justification |
 |---------|----------------------|
-| `/specd:think` (242 lines) | Merged into `/specd:create-spec` — artificial separation dissolved when both need to read code |
-| `/specd:plan` (266 lines) | Replaced by spec + plan mode — no benchmark shows multi-phase outperforms a well-crafted prompt |
-| `plan-verifier` agent | Replaced by `specd-spec-reviewer` — same function, grounded in the new spec format |
+| `/spec-monkey:think` (242 lines) | Merged into `/spec-monkey:create-spec` — artificial separation dissolved when both need to read code |
+| `/spec-monkey:plan` (266 lines) | Replaced by spec + plan mode — no benchmark shows multi-phase outperforms a well-crafted prompt |
+| `plan-verifier` agent | Replaced by `spec-monkey-spec-reviewer` — same function, grounded in the new spec format |
 | `code-implementor` agent | execute-spec skill implements directly or uses generic subagents — no need for a dedicated agent |
 | `task-handoff-checker` agent | No task decomposition = no handoffs |
 | `refactor-opportunities` agent | Augment Code found separate "fix regressions" agents did not help |

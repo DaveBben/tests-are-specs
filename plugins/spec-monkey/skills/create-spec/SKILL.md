@@ -62,7 +62,18 @@ If the change is trivial, say so:
 
 ### Conversation
 
-Walk all six dimensions below, top to bottom. For each one, check the trigger in its parentheses. If the trigger is present, work that dimension. If the trigger is absent, state that it's absent and move on. Never skip a dimension without saying its trigger is absent.
+This phase has **two gates**, and they are separate turns. Do the concern sweep and present concerns (Gate 1). **Stop. Let the user discuss and reply.** Only after concerns are resolved do you slice and present the plan (Gate 2). Never dump concerns and the slice plan in the same message — that wall of text is the failure this structure prevents.
+
+#### Gate 1 — Surface and discuss concerns
+
+Sweep silently, then present. Two sources feed your concerns:
+
+1. **The six dimensions below.** Walk all six, top to bottom. Do not present them to the user — they ground your concerns, they aren't an output format. For each, check the trigger in its parentheses. If the trigger is present, work that dimension. If it's absent, note that to yourself and move on.
+2. **Everything else you uncovered walking the change path.** Why the approach might be wrong, design flaws, a better path, a hidden assumption — surface these alongside the dimension findings. The dimensions are a floor, not a ceiling.
+
+Present the grounded concerns to the user — the finding, then its consequence, per "How to behave." **Then stop and let the user respond.** Discuss, refine, and resolve each concern with them. Do not move to slicing until the risks are identified and accepted or mitigated, the approach is unambiguous, and the boundaries are set.
+
+The dimensions:
 
 **Intent & acceptance** (first):
 
@@ -101,7 +112,9 @@ Record each answer as a resolved `## Assumptions` entry or a measurement step. D
 
 > "What's explicitly NOT part of this change?"
 
-### Slice the feature
+#### Gate 2 — Slice and present the plan
+
+Only enter this gate once Gate 1's concerns are resolved. This is a **separate turn** from the concern discussion.
 
 Every feature ships as **ordered slices**, not one big spec. Slicing is the default, always — even a one-slice feature uses the folder + `index.md` format. There is no bare-`spec.md` path.
 
@@ -134,13 +147,13 @@ The approach, constraints, and alternatives you write must respect these princip
 
 **Branch first.** Before writing any file to disk — `index.md` or a slice — check the branch. If on `main`/`master`, create and switch to `spec/{slug}`. If on another branch, confirm with the user. Author the whole feature (`index.md` + every slice) on this one branch; per-slice branching is an execute-time concern.
 
-Then, before any slice spec, write the feature's `index.md` to `docs/specs/features/{slug}/index.md`, following `reference/index-template.md`. Populate the front-matter: `name: {slug}` matching the folder; `status: Waiting Implementation`; `created` and `modified` both today; `drafter` from `git config user.name`; `slices: {N}`; `depends_on: []` (or the slugs of other features this one depends on). Fill the Slices table from the approved slice plan — one row per slice (slug, file, depends-on, `Status: Waiting Implementation`, one-liner). This is the ordering record the slice specs and `/specd:execute-spec` both read.
+Then, before any slice spec, write the feature's `index.md` to `docs/specs/features/{slug}/index.md`, following `reference/index-template.md`. Populate the front-matter: `name: {slug}` matching the folder; `status: Waiting Implementation`; `created` and `modified` both today; `drafter` from `git config user.name`; `slices: {N}`; `depends_on: []` (or the slugs of other features this one depends on). Fill the Slices table from the approved slice plan — one row per slice (slug, file, depends-on, `Status: Waiting Implementation`, one-liner). This is the ordering record the slice specs and `/spec-monkey:execute-spec` both read.
 
 ### Draft each slice's sections
 
 Draft the slices **sequentially**, in dependency order — not in parallel. Sequential drafting bounds your context and lets an earlier slice's decisions inform the next. For each slice, draft the spec sections below into `docs/specs/features/{slug}/{slice}.md`.
 
-Dispatch steps 2–4 to `specd-spec-investigator` (`subagent_type: "specd-spec-investigator"`) with the slice's change description and relevant symbols. Write steps 1 and 5 yourself — they require your full mental model.
+Dispatch steps 2–4 to `spec-monkey-spec-investigator` (`subagent_type: "spec-monkey-spec-investigator"`) with the slice's change description and relevant symbols. Write steps 1 and 5 yourself — they require your full mental model.
 
 1. **Current behavior**: plain prose a newcomer can follow. Use `file:line` sparingly.
 2. **Files that matter**: every symbol the change touches — callers, type definitions, related tests. Target 6–10 files. Tag each `[modify]`/`[context]`/`[new]` (see the template); a thing you "add to" must exist or it's `[new]`. The investigator flags references it can't locate — resolve any phantom before tagging.
@@ -149,15 +162,15 @@ Dispatch steps 2–4 to `specd-spec-investigator` (`subagent_type: "specd-spec-i
 5. **Verification command**: the exact setup-and-run sequence — any dependency install with the extras the tests need, service start, or env step, then the command — then a checklist: Given/When/Then for user-facing behavior, plain bullets otherwise. Include at least one error-path bullet for I/O or untrusted input. A verification *seam* is a criterion that depends on a test mechanism whose limits the criterion alone hides. At each seam, name the mechanism, not just the property. The template names the three seam types and gives an example of each — see its "Seams to make concrete" list.
 6. **Optional domain sections**: add structured artifacts (schema definitions, state tables, migration plans) between "Current behavior" and "Alternatives rejected" if they aid review.
 
-Write each slice to `docs/specs/features/{slug}/{slice}.md` following `reference/spec-template.md` and `reference/writing-style.md` (read both if you haven't this session). Populate the YAML front-matter: `name: {slice}` matching the filename; `summary` — a one-line summary of the slice's change (this drives the execute-spec menu); `status: Waiting Implementation`; `created` and `modified` both today; `drafter` from `git config user.name`; `depends_on: [sibling slugs]` matching this slice's row in `index.md`. Leave `model`, `tokens`, `cost`, and `reasoning_effort` blank — `/specd:execute-spec` fills those at finalize.
+Write each slice to `docs/specs/features/{slug}/{slice}.md` following `reference/spec-template.md` and `reference/writing-style.md` (read both if you haven't this session). Populate the YAML front-matter: `name: {slice}` matching the filename; `summary` — a one-line summary of the slice's change (this drives the execute-spec menu); `status: Waiting Implementation`; `created` and `modified` both today; `drafter` from `git config user.name`; `depends_on: [sibling slugs]` matching this slice's row in `index.md`. Leave `model`, `tokens`, `cost`, and `reasoning_effort` blank — `/spec-monkey:execute-spec` fills those at finalize.
 
 ### Review each slice
 
 For each slice, after drafting it:
 
-Run `specd-reference-linter` (`subagent_type: "specd-reference-linter"`) on the slice. Fix every MISSING/MISLOCATED reference before proceeding.
+Run `spec-monkey-reference-linter` (`subagent_type: "spec-monkey-reference-linter"`) on the slice. Fix every MISSING/MISLOCATED reference before proceeding.
 
-Run `specd-spec-reviewer` (`subagent_type: "specd-spec-reviewer"`) with the slice path only. Fix any failing checks; don't hand them to the user. Re-run on the fixed slice. Loop up to 3 rounds; if still failing, present the remaining findings with what you tried.
+Run `spec-monkey-spec-reviewer` (`subagent_type: "spec-monkey-spec-reviewer"`) with the slice path only. Fix any failing checks; don't hand them to the user. Re-run on the fixed slice. Loop up to 3 rounds; if still failing, present the remaining findings with what you tried.
 
 **A scope-creep FAIL means re-slice, not split into a new feature.** The reviewer now judges the slice boundary. If a slice is too big, break it into more, smaller slices in this same folder — update `index.md` (and the slices count) and each affected `depends_on` to match.
 
@@ -189,8 +202,8 @@ Tell the user:
 > "Feature saved to `docs/specs/features/{slug}/` ({N} slices). Overview and ordering in `index.md`. Spec Index updated in `docs/specs/spec.md`.
 >
 > Clear your context and run the first slice:
-> `/specd:execute-spec docs/specs/features/{slug}/{first-slice}.md`
-> (or `/specd:execute-spec` with no args to pick the next unblocked slice.)"
+> `/spec-monkey:execute-spec docs/specs/features/{slug}/{first-slice}.md`
+> (or `/spec-monkey:execute-spec` with no args to pick the next unblocked slice.)"
 
 ---
 

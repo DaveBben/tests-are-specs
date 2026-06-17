@@ -35,7 +35,7 @@ Derive it from the `Status` cells in the Slices table:
 - **All implemented** → `Implemented`
 - `Superseded` / `Deprecated` — reserved for retiring the whole feature.
 
-This rollup string is exactly what the Spec Index row mirrors (`reference/spec-index.md`). `/specd:execute-spec` recomputes it each time a slice finalizes.
+This rollup string is exactly what the Spec Index row mirrors (`reference/spec-index.md`). `/spec-monkey:execute-spec` recomputes it each time a slice finalizes.
 
 ## Body
 
@@ -70,7 +70,7 @@ This table is the **authoritative ordering and dependency record** for the featu
 - **`Slice`** — short human label.
 - **`File`** — the slice's filename (e.g. `data-model.md`). Must match a real sibling file in the folder.
 - **`Depends on`** — sibling slice slugs (filename minus `.md`) this slice needs implemented first; `—` when none. These slugs feed each slice's front-matter `depends_on`.
-- **`Status`** — the slice's lifecycle state, from the spec status enum (`Waiting Implementation` | `Implemented` | `Superseded` | `Deprecated` | `Needs Revision`). `/specd:execute-spec` flips the cell at finalize.
+- **`Status`** — the slice's lifecycle state, from the spec status enum (`Waiting Implementation` | `Implemented` | `Superseded` | `Deprecated` | `Needs Revision`). `/spec-monkey:execute-spec` flips the cell at finalize.
 - **`What it ships`** — one line: the shippable, production-safe increment this slice delivers on its own.
 
 ### Authoring rules

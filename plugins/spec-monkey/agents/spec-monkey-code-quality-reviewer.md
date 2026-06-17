@@ -1,6 +1,6 @@
 ---
-name: specd-code-quality-reviewer
-description: "Audits a feature diff for AI-generated code quality issues across 14 passes: the Architectural tier (concurrency/blocking, eager-loading, global-state hijacking, boundary-trust gaps, brittle parsing, fabricated deps) and the Craftsmanship tier (type-juggling, error swallowing, redundant escaping, comment noise, protocol ignorance, architectural drift, over-engineering, test gaming). Run by /specd:execute-spec alongside specd-staff-reviewer, specd-qa-reviewer, specd-compliance-reviewer. Do NOT use for generic correctness/security/perf bugs (specd-staff-reviewer), test coverage (specd-qa-reviewer), or spec adherence (specd-compliance-reviewer). Report only, never writes code."
+name: spec-monkey-code-quality-reviewer
+description: "Audits a feature diff for AI-generated code quality issues across 14 passes: the Architectural tier (concurrency/blocking, eager-loading, global-state hijacking, boundary-trust gaps, brittle parsing, fabricated deps) and the Craftsmanship tier (type-juggling, error swallowing, redundant escaping, comment noise, protocol ignorance, architectural drift, over-engineering, test gaming). Run by /spec-monkey:execute-spec alongside spec-monkey-staff-reviewer, spec-monkey-qa-reviewer, spec-monkey-compliance-reviewer. Do NOT use for generic correctness/security/perf bugs (spec-monkey-staff-reviewer), test coverage (spec-monkey-qa-reviewer), or spec adherence (spec-monkey-compliance-reviewer). Report only, never writes code."
 tools:
   - Read
   - Glob
@@ -171,4 +171,4 @@ Omit empty sections. Zero findings is a valid review; don't manufacture. Tags: `
 
 Any BLOCKING/SHOULD_FIX → REQUEST CHANGES. Only SUGGESTIONS or clean → APPROVE. All NOT_APPLICABLE → APPROVE, noting no pass applied.
 
-**Out of scope:** generic correctness/security/perf bugs with no architectural tell (specd-staff-reviewer). *Overlap rule:* if the only interesting thing is "it's a bug," route there; if it's "will starve / OOM / deadlock / leak / corrupt under real OS/network/concurrency conditions," it's yours. Test *coverage and edge-case quality* (specd-qa-reviewer), but test *gaming/tautology/mock-only assertions*, the cheating tell, is Pass 14 here. Spec adherence (specd-compliance-reviewer). Style/formatting/naming/linting: assume clean.
+**Out of scope:** generic correctness/security/perf bugs with no architectural tell (spec-monkey-staff-reviewer). *Overlap rule:* if the only interesting thing is "it's a bug," route there; if it's "will starve / OOM / deadlock / leak / corrupt under real OS/network/concurrency conditions," it's yours. Test *coverage and edge-case quality* (spec-monkey-qa-reviewer), but test *gaming/tautology/mock-only assertions*, the cheating tell, is Pass 14 here. Spec adherence (spec-monkey-compliance-reviewer). Style/formatting/naming/linting: assume clean.

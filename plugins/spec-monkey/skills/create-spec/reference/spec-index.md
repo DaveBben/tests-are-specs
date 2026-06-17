@@ -24,7 +24,7 @@ The Status column mirrors `index.md`'s front-matter `status` verbatim — one of
 
 - **Waiting Implementation** — feature written, no slice implemented yet
 - **In Progress — {k}/{N} slices implemented** — some slices done, some not
-- **Implemented** — every slice's `/specd:execute-spec` finished and verification passed
+- **Implemented** — every slice's `/spec-monkey:execute-spec` finished and verification passed
 - **Superseded** — replaced by a newer feature that covers this change
 - **Deprecated** — feature abandoned or removed
 - **Needs Revision** — feature needs changes before it can be implemented
@@ -33,6 +33,6 @@ The Status column mirrors `index.md`'s front-matter `status` verbatim — one of
 
 The **Updated** column mirrors `index.md`'s front-matter `modified` date — set both to today's date (`YYYY-MM-DD`) on every lifecycle event:
 
-- **Creating**: new row, status `Waiting Implementation`, Updated = today. Added by `/specd:create-spec`.
-- **Updating**: `/specd:execute-spec` refreshes the rollup Status and Updated each time a slice finalizes. Adding or editing a slice in `/specd:create-spec` also bumps Updated. Update the description too if the feature scope changed.
+- **Creating**: new row, status `Waiting Implementation`, Updated = today. Added by `/spec-monkey:create-spec`.
+- **Updating**: `/spec-monkey:execute-spec` refreshes the rollup Status and Updated each time a slice finalizes. Adding or editing a slice in `/spec-monkey:create-spec` also bumps Updated. Update the description too if the feature scope changed.
 - **Deleting**: never delete the row — set status to `Superseded` or `Deprecated` and refresh Updated. Keeping the row preserves the audit trail so the decision isn't relitigated.

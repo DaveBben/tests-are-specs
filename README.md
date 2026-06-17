@@ -1,4 +1,4 @@
-# Spec-Driven Development (specd)
+# Spec Monkey
 
 A pipeline that attempts to ground its design choices in empirical research, keeping humans in architectural decisions while AI handles investigation and implementation.
 
@@ -11,16 +11,16 @@ Install as a Claude Code plugin:
 /plugin marketplace add DaveBben/claude-kiss
 
 # Install the plugin
-/plugin install specd@specd-marketplace
+/plugin install spec-monkey@spec-monkey-marketplace
 ```
 
 Or test locally:
 
 ```bash
-claude --plugin-dir ./plugins/specd
+claude --plugin-dir ./plugins/spec-monkey
 ```
 
-All skills are namespaced under `specd:` (e.g., `/specd:create-spec`, `/specd:execute-spec`).
+All skills are namespaced under `spec-monkey:` (e.g., `/spec-monkey:create-spec`, `/spec-monkey:execute-spec`).
 
 ---
 
@@ -28,22 +28,22 @@ All skills are namespaced under `specd:` (e.g., `/specd:create-spec`, `/specd:ex
 
 ```
 Is this a new codebase or one you haven't onboarded yet (brownfield)?
-  └── Yes → /specd:onboard  (creates CLAUDE.md + spec.md)
+  └── Yes → /spec-monkey:onboard  (creates CLAUDE.md + spec.md)
 
 Can the change be understood by a single diff?
   └── Yes → Use vanilla Claude Code with plan mode. No skills needed.
 
 Is it a bug?
-  └── Yes → /specd:bug → produces bug spec → /specd:execute-spec
+  └── Yes → /spec-monkey:bug → produces bug spec → /spec-monkey:execute-spec
 
 Want to think through a change before implementing?
-  └── Yes → /specd:create-spec → then plan mode
+  └── Yes → /spec-monkey:create-spec → then plan mode
 
 Ready to implement (you already have a spec or clear prompt)?
-  └── Yes → Plan mode directly, or /specd:execute-spec
+  └── Yes → Plan mode directly, or /spec-monkey:execute-spec
 
 Want a second set of eyes on what you're writing?
-  └── Yes → ask Claude to run the specd-staff-reviewer agent (multi-pass review — never writes code)
+  └── Yes → ask Claude to run the spec-monkey-staff-reviewer agent (multi-pass review — never writes code)
 ```
 
 ---
@@ -52,35 +52,35 @@ Want a second set of eyes on what you're writing?
 
 | Skill | What it does | Artifacts produced |
 |---|---|---|
-| `/specd:onboard` | Sets up context for a new or existing codebase | `CLAUDE.md`, `docs/specs/spec.md`, `docs/specs/subsystems/*/spec.md` |
-| `/specd:create-spec` | Thinking partner + spec producer — challenges your approach, then writes the spec | `docs/specs/features/{slug}/spec.md` |
-| `/specd:execute-spec` | Reads a spec, implements changes, verifies, then runs parallel staff + QA reviews | Branch, commits |
-| `/specd:bug` | Investigates a bug symptom, traces root cause, produces a bug spec | `docs/specs/bugs/{slug}/spec.md` |
+| `/spec-monkey:onboard` | Sets up context for a new or existing codebase | `CLAUDE.md`, `docs/specs/spec.md`, `docs/specs/subsystems/*/spec.md` |
+| `/spec-monkey:create-spec` | Thinking partner + spec producer — challenges your approach, then writes the spec | `docs/specs/features/{slug}/spec.md` |
+| `/spec-monkey:execute-spec` | Reads a spec, implements changes, verifies, then runs parallel staff + QA reviews | Branch, commits |
+| `/spec-monkey:bug` | Investigates a bug symptom, traces root cause, produces a bug spec | `docs/specs/bugs/{slug}/spec.md` |
 
 ---
 
 ## Skill Details
 
-### `/specd:onboard`
+### `/spec-monkey:onboard`
 
 Run this first on any codebase — new or existing. The skill reads the repository, asks targeted questions about purpose, tech stack, conventions, and constraints, then produces:
 
 - **`CLAUDE.md`** — quick-reference context that Claude Code loads on every conversation
 - **`spec.md`** — living specification describing what the system does, key decisions, and known constraints
 
-Once onboarded, `/specd:create-spec` and `/specd:bug` have rich context to work from, increasing the chances that AI agents implement changes without breaking existing data contracts.
+Once onboarded, `/spec-monkey:create-spec` and `/spec-monkey:bug` have rich context to work from, increasing the chances that AI agents implement changes without breaking existing data contracts.
 
-### `/specd:create-spec`
+### `/spec-monkey:create-spec`
 
 Thinking partner + spec producer in one conversation. You describe a change, Claude reads the codebase (not just CLAUDE.md/spec.md — the actual source files), challenges your assumptions with specific grounded concerns, then produces a complete spec ready for plan mode.
 
 **Phase 1 — Understand and Challenge:** Claude reads the relevant code and pushes back on your approach using techniques from cognitive science research: pre-mortem ("it shipped and broke — why?"), alternatives analysis, second-order thinking, and operational readiness. It's a conversation with a senior engineer, not an interview.
 
-**Phase 2 — Produce the Spec:** Claude investigates for precise file:line references, symbols, verification commands. Runs the `specd-spec-reviewer` agent to check for seven evidence-backed failure modes before presenting the spec.
+**Phase 2 — Produce the Spec:** Claude investigates for precise file:line references, symbols, verification commands. Runs the `spec-monkey-spec-reviewer` agent to check for seven evidence-backed failure modes before presenting the spec.
 
 Produces **`docs/specs/features/{slug}/spec.md`** — a contract between the human (who decides what and why) and the AI agent (who implements how). Hand it to plan mode to implement.
 
-### `/specd:execute-spec`
+### `/spec-monkey:execute-spec`
 
 Reads a spec and implements it:
 
@@ -88,13 +88,13 @@ Reads a spec and implements it:
 2. Implement changes following the spec's Approach, Constraints, Edge cases, and Do NOT
 3. Before each commit: run linters, type checkers, and the relevant tests — never commit red
 4. Run the spec's verification command — not done until it passes
-5. Final review in parallel: `specd-staff-reviewer` (code) + `specd-qa-reviewer` (tests & edge cases) + `specd-compliance-reviewer` (spec contract), then full test suite
+5. Final review in parallel: `spec-monkey-staff-reviewer` (code) + `spec-monkey-qa-reviewer` (tests & edge cases) + `spec-monkey-compliance-reviewer` (spec contract), then full test suite
 
 Does not push or create PRs. Uses subagents for parallel work when the spec involves independent concerns.
 
-### `/specd:bug`
+### `/spec-monkey:bug`
 
-Bugs start from a symptom, not a change request. Claude reads the code, traces the root cause using dual-frame analysis (backward from symptom + forward from suspected cause), and produces a bug spec with intended/actual behavior, repro steps, root cause, and mitigation approach. Feeds into `/specd:execute-spec` the same way feature specs do.
+Bugs start from a symptom, not a change request. Claude reads the code, traces the root cause using dual-frame analysis (backward from symptom + forward from suspected cause), and produces a bug spec with intended/actual behavior, repro steps, root cause, and mitigation approach. Feeds into `/spec-monkey:execute-spec` the same way feature specs do.
 
 ---
 
@@ -102,10 +102,10 @@ Bugs start from a symptom, not a change request. Claude reads the code, traces t
 
 | Agent | Role | Used by |
 |---|---|---|
-| `specd-spec-reviewer` | Checks specs for 7 evidence-backed failure modes before presenting to user | `/specd:create-spec`, `/specd:bug` |
-| `specd-staff-reviewer` | Multi-pass staff-level review of the full diff (security → correctness → performance → reliability) | `/specd:execute-spec` final review, or standalone on any diff |
-| `specd-qa-reviewer` | Test quality, test coverage, and edge case handling of the full diff | `/specd:execute-spec` final review, or standalone |
-| `specd-compliance-reviewer` | End-of-feature check that the implementation matches the spec's contract | `/specd:execute-spec` final review |
+| `spec-monkey-spec-reviewer` | Checks specs for 7 evidence-backed failure modes before presenting to user | `/spec-monkey:create-spec`, `/spec-monkey:bug` |
+| `spec-monkey-staff-reviewer` | Multi-pass staff-level review of the full diff (security → correctness → performance → reliability) | `/spec-monkey:execute-spec` final review, or standalone on any diff |
+| `spec-monkey-qa-reviewer` | Test quality, test coverage, and edge case handling of the full diff | `/spec-monkey:execute-spec` final review, or standalone |
+| `spec-monkey-compliance-reviewer` | End-of-feature check that the implementation matches the spec's contract | `/spec-monkey:execute-spec` final review |
 
 ---
 
@@ -117,16 +117,16 @@ Specs live under `docs/specs/`, bug tasks under `.claude/bugs/`:
 {project-root}/
   docs/
     specs/
-      spec.md                          ← project-level spec (produced by /specd:onboard)
+      spec.md                          ← project-level spec (produced by /spec-monkey:onboard)
       subsystems/
         {domain-slug}/
-          spec.md                      ← subsystem spec (produced by /specd:onboard)
+          spec.md                      ← subsystem spec (produced by /spec-monkey:onboard)
       features/
         {feature-slug}/
-          spec.md                      ← feature/change spec (produced by /specd:create-spec)
+          spec.md                      ← feature/change spec (produced by /spec-monkey:create-spec)
       bugs/
         {bug-slug}/
-          spec.md                      ← bug spec (produced by /specd:bug)
+          spec.md                      ← bug spec (produced by /spec-monkey:bug)
 ```
 
 The project-level `docs/specs/spec.md` contains a **Spec Index** — a table of contents listing all subsystem and feature specs with descriptions. This is how agents discover related specs without loading every file into context.
@@ -137,11 +137,11 @@ Feature specs are persistent artifacts that collectively document how the codeba
 
 ## Design Principles
 
-**Human decides, AI challenges, then AI implements.** `/specd:create-spec` reads the code and pushes back on assumptions. The human makes the final call. The spec captures the decision.
+**Human decides, AI challenges, then AI implements.** `/spec-monkey:create-spec` reads the code and pushes back on assumptions. The human makes the final call. The spec captures the decision.
 
 **The spec is the contract.** One artifact, under 300 words, with everything the implementing agent needs and nothing it doesn't. Every token must earn its place.
 
-**Context density over context volume.** Wrong context is worse than no context. Specs are reviewed by the `specd-spec-reviewer` agent for seven evidence-backed failure modes before the human sees them.
+**Context density over context volume.** Wrong context is worse than no context. Specs are reviewed by the `spec-monkey-spec-reviewer` agent for seven evidence-backed failure modes before the human sees them.
 
 **Regression prevention is the primary quality metric.** Targeted at-risk tests (human-confirmed, specific) reduce regressions 72%. Generic TDD instructions without targeted context increase them. The pipeline is designed around this finding.
 
@@ -263,7 +263,7 @@ Design choices map to empirical findings on how coding agents fail and how human
 | Principle | Key finding | Pipeline response |
 |-----------|------------|-------------------|
 | **Context precision over volume** | Wrong context is worse than none ([2602.08316](https://arxiv.org/abs/2602.08316)). Context types interfere ([2503.20589](https://arxiv.org/abs/2503.20589)). Structured context degrades review across all models tested ([2603.26130](https://arxiv.org/abs/2603.26130)). | Artifacts capped (brainstorm 200 lines, plan 200, task JSONs per-task only). Every field must earn its place. |
-| **Task decomposition** | Highest-ceiling intervention: +10–40pp ([2510.07772](https://arxiv.org/abs/2510.07772), [2311.05772](https://arxiv.org/abs/2311.05772)). Agents collapse from 74% to 11% on feature-level tasks ([2602.10975](https://arxiv.org/abs/2602.10975)). | `/specd:create-spec` and plan mode decompose into vertical slices, hard max 4 files per task. |
+| **Task decomposition** | Highest-ceiling intervention: +10–40pp ([2510.07772](https://arxiv.org/abs/2510.07772), [2311.05772](https://arxiv.org/abs/2311.05772)). Agents collapse from 74% to 11% on feature-level tasks ([2602.10975](https://arxiv.org/abs/2602.10975)). | `/spec-monkey:create-spec` and plan mode decompose into vertical slices, hard max 4 files per task. |
 | **Targeted test context** | Test dependency info reduced regressions 72%; generic TDD instructions *increased* them 42% ([2603.17973](https://arxiv.org/abs/2603.17973)). | Human-confirmed at-risk tests, multi-agent triangulated. Never instructs "write tests first." |
 | **Single agent** | Matches or beats multi-agent at fraction of cost ([2604.02460](https://arxiv.org/abs/2604.02460), [2505.18286](https://arxiv.org/abs/2505.18286)). Weaker model + strong scaffolding wins ([2512.10398](https://arxiv.org/abs/2512.10398)). | One agent per task. Haiku/Sonnet implements, Opus orchestrates. |
 | **Instruction brevity** | Shorter instructions quadrupled resolution ([2603.17973](https://arxiv.org/abs/2603.17973)). Context length alone degrades performance even with perfect retrieval ([2510.05381](https://arxiv.org/abs/2510.05381)). | Task JSONs carry intent, not procedures. |
@@ -275,10 +275,10 @@ Design choices map to empirical findings on how coding agents fail and how human
 
 | Principle | Key finding | Pipeline response |
 |-----------|------------|-------------------|
-| **Predict-before-reveal** | Predicting before seeing results improves learning and defends against anchoring ([2410.08922](https://arxiv.org/abs/2410.08922), [SSRN:6097646](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6097646)). | `/specd:create-spec` asks human to predict at-risk tests and propose approach before revealing findings. |
+| **Predict-before-reveal** | Predicting before seeing results improves learning and defends against anchoring ([2410.08922](https://arxiv.org/abs/2410.08922), [SSRN:6097646](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6097646)). | `/spec-monkey:create-spec` asks human to predict at-risk tests and propose approach before revealing findings. |
 | **Human decides, AI investigates** | Formulating hypotheses produces deeper learning than following suggestions ([2505.08063](https://arxiv.org/abs/2505.08063)). | AI never recommends. Human chooses approach, confirms boundaries, signs off scope. |
 | **Batch reveals** | Most AI interactions stay in a single metacognitive phase, skipping planning and evaluation ([2511.04144](https://arxiv.org/abs/2511.04144)). | Three sequential batches (impact → tests → approach), each gated on human response. |
-| **Inquiry over delegation** | Conceptual inquiry builds skill; code delegation erodes it ([2601.20245](https://arxiv.org/abs/2601.20245), [2506.08872](https://arxiv.org/abs/2506.08872)). | `/specd:create-spec` = inquiry mode (human). `/specd:execute-spec` = delegation (agent). |
+| **Inquiry over delegation** | Conceptual inquiry builds skill; code delegation erodes it ([2601.20245](https://arxiv.org/abs/2601.20245), [2506.08872](https://arxiv.org/abs/2506.08872)). | `/spec-monkey:create-spec` = inquiry mode (human). `/spec-monkey:execute-spec` = delegation (agent). |
 
 ### Cross-cutting
 

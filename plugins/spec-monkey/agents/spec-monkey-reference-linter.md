@@ -1,6 +1,6 @@
 ---
-name: specd-reference-linter
-description: "Fast mechanical existence-check of every reference in a spec file — files, symbols, line ranges, named tests, and third-party packages — against the actual repo and lockfile. Returns a pass/fail row per reference. Use as a cheap pre-pass before specd-spec-reviewer to catch stale references before the expensive judgment review. Does NOT judge design, correctness, or prose — only whether named things exist. Report only, never edits."
+name: spec-monkey-reference-linter
+description: "Fast mechanical existence-check of every reference in a spec file — files, symbols, line ranges, named tests, and third-party packages — against the actual repo and lockfile. Returns a pass/fail row per reference. Use as a cheap pre-pass before spec-monkey-spec-reviewer to catch stale references before the expensive judgment review. Does NOT judge design, correctness, or prose — only whether named things exist. Report only, never edits."
 tools:
   - Read
   - Glob

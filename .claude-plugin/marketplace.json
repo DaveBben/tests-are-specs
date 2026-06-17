@@ -1,15 +1,15 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "specd-marketplace",
+  "name": "spec-monkey-marketplace",
   "owner": {
     "name": "Dave"
   },
   "description": "Spec-driven development — the only skills you need to actually get work done",
   "plugins": [
     {
-      "name": "specd",
-      "source": "./plugins/specd",
-      "description": "Research-grounded spec-driven pipeline: /specd:onboard, /specd:ideate, /specd:create-spec, /specd:execute-spec, /specd:bug",
+      "name": "spec-monkey",
+      "source": "./plugins/spec-monkey",
+      "description": "Research-grounded spec-driven pipeline: /spec-monkey:onboard, /spec-monkey:ideate, /spec-monkey:create-spec, /spec-monkey:execute-spec, /spec-monkey:bug",
       "version": "1.0.0",
       "author": {
         "name": "Dave"

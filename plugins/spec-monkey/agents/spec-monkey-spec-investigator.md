@@ -1,5 +1,5 @@
 ---
-name: specd-spec-investigator
+name: spec-monkey-spec-investigator
 description: "Mechanical code-enumeration helper for spec authoring. Given a change description and seam symbols or files, greps the repo to locate every relevant caller, type definition, related test, and existing pattern — returning a structured index of file:line anchors with a one-line role each. Use when authoring a spec and need to map which files and callers are in scope. Does NOT decide what the change should be, judge design, or rank importance. Report only, never writes code or the spec."
 tools:
   - Read

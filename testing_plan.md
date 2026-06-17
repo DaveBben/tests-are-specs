@@ -66,7 +66,7 @@ review × artifact" below.
      "more effort wins," which we already know — we want to isolate the
      *spec*, not the effort.)
    - **C — Spec, reviewer disabled** — `create-spec` produces the spec,
-     but the `specd-spec-reviewer` step is turned off.
+     but the `spec-monkey-spec-reviewer` step is turned off.
    - **D — Full `create-spec`** — spec + reviewer. The shipping product.
    - **B — Plan + review (optional)** — arm A's plan run through an
      *analogous* generic critique-and-revise pass. Add only to test "is
@@ -110,7 +110,7 @@ Each contrast is scored with the pairwise method below (5 × 5 = 25
 matchups × both orders); pass-rate is computed per arm. Three arms =
 three pairwise contrasts (A–C, A–D, C–D).
 
-**Wrinkle:** `specd-spec-reviewer` is specialized for specs (it checks
+**Wrinkle:** `spec-monkey-spec-reviewer` is specialized for specs (it checks
 vague constraints, weak verification, untestable NFRs — sections a plain
 plan lacks). You can't bolt the identical agent onto the plan; B uses an
 *analogous* generic review pass, recorded as an analog, not an identical

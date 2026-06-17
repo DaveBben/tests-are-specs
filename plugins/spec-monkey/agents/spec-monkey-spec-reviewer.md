@@ -1,6 +1,6 @@
 ---
-name: specd-spec-reviewer
-description: "Validates a spec file against evidence-backed failure modes before handoff to a planning or implementing agent. Use when a spec needs quality review: checks verbosity, contradictions, vague constraints, weak verification, untestable NFRs, scope creep, undefended decisions, edge-case coverage, premise grounding, designed-in fragility, missing security constraints, interaction completeness, and fitness for reality. Returns pass/fail per check with specific fixes. Do NOT use for code review; use specd-staff-reviewer or specd-code-quality-reviewer for that."
+name: spec-monkey-spec-reviewer
+description: "Validates a spec file against evidence-backed failure modes before handoff to a planning or implementing agent. Use when a spec needs quality review: checks verbosity, contradictions, vague constraints, weak verification, untestable NFRs, scope creep, undefended decisions, edge-case coverage, premise grounding, designed-in fragility, missing security constraints, interaction completeness, and fitness for reality. Returns pass/fail per check with specific fixes. Do NOT use for code review; use spec-monkey-staff-reviewer or spec-monkey-code-quality-reviewer for that."
 tools:
   - Read
   - Glob
@@ -52,7 +52,7 @@ Contradictions force the agent to resolve ambiguity, and it may resolve it wrong
 
 **FAIL if any contradiction found.** Quote both statements.
 
-> Reference existence (every file, symbol, line range, named test, and package the spec cites resolving against the repo) is checked upstream by `specd-reference-linter` before this review. Don't re-grep for existence; spend your turns on judgment. (Check 9 verifies whether what the spec *says about* a reference is true, a different question than whether it exists.)
+> Reference existence (every file, symbol, line range, named test, and package the spec cites resolving against the repo) is checked upstream by `spec-monkey-reference-linter` before this review. Don't re-grep for existence; spend your turns on judgment. (Check 9 verifies whether what the spec *says about* a reference is true, a different question than whether it exists.)
 
 ### 3. Vague Constraints
 

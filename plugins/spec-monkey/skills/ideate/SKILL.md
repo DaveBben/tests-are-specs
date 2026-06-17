@@ -4,7 +4,7 @@ argument-hint: "[the problem or idea you want to think through]"
 disable-model-invocation: true
 model: opus
 effort: xhigh
-description: "Pair-design ideation session for engineering problems whose shape is not settled yet. Use when the user wants to think through, discuss, design, or architect something; weigh approaches; or asks what is the best way to build X — before the change is concrete enough for /specd:create-spec. Converges to a Design Brief whose spec-seed paragraph pastes directly into /specd:create-spec. If the user already knows exactly what to build in a known codebase, point them to /specd:create-spec instead."
+description: "Pair-design ideation session for engineering problems whose shape is not settled yet. Use when the user wants to think through, discuss, design, or architect something; weigh approaches; or asks what is the best way to build X — before the change is concrete enough for /spec-monkey:create-spec. Converges to a Design Brief whose spec-seed paragraph pastes directly into /spec-monkey:create-spec. If the user already knows exactly what to build in a known codebase, point them to /spec-monkey:create-spec instead."
 ---
 
 # Ideate — Pair-Design Session
@@ -118,7 +118,7 @@ ascii diagram if the topology matters}
 **Open questions:**
 - {what's unresolved and what would resolve it}
 
-**Spec seed — paste into /specd:create-spec:**
+**Spec seed — paste into /spec-monkey:create-spec:**
 > {ONE dense paragraph: what to build, the settled approach and key
 > decisions with their reasons, the alternatives already rejected (so spec
 > doesn't relitigate them), known risks, and the open questions spec should
@@ -126,6 +126,6 @@ ascii diagram if the topology matters}
 > human reader.}
 ```
 
-The spec seed is the contractual handoff: `/specd:create-spec` takes it as `$ARGUMENTS`, and its Phase 1 ("challenge") should start from these settled decisions instead of rediscovering them. Compress accordingly — every settled decision stated as settled *with its reason*, every rejected alternative named, so the spec's "Alternatives rejected" section writes itself.
+The spec seed is the contractual handoff: `/spec-monkey:create-spec` takes it as `$ARGUMENTS`, and its Phase 1 ("challenge") should start from these settled decisions instead of rediscovering them. Compress accordingly — every settled decision stated as settled *with its reason*, every rejected alternative named, so the spec's "Alternatives rejected" section writes itself.
 
 Don't force the close. If the user ends the session mid-design, offer the brief for what *has* settled, with the unsettled threads listed as open questions.

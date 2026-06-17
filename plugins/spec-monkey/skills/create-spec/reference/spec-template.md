@@ -1,8 +1,8 @@
 # Spec Template
 
-Read this when producing the spec in Phase 2. The implementing agent (`/specd:execute-spec`) consumes the result, so fill every section with the precision described in the placeholders.
+Read this when producing the spec in Phase 2. The implementing agent (`/spec-monkey:execute-spec`) consumes the result, so fill every section with the precision described in the placeholders.
 
-A feature is **sliced**: this template fills ONE slice file (`{slice}.md`) inside `docs/specs/features/{slug}/`. The folder also holds an `index.md` (see `index-template.md`) with the feature overview and slice ordering. Each slice is a complete, self-contained spec. `/specd:execute-spec` runs one slice per call, producing one PR. Size each slice to ship on its own without breaking production. One person reviews it in a sitting (~400 changed lines).
+A feature is **sliced**: this template fills ONE slice file (`{slice}.md`) inside `docs/specs/features/{slug}/`. The folder also holds an `index.md` (see `index-template.md`) with the feature overview and slice ordering. Each slice is a complete, self-contained spec. `/spec-monkey:execute-spec` runs one slice per call, producing one PR. Size each slice to ship on its own without breaking production. One person reviews it in a sitting (~400 changed lines).
 
 The spec serves two audiences with one document.
 
@@ -17,12 +17,12 @@ The implementation-contract sections below the divider are exempt. There, identi
 **Front-matter.** Every spec opens with a YAML front-matter block (`---` fences). A deterministic linter validates it. Fill the fields as follows:
 
 - `name` — the slice's slug, identical to its filename without `.md` (e.g. `data-model` for `data-model.md`). Matches this slice's row in `index.md`.
-- `summary` — a one-line summary of the change this slice makes. This is what `/specd:execute-spec` shows in its slice-selection menu, so keep it to a single, scannable line. Quote it if it contains a colon.
+- `summary` — a one-line summary of the change this slice makes. This is what `/spec-monkey:execute-spec` shows in its slice-selection menu, so keep it to a single, scannable line. Quote it if it contains a colon.
 - `status` — lifecycle state. One of: `Waiting Implementation` | `Implemented` | `Superseded` | `Deprecated` | `Needs Revision`. New specs start at `Waiting Implementation`.
 - `created` — `YYYY-MM-DD`, set once when the spec is first written; never changes.
 - `modified` — `YYYY-MM-DD`, refreshed on every edit or status change. Equals `created` at creation. The Spec Index "Updated" column mirrors this date.
 - `drafter` — who authored the spec; default to the git identity (`git config user.name`).
-- `model` — the model that *implemented* the spec. Leave blank during curation; `/specd:execute-spec` fills it at finalize. Omit, don't guess.
+- `model` — the model that *implemented* the spec. Leave blank during curation; `/spec-monkey:execute-spec` fills it at finalize. Omit, don't guess.
 - `tokens`, `cost`, `reasoning_effort` — optional execution metadata, also filled (if at all) at execute time. Leave blank during curation.
 - `depends_on` — optional, ordered list of **sibling slice slugs** in the same feature folder this slice needs implemented first (e.g. `['data-model']`). Use bare slugs, not paths. This mirrors this slice's row in `index.md`. `index.md` is authoritative. If they disagree, `index.md` wins. Use an empty list when none exist.
 

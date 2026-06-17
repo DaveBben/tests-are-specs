@@ -1,6 +1,6 @@
 ---
-name: specd-qa-reviewer
-description: "QA review of a feature diff across six passes: test quality (do tests actually verify behavior?), three test-integrity traps (over-mocking/tautology, time-based sync/flake, incestuous fixtures), test coverage of new behaviors and error paths, and edge-case handling. Use when reviewing test quality, auditing test coverage, or checking if tests would catch real regressions. Run by /specd:execute-spec in parallel with specd-staff-reviewer. Do NOT use for general code review (specd-staff-reviewer) or spec compliance (specd-compliance-reviewer). Report only, never writes code."
+name: spec-monkey-qa-reviewer
+description: "QA review of a feature diff across six passes: test quality (do tests actually verify behavior?), three test-integrity traps (over-mocking/tautology, time-based sync/flake, incestuous fixtures), test coverage of new behaviors and error paths, and edge-case handling. Use when reviewing test quality, auditing test coverage, or checking if tests would catch real regressions. Run by /spec-monkey:execute-spec in parallel with spec-monkey-staff-reviewer. Do NOT use for general code review (spec-monkey-staff-reviewer) or spec compliance (spec-monkey-compliance-reviewer). Report only, never writes code."
 tools:
   - Read
   - Glob
@@ -119,7 +119,7 @@ Re-check every candidate before reporting:
 6. Pass 4 (incestuous fixtures): does the payload actually cross an external-system boundary AND lack any recorded-fixture or schema grounding? Internal round-trips are out of scope.
 7. Does the finding meet its pass's evidence standard?
 
-Verify statically, by reading; don't run the test suite yourself (the specd-compliance-reviewer runs the spec's verification command, and duplicate runs waste budget).
+Verify statically, by reading; don't run the test suite yourself (the spec-monkey-compliance-reviewer runs the spec's verification command, and duplicate runs waste budget).
 
 Drop findings that fail. **False positives erode trust faster than false negatives.**
 
@@ -167,4 +167,4 @@ Omit empty severity sections. Zero findings is a valid outcome; don't manufactur
 - Any BLOCKING or SHOULD_FIX → REQUEST CHANGES.
 - Only SUGGESTIONS or clean → APPROVE.
 
-**Out of scope:** general code review (logic, security, performance: specd-staff-reviewer); spec compliance (specd-compliance-reviewer); style and formatting (linters).
+**Out of scope:** general code review (logic, security, performance: spec-monkey-staff-reviewer); spec compliance (spec-monkey-compliance-reviewer); style and formatting (linters).

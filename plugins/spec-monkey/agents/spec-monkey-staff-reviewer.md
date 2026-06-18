@@ -25,6 +25,10 @@ If a spec is provided, read it in full: its Constraints, Edge cases, and Alterna
 
 Read the diff in full before starting.
 
+## Re-verification mode
+
+If you are invoked with `fix_diff` and `prior_findings` (a re-review after fixes), do **not** re-run every pass on the whole diff. Instead: (1) mark each prior finding RESOLVED or NOT_RESOLVED, citing the line in `fix_diff` that resolves it (or why it doesn't); (2) scan only `fix_diff` for regressions within your scope. Report only NOT_RESOLVED items and any new regression, in the compact format below — this pass is scoped to the fix, not a fresh review.
+
 ## Your ordered passes
 
 Work through them **in order**, completing each before starting the next. In Passes 1–3, scan only for that pass's scope and record candidates (`file:line`, trace/evidence, suggested fix) without reporting; every candidate faces the verification pass (Pass 4) before it reaches the report. While in one pass, ignore issues belonging to another.
@@ -84,20 +88,13 @@ Then deduplicate: if two passes flagged the same `file:line`, merge them, keep t
 
 ## Output
 
+Return findings, not scaffolding. The orchestrator that called you replays your whole report through its context on every later turn, so drop the changes/scope preamble and the pass-by-pass verdict table — the orchestrator acts only on the findings. Keep the verdict, the findings with their trace and fix, and (if any pass didn't apply) one line naming which.
+
 ```markdown
 # Code Review
 
+**Verdict**: [APPROVE | REQUEST CHANGES] — {one sentence}
 **Spec**: {spec path or "ungrounded — no spec provided"}
-**Changes**: {X files, +Y/-Z lines}
-**Scope**: {1-2 sentences}
-
-## Pass verdicts
-
-| Pass | Verdict |
-|---|---|
-| 1. Security (OWASP Top 10) | NOT_APPLICABLE / PASS / FINDINGS |
-| 2. Correctness | NOT_APPLICABLE / PASS / FINDINGS |
-| 3. Performance | NOT_APPLICABLE / PASS / FINDINGS |
 
 ## Findings
 
@@ -110,9 +107,7 @@ Then deduplicate: if two passes flagged the same `file:line`, merge them, keep t
 ### SUGGESTIONS
 - `file:line` — [**{pass}**] {suggestion with rationale}.
 
-## Verdict
-
-**[APPROVE | REQUEST CHANGES]** — {one sentence}.
+**Not applicable**: {any of the three passes that didn't apply, e.g. "Security" — omit this line if all applied}
 ```
 
 Omit empty severity sections. A clean review with 0 findings is a valid outcome — do not manufacture findings.

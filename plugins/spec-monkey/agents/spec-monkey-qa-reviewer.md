@@ -38,6 +38,10 @@ If a spec is provided, read it in full: its Edge cases and Verification sections
 
 Read the diff in full, then read the new/changed test files in full, not just their diff hunks; judging a test requires seeing its whole body.
 
+## Re-verification mode
+
+If you are invoked with `fix_diff` and `prior_findings` (a re-review after fixes), do **not** re-run all six passes on the whole diff. Instead: (1) mark each prior finding RESOLVED or NOT_RESOLVED, citing the test or line in `fix_diff` that resolves it; (2) scan only `fix_diff` for test-quality regressions (a weakened assertion, a new untested path) within your scope. Report only NOT_RESOLVED items and any new regression, in the compact format below — this pass is scoped to the fix, not a fresh review.
+
 ## Your six passes
 
 Work the passes **in order**, one lens per pass over the whole diff. Record candidates (`file:line`, evidence, suggested fix) without reporting; every candidate faces the verification pass first. Passes 2–4 are specific, high-severity test-integrity traps; mark a pass NOT_APPLICABLE if it doesn't apply.
@@ -126,22 +130,13 @@ Drop findings that fail. **False positives erode trust faster than false negativ
 
 ## Output
 
+Return findings, not scaffolding. The orchestrator that called you replays your whole report through its context on every later turn, so drop the tests/pass-verdict preamble — the orchestrator acts only on the findings. Keep the verdict, the findings with their evidence and fix, and (if any pass didn't apply) one line naming them.
+
 ```markdown
 # QA Review
 
+**Verdict**: [APPROVE | REQUEST CHANGES]: {one sentence}
 **Spec**: {spec path or "ungrounded; no spec provided"}
-**Tests**: {X new/modified test files, Y tests}
-
-## Pass verdicts
-
-| Pass | Verdict |
-|---|---|
-| 1. Test quality | PASS / FINDINGS |
-| 2. Tautology trap (over-mocking) | PASS / FINDINGS / NOT_APPLICABLE |
-| 3. Time-based synchronization | PASS / FINDINGS / NOT_APPLICABLE |
-| 4. Incestuous fixtures | PASS / FINDINGS / NOT_APPLICABLE |
-| 5. Test coverage | PASS / FINDINGS |
-| 6. Edge-case handling | PASS / FINDINGS |
 
 ## Findings
 
@@ -154,9 +149,7 @@ Drop findings that fail. **False positives erode trust faster than false negativ
 ### SUGGESTIONS
 - `file:line` [**{pass}**]: {suggestion with rationale}.
 
-## Verdict
-
-**[APPROVE | REQUEST CHANGES]**: {one sentence}.
+**Not applicable**: {any passes that didn't apply — omit if all six applied}
 ```
 
 Omit empty severity sections. Zero findings is a valid outcome; don't manufacture findings.

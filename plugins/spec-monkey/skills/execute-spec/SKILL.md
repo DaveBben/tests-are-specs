@@ -144,7 +144,16 @@ When all four return, merge their findings (deduplicate overlap), then resolve:
 - **Staff / QA / code-quality findings**: fix all BLOCKING and SHOULD_FIX. SUGGESTIONS may be deferred or skipped if out of scope; note any you skip and why.
 - **Compliance deviations** (NON_COMPLIANT): if the spec is right and the code drifted, fix the code. A deviation may instead be a reasonable amendment — an edge case the spec missed, or a constraint that turned out wrong (e.g. the spec said "retry 3 times" but exponential backoff with 5 retries is better). You may **propose** an amendment. You may not decide one yourself and then mark the work compliant. Do not edit the spec to match the code and call that compliance. So: list every proposed amendment under **Needs attention** in the summary, not only under "resolved deviations". If you modified the spec during execution, get explicit user confirmation before flipping `Status` to `Implemented`. Do not finalize while any uncorrected non-compliance remains.
 
-After fixing, re-run each reviewer whose findings you addressed (or whose scope your fixes touched) until staff, code-quality, and QA return APPROVE and compliance returns COMPLIANT. If BLOCKING findings remain after three rounds, stop and report the open findings rather than looping further.
+After fixing, re-review in **re-verification mode** — a scoped re-check of your fixes, not a fresh full review. Re-dispatch only the reviewers whose findings you addressed (or whose scope your fixes touched), passing each:
+- `fix_diff`: the diff of just your fixes (the fixing commits, or `git diff` of the changes made since that review)
+- `prior_findings`: the specific findings from that reviewer you are claiming to have resolved
+- `spec_path`: as before.
+
+In this mode the reviewer marks each prior finding RESOLVED or NOT_RESOLVED and scans only `fix_diff` for regressions — it does not re-read the whole diff or re-run every pass. A fresh full review each round re-pays the entire diff + spec + file read; the scoped re-check does not.
+
+**Default to one re-review round.** Rounds past the first have steeply diminishing value: their extra findings are mostly low-confidence false positives, not new real bugs. Open a second round only if the first surfaced a **new BLOCKING** finding — one absent from the original review. The three-round ceiling is a backstop, not a target: stop and report any BLOCKING that remains after it, rather than looping further.
+
+Continue until staff, code-quality, and QA return APPROVE and compliance returns COMPLIANT (or you hit the ceiling).
 
 ---
 

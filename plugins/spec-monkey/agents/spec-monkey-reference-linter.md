@@ -88,28 +88,25 @@ V. **Reserved / colliding names** — REVIEW-flag any slice slug equal to the fe
 # Reference Lint
 
 **Spec**: {spec path}
-**Result**: {ALL VERIFIED | N issue(s): X missing, Y mislocated, Z review}
+**Result**: {ALL VERIFIED (N references) | N references checked: X verified, Y missing, Z mislocated, W review}
 
 ## References
 
 | Reference (spec claim) | Kind | Status | Detail |
 |---|---|---|---|
-| front-matter: required keys | front-matter | VERIFIED | `schema`, `name`, `summary`, `status`, `created`, `modified`, `drafter` all present |
-| front-matter: `schema` value | front-matter | VERIFIED | `schema: v2` |
 | front-matter: `name` matches file | front-matter | MISLOCATED | `name: data_model` but file is `data-model.md` |
 | front-matter: `status` enum | front-matter | MISSING | value `In Progress` not a valid status |
-| `depends_on: data-model` | front-matter | VERIFIED | sibling `data-model.md` exists in folder; listed in `_index.md` |
 | `depends_on: auth-rework` | front-matter | REVIEW | no sibling `auth-rework.md` in folder — may be planned |
-| `[modify] output.py:54` → `append_record` | file/symbol | VERIFIED | found at :54 |
 | `[modify] __main__.py:219` → `_persist` | file/symbol | MISLOCATED | symbol is at :231, not :219 |
 | `[modify] cdk.json` → `monitoring` block | file/symbol | MISSING | tagged `[modify]` but no `monitoring` key exists; should be `[new]` |
-| `[new] alarm_toggler/handler.py` | file/symbol | NEW (skipped) | does not exist yet, as expected; no collision |
 | `fastjsonschema` | dependency | MISSING | not in uv.lock; project pins `jsonschema` |
 | `tests/test_x.py::test_y` | existing test | MISSING | file exists, no `test_y` in it |
 | `tests/test_z.py` | test | REVIEW | spec may intend to add this — can't tell |
+
+(List only the non-VERIFIED rows like these — don't emit a row per verified reference; the verified ones are summarized by the count in the Result line.)
 
 ## To fix before review
 {Bulleted, only the MISSING / MISLOCATED rows, each with the concrete correction: the real path/line, the actual package name, or "remove the stale reference." Omit if ALL VERIFIED.}
 ```
 
-Report a row for every reference you checked — the verified ones too, so the orchestrator can see coverage. List each MISSING and MISLOCATED reference you found in "To fix." If every reference checks out, say so plainly — `Result: ALL VERIFIED` and an empty "To fix" section. Report a reference as MISSING or MISLOCATED only when the check shows it; don't invent an issue to fill a row.
+List a row only for references that are **not** VERIFIED — the MISSING, MISLOCATED, and REVIEW ones — and put the verified count in the Result line (e.g. `38 references checked: 35 verified, 2 missing, 1 review`). Don't emit a row per verified reference: the orchestrator acts only on issues, and this report is replayed through its context for the rest of the run. List each MISSING and MISLOCATED reference in "To fix." If every reference checks out, say so plainly — `Result: ALL VERIFIED (N references)`, an empty References table, and an empty "To fix" section. Report a reference as MISSING or MISLOCATED only when the check shows it; don't invent an issue to fill a row.

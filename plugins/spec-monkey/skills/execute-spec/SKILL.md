@@ -80,10 +80,11 @@ Read the slice's Approach, Constraints, and Edge cases sections. These are your 
 - One logical change per commit. Commit each concern separately.
 - **Default to parallelizing independent work.** When the spec's concerns touch non-overlapping files, dispatch them as concurrent implementation subagents; stay single-threaded only when the changes are interdependent. Pass each subagent these principles, the spec path, and a targeted description of its change. Merge and verify the combined result **before any commit**; never commit unmerged or unverified subagent work.
 - **Fail loud.** Catch only the specific exceptions the code can raise; never catch base exception classes; never ship a stub that fakes success (`return True  # in a real implementation...`). Both hide brokenness behind plausible success.
+- **Verify, don't predict.** Every import, package, and API method must exist in the version this project pins; check the lockfile or installed source before using it. Behavior counts too: when correctness depends on how a library or external system acts on malformed, truncated, empty, or boundary input (does it raise, return a sentinel, or silently truncate?), confirm it with a quick probe through the real dependency before relying on it. The shape of an API is not evidence of its behavior. This is where a dead error branch hides: the code assumes a raise that never fires.
 - **Match this codebase.** Find how this project already solves similar problems and follow that pattern; consolidate near-duplicates instead of adding parallel implementations.
 - **Least code that works.** No speculative abstractions, no indirection for single callers, stdlib over hand-rolling; delete dead code outright (git is the backup).
 - **Comments explain why, never what.** Delete a comment that restates the code. Update adjacent comments when behavior changes.
-- **Test real behavior.** Realistic inputs through real libraries, deterministic sync (no sleeps), fixtures with real-world mess. Never modify a test to make it pass; flag it instead.
+- **Test real behavior.** Realistic inputs through real libraries, deterministic sync (no sleeps), fixtures with real-world mess. Each test must be able to fail: name the production line that, broken or deleted, turns it red. Derive expected values independently; don't import the code's own constants or messages as the assertion target. Exercise an error path with genuinely bad input, not a payload built to match the handler. When sibling tests share an observable contract (a log line, an error field), every one of them asserts it. Never modify a test to make it pass; flag it instead.
 
 
 ### Doing the work
@@ -102,7 +103,7 @@ After each logical unit of work, before committing:
 
 1. **Run linters and type checkers** (via the test-runner). Fix any new violations.
 2. **Run the tests relevant to the change** via the `spec-monkey-test-runner` agent (`subagent_type: "spec-monkey-test-runner"`); at minimum the scope of the spec's verification command. All must pass; never commit on a red state you introduced.
-3. **Diff the tests.** Run `git diff` and `git status` against the test directories. For every test file the change modified, deleted, or skipped, confirm the spec justifies it, not a weakened assertion papering over a failure. Record each touched test file and its justification for the summary. If a test was changed only to make it pass, revert it and fix the code.
+3. **Diff the tests.** Run `git diff` and `git status` against the test directories. For every test file the change modified, deleted, or skipped, confirm the spec justifies it, not a weakened assertion papering over a failure. Record each touched test file and its justification for the summary. If a test was changed only to make it pass, revert it and fix the code. Confirm each new or changed test can fail: name the production line that, deleted, reddens it. A test that cannot fail is a finding, same as a weakened one.
 
 Then commit with a clear message. Keep commits under 400 changed lines (review effectiveness drops sharply beyond that); split a larger logical change into smaller commits.
 

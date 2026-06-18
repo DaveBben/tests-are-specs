@@ -137,11 +137,11 @@ A **slice** is one PR. Size each slice so it:
 
 The approach, constraints, and alternatives you write must respect these principles. Apply them to every slice you produce, not just the first — re-check each one as you shape that slice's spec:
 
-- **Verify, don't predict.** Every import, package, and API method must exist in the version this project pins — check the lockfile or installed source before using it.
+- **Verify, don't predict.** Every import, package, and API method must exist in the version this project pins; check the lockfile or installed source before using it. Behavior counts too: when correctness depends on how a library or external system acts on malformed, truncated, empty, or boundary input (does it raise, return a sentinel, or silently truncate?), confirm it with a quick probe through the real dependency before relying on it. The shape of an API is not evidence of its behavior. This is where a dead error branch hides: the code assumes a raise that never fires.
 - **Fail loud.** Catch only the specific exceptions the code can raise; never catch base exception classes; never ship a stub that fakes success. Both hide brokenness behind plausible-looking success.
 - **Match this codebase.** Before writing anything new, find how this project already solves similar problems and follow that pattern; consolidate near-duplicates instead of adding parallel implementations.
 - **Least code that works.** No speculative abstractions, no indirection for single callers, stdlib over hand-rolling; delete dead code outright
-- **Test real behavior.** Realistic inputs through real libraries, deterministic sync (no sleeps), fixtures with real-world mess. Never modify a test to make it pass — flag it instead.
+- **Test real behavior.** Realistic inputs through real libraries, deterministic sync (no sleeps), fixtures with real-world mess. Each test must be able to fail: name the production line that, broken or deleted, turns it red. Derive expected values independently; don't import the code's own constants or messages as the assertion target. Exercise an error path with genuinely bad input, not a payload built to match the handler. When sibling tests share an observable contract (a log line, an error field), every one of them asserts it. Never modify a test to make it pass; flag it instead.
 
 ### Write `_index.md` first
 

@@ -44,7 +44,7 @@ Size/memory/pagination limits must be enforced *during* stream ingestion. Flag l
 Flag mutating global config, env, runtime, or shared singletons to solve a local problem: default worker pools, global client timeouts, loggers, monkey-patched core libs. AI caps concurrency by shrinking the *global* pool, bottlenecking unrelated subsystems. Scope resources to the module that uses them.
 
 ### 4. Boundary trust & contract mismatches
-Don't trust docstrings/types. When internal logic needs clean, sanitized, or strict data, trace the flow backward; flag data crossing an external boundary (HTTP, DB, file parse) reaching strict internal logic with no validation/sanitization layer. AI writes a safe internal function, then feeds it raw untrusted input from the routing layer. Verify the caller enforces what the callee assumes.
+Don't trust docstrings/types. When internal logic needs clean, sanitized, or strict data, trace the flow backward; flag data crossing an external boundary (HTTP, DB, file parse) reaching strict internal logic with no validation/sanitization layer. AI writes a safe internal function, then feeds it raw untrusted input from the routing layer. Verify the caller enforces what the callee assumes. Equally, flag an error-handling branch whose trigger is an assumed library behavior that was never verified: code that treats malformed, truncated, or empty input as an exception path when the library actually returns a sentinel or partial result and never raises. The guard is then dead and the bad data flows on. The tell is an assumption about how a parse, decode, or decompress call fails, with no probe or test feeding real bad input through the real library.
 
 ### 5. Brittle parsing of structured data
 Flag regex/string-splitting to extract from hierarchical formats (HTML, XML, JSON, YAML, ASTs). LLMs bias to regex (fewer tokens); it breaks on a line break, attribute reorder, or quote-style flip. Demand a real structural parser, however "simple" the extraction looks.
@@ -88,7 +88,7 @@ Evidence: cite `file:line` and name the simpler form (the guard clause, the stdl
 ### 14. Test gaming & reward hacking
 Flag tests that pass without proving the code works:
 - **Gamed/cheating**: a test edited to match the buggy output, special-cased to the grader's inputs, hardcoded to the expected value, or skipped/`xfail`ed to go green.
-- **Tautological**: an assertion that can't fail (a literal compared to itself, the expected value re-derived by the code under test, `assert True`, or no assertion at all).
+- **Tautological**: an assertion that can't fail (a literal compared to itself, the expected value re-derived by the code under test or imported from the module under test, `assert True`, or no assertion at all).
 - **Testing the mock**: the test asserts on a mock/stub's own configured return, or mocks the very thing under test, so real code never runs.
 
 Pay special attention to any test the diff **modifies alongside the code it covers**, especially weakened or deleted assertions: an agent that can edit tests will change them to pass rather than fix the code (measured ~76% cheating on impossible SWE-bench tasks; making tests read-only drops it to near zero, per ImpossibleBench). A green suite then certifies broken code. Treat agent-edited tests as suspect and flag for manual review.
@@ -103,7 +103,7 @@ False positives here are easy: anything defensive sounds suspicious, any I/O cal
 2. **P1**: is the blocking call really on the async path in prod, or on a worker thread / behind `run_in_executor`/`spawn_blocking` / startup-only?
 3. **P2**: is the payload truly unbounded, or already capped upstream (capped response, `LIMIT`ed query)? Is the eager buffer on the hot path?
 4. **P3**: is the state truly global, or module/instance-local and correctly scoped?
-5. **P4**: is the unsanitized value reachable from an external boundary in prod, or is enforcement one frame up?
+5. **P4**: is the unsanitized value reachable from an external boundary in prod, or is enforcement one frame up? For an assumed-failure branch, confirm the library actually raises on that input (or that a test proves it); if it returns silently, the branch is dead.
 6. **P5**: is the input actually structured and adversarial, or a fixed internal format where regex is safe?
 7. **P6**: is the package genuinely absent from the lockfile AND not stdlib/well-known (not merely unfamiliar)? Is the method really absent from the pinned version's API?
 8. **P7**: does the project actually depend on a schema lib, or is manual checking the local idiom? No standard → not a finding.

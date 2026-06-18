@@ -21,7 +21,7 @@ Unifying thread: these tests verify the language's runtime semantics, not the sy
 
 1. **Mocking inside the unit, not at its boundary.** Tests stub the function-under-test's in-module collaborators rather than the real I/O seam, so all that's left to exercise is the if/elif/else ladder. Mock at the I/O boundary (HTTP client, DB driver), not at module-private helpers.
 2. **"Pin current behavior" change-detectors.** Comments like "pin the actual current behavior" or "lock in existing output" mean the author punted on what's correct. These block bug-fixing refactors. Demand a contract assertion, or delete.
-3. **Tautological assertions.** The test asserts on a value the code under test constructs, or restates a constant the code references. Derive the expected value independently of the code's logic.
+3. **Tautological assertions.** The test asserts on a value the code under test constructs, restates a constant the code references, or imports the expected value (an error message, constant, or mapping) from the production module and asserts the output equals it. The two sides then move together, so a wrong value stays green. Derive the expected value independently of the code's logic; restate the literal in the test.
 4. **Coverage theater.** A high test-to-code ratio concentrated on trivial paths while the failure modes that matter go uncovered. Map tests to behaviors, not lines; volume is not evidence.
 5. **"Concurrency" tests with no concurrency.** `asyncio.gather(mock(), mock())` with AsyncMocks that resolve instantly proves nothing about interleaving. Real concurrency tests need a coordination point that would expose a race; otherwise delete.
 6. **Schema-blind fixtures.** Mocks accept whatever shape is fed in, so the backend's contract isn't enforced: renamed fields, changed types, new required keys all sail through. Validate fixture shape against the real schema, use a typed fake, or hit a real test instance.
@@ -48,6 +48,7 @@ For each new or modified test, ask: **if the behavior it tests broke, would this
 
 - **Behavior, not implementation**: exercise the public API/contract. Tests asserting on private internals or mock call sequences break on refactor and pass on real bugs.
 - **Assertion strength**: assert specific values and side effects, not just "no exception", "not null", or truthiness. Error-path tests must assert the error type/effect, not merely that *something* was raised.
+- **Uniform assertions across siblings**: when several tests exercise the same observable contract (a log line, an `exception=` field, an error code), every one must assert it. A family where some assert the contract and others do not has silent gaps that drift; flag each test missing the shared assertion.
 - **Mock discipline**: mock only at boundaries (external services, clock, randomness). A test that mocks every collaborator re-tests the mocks, not the code. Watch for mocks of the unit under test, and mock returns that don't match the real dependency.
 - **Determinism**: no real time/sleeps, network, unseeded randomness, or dependence on execution order. Flaky tests get deleted or ignored; either way coverage silently dies.
 - **Right level**: logic/branch behavior in unit tests; component contracts (DB queries, serialization, API wiring) in integration tests; only critical journeys in e2e. Flag behavior tested at a slower level than needed, or unit tests that mock so much they should be integration tests.
@@ -80,7 +81,7 @@ Flag-on-sight #6 (schema-blind fixtures) is the quick tell; this pass demands th
 Coverage is about behaviors, not lines. Map new behavior to tests:
 
 - Every new public function/endpoint/branch the diff introduces has at least one test exercising it through realistic input.
-- Every error path has a test; AI code has 2x more error-handling gaps, and untested error paths are where they hide.
+- Every error path has a test; AI code has 2x more error-handling gaps, and untested error paths are where they hide. An error path that fires only when a library raises or signals on bad input must be exercised with genuinely malformed input through the real library, not a hand-built input that assumes the failure. The assumption that the library raises is itself the thing to verify: a truncated-stream decoder that returns partial output instead of raising leaves the except branch dead.
 - Every config value, flag, or mode added has each variant tested.
 - Every spec **Verification** assertion has a corresponding test.
 - Boundary inputs are tested, not just the happy middle: empty, one element, maximum, just-over-maximum.

@@ -52,9 +52,9 @@ If a symbol has hundreds of call-sites, report the representative ones and say h
 
 **Change**: {one-line restatement of what was asked}
 
-## Files that matter (candidates — author curates)
-- `path/file.ext` — `symbolA` (`:N`) (exists) {role}; `symbolB` (`:M`) (exists) {role}.
-- `path/named-but-absent` — `thing the change says to add to` (NOT FOUND) {what was searched}.
+## Files that matter (candidates — author curates: assigns New/Modified/Removed/Context and adds line estimates)
+- `path/file.ext` — `symbolA` (`:N`) (exists) {role}; `symbolB` (`:M`) (exists) {role}. — suggest **Modified** or **Context**
+- `path/named-but-absent` — `thing the change says to add to` (NOT FOUND) {what was searched}. — suggest **New**
 - ...
 
 ## Related tests

@@ -90,14 +90,14 @@ Vague non-functional requirements add tokens without improving outcomes. Scan fo
 
 This is one slice — one PR. Review effectiveness drops sharply beyond 400 lines, and adherence to each requirement drops as requirements multiply. Catching an oversized slice here is cheaper than after implementation.
 
-- Count files in "Files that matter" that will be **modified** (not just read).
+- Count files in "Files that matter" under **New + Modified + Removed** (Context is read-only — exclude it).
 - Count distinct concerns. A "concern" is a logically separable change (e.g., "swap model" and "remove tool calling" are two).
-- Estimate lines of change: read each modified file and estimate from the spec's Constraints, Edge cases, and Approach. Include new code (functions, tests, migrations). Err on the side of overestimating.
+- **Sum the `estimated lines` the spec states** for each New/Modified/Removed entry — don't re-estimate from prose; the author committed a number per file. Then audit it: for any entry the spec says to **rewrite, replace, or delete wholesale**, the honest estimate is the file's **real current line count** — open the file (or `wc -l`) and confirm the stated number isn't an under-count. A four-word "rewrite `tests/test_x.py`" that hides 1,140 changed lines is the exact failure this check exists to catch. An entry that clearly changes a file but carries no estimate is itself a FAIL — the author skipped the field.
 
 **FAIL if any threshold is exceeded:**
-- **>4 files** modified
+- **>4 files** changed (New + Modified + Removed)
 - **>3 distinct concerns**
-- **>400 estimated lines of change**
+- **>400 summed estimated lines of change**
 
 On failure, recommend **re-slicing the feature** — split this slice into more, smaller slices in the same folder, not a separate feature. Say which concerns or files go into which new slice, with a one-line description and the ordering/`depends_on` between them. Each resulting slice should ship on its own without breaking production and be independently verifiable.
 

@@ -51,7 +51,7 @@ For each **Edge case**, find where the code handles it and trace the input throu
 
 ### 5. Files scope
 
-Run `git diff --name-only` and compare against the spec's **Files that matter**. Flag any modified file not in the list.
+Run `git diff --name-only` and compare against the spec's **Files that matter**. The in-scope allowlist is the **New + Modified + Removed** groups. Flag any changed file not in those groups — and in particular, flag a **Context** file that appears in the diff (Context is read-only; changing it is out of scope). A **Removed** file should be gone from the tree; if it still exists, that's a FAIL.
 
 NOT failures:
 - New test files derived from "Files that matter" entries.

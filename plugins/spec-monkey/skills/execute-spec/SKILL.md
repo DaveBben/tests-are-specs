@@ -23,77 +23,70 @@ Read the spec. Do the work.
 
 ## Input
 
-A feature is a folder of **slices** (`docs/specs/features/{slug}/` with an `_index.md` plus one `{slice}.md` per slice). You run **one slice per call** — the chosen slice file is your contract, not `_index.md` and not its siblings. Resolve `$ARGUMENTS` to a single slice file:
+A feature is a folder of **slices** (`docs/specs/features/{slug}/` — an `_index.md` plus one `{slice}.md` each). Run **one slice per call**; that slice file is your contract, not `_index.md` or its siblings. Resolve `$ARGUMENTS`:
 
-1. **Full path to a slice** (`docs/specs/features/{slug}/{slice}.md`): use directly.
-2. **A feature folder or its `_index.md`**: read `_index.md`, then pick the **next unblocked slice** — the first row whose `Status` is `Waiting Implementation` and whose `Depends on` slices are all `Implemented`. If several are eligible, present them as a menu and ask.
-3. **A bare feature slug**: resolve `docs/specs/features/{slug}/_index.md`, then pick the next unblocked slice as in (2).
-4. **No input**: build the menu with a single shell pass — don't read every slice into your context just to filter it. Grep for the waiting status across both spec roots, **excluding `_index.md`**:
+1. **Full path to a slice**: use directly.
+2. **A feature folder or its `_index.md`**: read `_index.md`, pick the **next unblocked slice** — the first row with `Status: Waiting Implementation` whose `Depends on` slices are all `Implemented`. Several eligible → present a menu and ask.
+3. **A bare slug**: resolve `docs/specs/features/{slug}/_index.md`, then pick as in (2).
+4. **No input**: find waiting slices in one shell pass — don't read every slice into context just to filter:
 
    ```bash
    grep -liE '(\*\*)?status(\*\*)?:[[:space:]]*Waiting Implementation' \
-     docs/specs/features/*/*.md docs/specs/bugs/*/*.md 2>/dev/null \
-     | grep -v '/_index.md'
+     docs/specs/features/*/*.md docs/specs/bugs/*/*.md 2>/dev/null | grep -v '/_index.md'
    ```
 
-   (The `-i` makes it case-insensitive, so it matches the YAML front-matter `status:` key and still catches any older bold `**Status**:` body line. The `grep -v` drops the per-feature `_index.md`, whose rollup status is not a runnable slice.) For each match, read its front-matter **`summary`** field for the one-line description. Group the matches by feature and show only the eligible (unblocked) slices, with slug and summary, then ask the user to choose. If none match, tell the user.
+   For each match read its front-matter `summary`. Group by feature, show only unblocked slices (slug + summary), and ask. None → tell the user.
 
-Read the chosen slice in full. This is your contract.
-
-Also read `CLAUDE.md`, and `AGENTS.md` for project conventions and build/test commands, if it exists.
+Read the chosen slice **in full** — this is your contract. Also read `CLAUDE.md` and `AGENTS.md` (if present) for conventions and build/test commands.
 
 ---
 
 ## Running tests and checks (always delegate)
 
-**Never run a test suite, linter, or type-checker inline** (their output is large and noisy). **Every time** you need to run one (the verification command, at baseline, before each commit, in the fix-loop, at finalize), dispatch the `spec-monkey-test-runner` agent (`subagent_type: "spec-monkey-test-runner"`) with the exact command and repo root.
+**Never run a test suite, linter, or type-checker inline** — the output is large and noisy. **Every time** you need one (verification command, baseline, pre-commit, fix-loop, finalize), dispatch `spec-monkey-test-runner` (`subagent_type: "spec-monkey-test-runner"`) with the exact command and repo root.
 
-It returns a compact digest and only runs and reports. **You** judge which failures matter and what to fix. If a digest lacks the detail to debug a specific failure, ask the runner to re-run that one test with more verbosity (e.g. `-vv`), not the whole suite inline.
+It runs and returns a compact digest; **you** judge which failures matter and what to fix. If a digest lacks the detail to debug a failure, ask the runner to re-run that one test with more verbosity (`-vv`) — not the whole suite inline.
 
 ---
 
 ## Pre-flight
 
-1. **Check prerequisites**: read the feature's `_index.md`. Find the chosen slice's row and collect its `Depends on` slugs. (Cross-check the slice's front-matter `depends_on`; if the two disagree, `_index.md` wins — warn the user about the mismatch.) Read each prerequisite slice's `Status` from the index table. If any prerequisite is **not `Implemented`**, warn which slices come first and their statuses, then ask whether to proceed anyway — don't auto-abort or auto-proceed:
+1. **Prerequisites**: read `_index.md`, find the slice's row, collect its `Depends on` slugs. (Cross-check the slice's front-matter `depends_on`; on disagreement `_index.md` wins — warn the user.) Read each prerequisite's `Status`. If any is **not `Implemented`**, warn which come first and ask whether to proceed — don't auto-abort or auto-proceed.
 
-   > "Slice `api-endpoint` depends on `data-model`, still `Waiting Implementation`. Shipping now may not work end-to-end. Proceed anyway, or run `data-model` first?"
+2. **Branch**: on `main`/`master`, create `feature/{slug}/{slice}` so this slice is its own PR. On another branch, confirm with the user. **Never execute on main.**
 
-2. **Branch**: if on `main`/`master`, create `feature/{slug}/{slice}` (e.g. `feature/checkout/data-model`) so this slice becomes its own PR. If on another branch, confirm with user. Never execute on main. Each slice branches off `main`/`master` — slices are sized to ship on their own; the prerequisite check above guards ordering.
+3. **Test baseline**: have the test-runner run the slice's verification command. Record pass/fail and the **exact names of already-failing tests** — that is the pre-existing-failure set, excluded from must-pass. Every other test must pass and none may regress. Don't expand this set later to excuse a failure you introduced.
 
-3. **Test baseline**: have the test-runner run the slice's verification command. Record the pass/fail state and the **exact names of any already-failing tests**. If tests already fail, warn the user and treat precisely those tests as the pre-existing-failure set: excluded from the must-pass set, while every other test must pass and none may regress. Don't expand this set later to excuse a failure you introduced.
+4. **Validate the spec**: dispatch `spec-monkey-reference-linter` (`subagent_type: "spec-monkey-reference-linter"`) with the slice path. It checks that the files, symbols, named tests, and dependencies the slice cites still exist in the *current* repo. On any MISSING or MISLOCATED reference, stop and report before implementing — a slice pointing at moved or vanished code is a stale contract. (REVIEW rows are usually things the slice intends to create.)
 
-4. **Validate the spec**: dispatch the `spec-monkey-reference-linter` agent (`subagent_type: "spec-monkey-reference-linter"`) with the slice path. It verifies the files, symbols, named tests, and dependencies the slice references still exist in the *current* repo (the slice may have drifted since it was authored), and that any `depends_on` resolves to a sibling slice in the same folder. On any MISSING or MISLOCATED reference, stop and report before implementing: a slice pointing at moved or vanished code is a stale contract. (REVIEW rows are usually new things the slice intends to create.)
-
-5. **Run linters and type checkers** if available (check CLAUDE.md, AGENTS.md), via the test-runner. Record baseline.
+5. **Lint/type baseline**: if the project has linters or type checkers (per CLAUDE.md/AGENTS.md), run them via the test-runner and record baseline.
 
 ---
 
 ## Implementation
 
-In this section and the ones below, "the spec" means the chosen slice file — the contract you read in full above, not `_index.md` and not its sibling slices.
-
-Read the slice's Approach, Constraints, and Edge cases sections. These are your boundaries.
+"The spec" below means the chosen slice file, not `_index.md` or its siblings. Read its Approach, Constraints, and Edge cases — your boundaries.
 
 ### Principles
 
-- Prefer a little repetition over the wrong abstraction. Do the simplest thing that satisfies the spec.
-- One logical change per commit. Commit each concern separately.
-- **Default to parallelizing independent work.** When the spec's concerns touch non-overlapping files, dispatch them as concurrent implementation subagents; stay single-threaded only when the changes are interdependent. Pass each subagent these principles, the spec path, and a targeted description of its change. Merge and verify the combined result **before any commit**; never commit unmerged or unverified subagent work.
-- **Fail loud.** Catch only the specific exceptions the code can raise; never catch base exception classes; never ship a stub that fakes success (`return True  # in a real implementation...`). Both hide brokenness behind plausible success.
-- **Verify, don't predict.** Every import, package, and API method must exist in the version this project pins; check the lockfile or installed source before using it. Behavior counts too: when correctness depends on how a library or external system acts on malformed, truncated, empty, or boundary input (does it raise, return a sentinel, or silently truncate?), confirm it with a quick probe through the real dependency before relying on it. The shape of an API is not evidence of its behavior. This is where a dead error branch hides: the code assumes a raise that never fires.
-- **Match this codebase.** Find how this project already solves similar problems and follow that pattern; consolidate near-duplicates instead of adding parallel implementations.
+- One logical change per commit.
+- **Fail loud.** Catch only the specific exceptions the code can raise; never base classes; never ship a stub that fakes success.
+- **Match this codebase.** Follow how the project already solves similar problems; consolidate near-duplicates instead of adding parallel implementations.
 - **Least code that works.** No speculative abstractions, no indirection for single callers, stdlib over hand-rolling; delete dead code outright (git is the backup).
-- **Comments explain why, never what.** Delete a comment that restates the code. Update adjacent comments when behavior changes.
-- **Test real behavior.** Realistic inputs through real libraries, deterministic sync (no sleeps), fixtures with real-world mess. Each test must be able to fail: name the production line that, broken or deleted, turns it red. Derive expected values independently; don't import the code's own constants or messages as the assertion target. Exercise an error path with genuinely bad input, not a payload built to match the handler. When sibling tests share an observable contract (a log line, an error field), every one of them asserts it. Never modify a test to make it pass; flag it instead.
-
+- **Comments explain why, never what.** Delete a comment that restates the code; update adjacent comments when behavior changes.
+- **Test real behavior.** Realistic inputs through real libraries, deterministic sync (no sleeps), fixtures with real-world mess. Each test must be able to fail — name the production line that, deleted, reddens it. Derive expected values independently; don't import the code's own constants or messages as the assertion target. Exercise an error path with genuinely bad input. When sibling tests share an observable contract (a log line, an error field), every one asserts it. Never modify a test to make it pass; flag it instead.
 
 ### Doing the work
 
-Read each file in "Files that matter" before modifying it. Understand what's there before changing it.
+"Files that matter" is an index, not a reading list. The investigation already located each symbol and pinned it to a line — don't re-read whole files to rediscover it. Navigate by the anchors and each entry's group: 
+ - **Modified** → read the cited symbol and nearby lines 
+ - **Context** → read the cited range to orient
+ - **Removed** → read just enough to delete it cleanly
+ - **New** → read nothing, you're creating it
+  
+If an anchor is wrong or too thin to change the code safely, widen the read — then record it as a spec gap in the retrospective, because the index should have been enough.
 
-Implement the changes described in the spec. Use the "Current behavior" section to find the starting point. Use "Constraints" and "Edge cases" to guide the implementation and stay in scope. Follow the "Approach". If you encounter a blocker the approach didn't anticipate, stop and report rather than silently switching to a different approach.
-
-If the "Alternatives rejected" section lists an approach, do not use that approach, it was explicitly rejected during planning.
+Implement what the spec describes: "Current behavior" is your starting point, "Constraints" and "Edge cases" keep you in scope, follow the "Approach". Hit a blocker the Approach didn't anticipate → stop and report; don't silently switch approaches. Never use an approach listed under "Alternatives rejected" — it was rejected during planning.
 
 ---
 
@@ -101,11 +94,11 @@ If the "Alternatives rejected" section lists an approach, do not use that approa
 
 After each logical unit of work, before committing:
 
-1. **Run linters and type checkers** (via the test-runner). Fix any new violations.
-2. **Run the tests relevant to the change** via the `spec-monkey-test-runner` agent (`subagent_type: "spec-monkey-test-runner"`); at minimum the scope of the spec's verification command. All must pass; never commit on a red state you introduced.
-3. **Diff the tests.** Run `git diff` and `git status` against the test directories. For every test file the change modified, deleted, or skipped, confirm the spec justifies it, not a weakened assertion papering over a failure. Record each touched test file and its justification for the summary. If a test was changed only to make it pass, revert it and fix the code. Confirm each new or changed test can fail: name the production line that, deleted, reddens it. A test that cannot fail is a finding, same as a weakened one.
+1. **Lint and type-check** (via the test-runner). Fix new violations.
+2. **Run the relevant tests** (via the test-runner) — at minimum the spec's verification scope. All must pass; never commit on a red state you introduced.
+3. **Diff the tests.** `git diff`/`git status` the test directories. For every test file modified, deleted, or skipped, confirm the spec justifies it — not a weakened assertion papering over a failure. Record each touched test file and its justification for the summary. A test changed only to make it pass → revert it and fix the code. Confirm each new or changed test can fail (name the line that, deleted, reddens it); a test that cannot fail is a finding.
 
-Then commit with a clear message. Keep commits under 400 changed lines (review effectiveness drops sharply beyond that); split a larger logical change into smaller commits.
+Then commit with a clear message. Keep commits under 400 changed lines (review effectiveness drops sharply beyond that); split a larger change into smaller commits.
 
 ---
 
@@ -113,47 +106,32 @@ Then commit with a clear message. Keep commits under 400 changed lines (review e
 
 **You are not done until the spec's verification criteria pass.**
 
-Have the `spec-monkey-test-runner` agent run the spec's verification command. Check every assertion:
-- All existing tests listed must still pass.
-- All new behaviors described must be verified.
-- On any failure, fix it and re-verify (re-run via the test-runner).
+Have the test-runner run the spec's verification command and check every assertion: all listed existing tests still pass, all new behaviors are verified, and any failure gets fixed and re-verified. Run linters and type checkers again; fix new violations. Don't trust your own judgment that the code is correct — run the actual commands.
 
-Run linters and type checkers again (via the test-runner); fix any new violations. Don't commit until verification passes, and don't trust your own judgment that the code is correct: run the actual commands.
-
-Stop and report to the user with details when either holds: verification has failed after five fix attempts, or you are re-applying a substantially similar fix. Five different hypotheses is healthy debugging; repeating one fix means you are stuck. Watch for repetition, not just the attempt count.
+Stop and report when verification still fails after **five** fix attempts, or when you're re-applying a substantially similar fix. Five different hypotheses is healthy debugging; repeating one fix means you're stuck — watch for repetition, not just the attempt count.
 
 ---
 
 ## Final Review
 
-**First, re-read the spec's Constraints and Edge cases sections.** This command runs long (implementation, four reviewers, up to three fix-and-re-review rounds), exactly the session length where context compaction silently drops constraints. Re-anchor on the contract rather than trust a compaction summary to have preserved it.
+**First, re-read the spec's Constraints and Edge cases.** This command runs long (implementation, four reviewers, up to three fix rounds) — exactly where compaction silently drops constraints. Re-anchor on the contract, don't trust a summary to have kept it.
 
-Then launch four review agents **in parallel** (one message, four Agent calls). Delegate every review to these agents; do not review your own diff, since models fail to correct their own errors.
+Then launch four review agents **in parallel** (one message, four Agent calls). Delegate every review — don't review your own diff, since models fail to correct their own errors.
 
-1. **`spec-monkey-staff-reviewer`** (`subagent_type: "spec-monkey-staff-reviewer"`): security, correctness, performance, reliability.
-2. **`spec-monkey-code-quality-reviewer`** (`subagent_type: "spec-monkey-code-quality-reviewer"`): architectural hallucinations in AI-generated code.
-3. **`spec-monkey-qa-reviewer`** (`subagent_type: "spec-monkey-qa-reviewer"`): test quality, coverage, edge-case handling.
-4. **`spec-monkey-compliance-reviewer`** (`subagent_type: "spec-monkey-compliance-reviewer"`): did we build what the spec said?
+1. **`spec-monkey-staff-reviewer`**: security, correctness, performance, reliability.
+2. **`spec-monkey-code-quality-reviewer`**: architectural hallucinations in AI-generated code.
+3. **`spec-monkey-qa-reviewer`**: test quality, coverage, edge-case handling.
+4. **`spec-monkey-compliance-reviewer`**: did we build what the spec said?
 
-Pass all four the same inputs:
-- `diff`: this slice's diff (`git diff <base-branch>...HEAD`, where `<base-branch>` is `main`/`master`, the branch this slice was cut from)
-- `spec_path`: the slice file path
+Pass all four the same inputs — `diff`: `git diff <base-branch>...HEAD` (base = the `main`/`master` this slice cut from); `spec_path`: the slice file.
 
-When all four return, merge their findings (deduplicate overlap), then resolve:
+When all four return, merge their findings (dedup overlap) and resolve:
+- **Staff / QA / code-quality**: fix all BLOCKING and SHOULD_FIX. SUGGESTIONS may be deferred or skipped if out of scope — note which and why.
+- **Compliance (NON_COMPLIANT)**: if the spec is right and the code drifted, fix the code. A deviation may instead be a reasonable amendment — an edge case the spec missed, or a constraint that proved wrong. You may **propose** an amendment; you may not decide one yourself and then mark the work compliant, and never edit the spec to match the code and call that compliance. List every proposed amendment under **Needs attention**. If you modified the spec during execution, get explicit user confirmation before flipping `Status` to `Implemented`. Don't finalize while any uncorrected non-compliance remains.
 
-- **Staff / QA / code-quality findings**: fix all BLOCKING and SHOULD_FIX. SUGGESTIONS may be deferred or skipped if out of scope; note any you skip and why.
-- **Compliance deviations** (NON_COMPLIANT): if the spec is right and the code drifted, fix the code. A deviation may instead be a reasonable amendment — an edge case the spec missed, or a constraint that turned out wrong (e.g. the spec said "retry 3 times" but exponential backoff with 5 retries is better). You may **propose** an amendment. You may not decide one yourself and then mark the work compliant. Do not edit the spec to match the code and call that compliance. So: list every proposed amendment under **Needs attention** in the summary, not only under "resolved deviations". If you modified the spec during execution, get explicit user confirmation before flipping `Status` to `Implemented`. Do not finalize while any uncorrected non-compliance remains.
+After fixing, re-review in **re-verification mode** — a scoped re-check of your fixes, not a fresh full review. Re-dispatch only the reviewers whose findings you addressed, passing each `fix_diff` (the diff of just your fixes), `prior_findings` (their findings you claim resolved), and `spec_path`. They mark each RESOLVED/NOT_RESOLVED and scan only `fix_diff` for regressions — a fresh full review re-pays the entire diff + spec; the scoped check doesn't.
 
-After fixing, re-review in **re-verification mode** — a scoped re-check of your fixes, not a fresh full review. Re-dispatch only the reviewers whose findings you addressed (or whose scope your fixes touched), passing each:
-- `fix_diff`: the diff of just your fixes (the fixing commits, or `git diff` of the changes made since that review)
-- `prior_findings`: the specific findings from that reviewer you are claiming to have resolved
-- `spec_path`: as before.
-
-In this mode the reviewer marks each prior finding RESOLVED or NOT_RESOLVED and scans only `fix_diff` for regressions — it does not re-read the whole diff or re-run every pass. A fresh full review each round re-pays the entire diff + spec + file read; the scoped re-check does not.
-
-**Default to one re-review round.** Rounds past the first have steeply diminishing value: their extra findings are mostly low-confidence false positives, not new real bugs. Open a second round only if the first surfaced a **new BLOCKING** finding — one absent from the original review. The three-round ceiling is a backstop, not a target: stop and report any BLOCKING that remains after it, rather than looping further.
-
-Continue until staff, code-quality, and QA return APPROVE and compliance returns COMPLIANT (or you hit the ceiling).
+**Default to one re-review round.** Later rounds mostly surface low-confidence false positives, not real bugs. Open a second only on a **new BLOCKING** finding absent from the original review. The three-round ceiling is a backstop, not a target — stop and report any BLOCKING that remains after it. Continue until staff, code-quality, and QA APPROVE and compliance is COMPLIANT (or you hit the ceiling).
 
 ---
 
@@ -161,29 +139,26 @@ Continue until staff, code-quality, and QA return APPROVE and compliance returns
 
 After verification passes:
 
-1. Run the full test suite (from CLAUDE.md's operational commands) via the test-runner to check for regressions beyond the spec's verification scope. Fix any regressions before finalizing.
+1. Run the **full** test suite (CLAUDE.md's operational commands, via the test-runner) to catch regressions beyond the spec's scope. Fix any before finalizing.
 
-2. Update the slice's front-matter `modified` date to today if implementation revealed new constraints or edge cases worth recording (or if the compliance review prompted amendments). Leave the front-matter `execution` block for the cost step (step 5) below; you can't self-measure the run, so it's filled from `/cost` after the summary.
+2. Update the slice's front-matter `modified` to today if implementation revealed new constraints or edge cases worth recording (or compliance prompted amendments). Leave the `execution` block for step 5.
 
-3. **Flip status in three places** — slice, then `_index.md`, then the Spec Index. **If the slice was amended during execution, do not flip to `Implemented` without explicit user confirmation** — present the amendments first (step 4) and wait. Otherwise:
-
+3. **Flip status in three places** — slice, `_index.md`, Spec Index. **If the slice was amended during execution, don't flip to `Implemented` without explicit user confirmation** (present the amendments in step 4 first). Otherwise:
    a. **Slice front-matter**: `status` → `Implemented`.
-
-   b. **`_index.md`** (`docs/specs/features/{slug}/_index.md`): flip this slice's `Status` cell in the Slices table to `Implemented`. Then **recompute the front-matter rollup `status`** from the table — `In Progress — {k}/{N} slices implemented` if some remain, `Implemented` if all are now done (see `index-template.md`). Bump `_index.md`'s `modified` to today.
-
-   c. **Spec Index** (`docs/specs/spec.md`): copy `_index.md`'s new rollup string into the feature row's Status column, and set its `Updated` column to today. If the feature lives under `docs/specs/bugs/`, update the Bugs table; otherwise the Features table.
+   b. **`_index.md`**: flip this slice's `Status` cell, then recompute the front-matter rollup `status` from the table (`In Progress — {k}/{N} slices implemented`, or `Implemented` if all are done; see `index-template.md`). Bump `modified` to today.
+   c. **Spec Index** (`docs/specs/spec.md`): copy the new rollup into the feature row's Status, set `Updated` to today. A feature under `docs/specs/bugs/` updates the Bugs table; otherwise Features.
 
 4. Present a summary:
    - **Branch**: name (`feature/{slug}/{slice}`) and commit count
-   - **Next slice**: the next unblocked slice from `_index.md` to run, or "all slices implemented — feature complete"
-   - **What was done**: 2-3 sentences
-   - **Verification**: pass/fail status, and the pre-existing-failure set excluded at baseline
-   - **Final review findings**: issues caught and fixed by the staff, code-quality, and QA reviews
+   - **Next slice**: the next unblocked slice from `_index.md`, or "all slices implemented — feature complete"
+   - **What was done**: 2–3 sentences
+   - **Verification**: pass/fail, plus the pre-existing-failure set excluded at baseline
+   - **Final review findings**: issues caught and fixed by the reviews
    - **Tests touched**: every test file modified, deleted, or skipped, each with its spec justification (or "none")
-   - **Compliance review**: COMPLIANT, or list of resolved deviations
-   - **Spec gaps** (if any): context you had to discover beyond the spec — a reference you re-located, a file it didn't point to, behavior or a data contract you reverse-engineered, setup it omitted. One concrete line each. This is the spec's retrospective: how the next spec improves and where CLAUDE.md gaps surface. List every gap you actually hit during execution. Write "none" if the spec was sufficient; report a gap only when you hit one, not to look thorough.
-   - **Needs attention** (if any): every spec amendment proposed or made during execution, plus anything unexpected or that the user should review
+   - **Compliance**: COMPLIANT, or list of resolved deviations
+   - **Spec gaps** (if any): context you had to discover beyond the spec — a reference you re-located, a file it didn't point to, behavior or a data contract you reverse-engineered, setup it omitted. One concrete line each; this is the spec's retrospective. "none" if the spec was sufficient — report a gap only when you hit one, not to look thorough.
+   - **Needs attention** (if any): every spec amendment proposed or made, plus anything the user should review
 
-5. Offer to record the run's cost. Tell the user: "If you want this run's cost recorded in the slice's `execution` block, run `/cost` and paste the output here; I'll fill it in." If the user pastes `/cost` output, fill the slice's front-matter `execution` block from it: `total_cost` from "Total cost", `total_duration` from the wall duration, and one `usage_by_models` entry per model (`model`, `input`, `output`, `cache_read`, `cache_write`, `cost`). Bump the slice's `modified` to today.
+5. Offer to record the run's cost: "If you want this run's cost recorded in the slice's `execution` block, run `/cost` and paste the output." If pasted, fill the `execution` block — `total_cost` from "Total cost", `total_duration` from the wall duration, one `usage_by_models` entry per model (`model`, `input`, `output`, `cache_read`, `cache_write`, `cost`). Bump the slice's `modified` to today.
 
 **Do NOT push or create a PR.** The user handles this.

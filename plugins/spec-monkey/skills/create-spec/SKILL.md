@@ -15,7 +15,8 @@ Dense, nested prose strains working memory — close each loop fast.
 - One idea per sentence; conclusion first. Caveats get their own sentence.
 - Actor then action: "PHP drops the fields," not "truncation occurs." Verbs over nouns.
 - Keep subject next to verb; repeat the noun rather than "it."
-- Plain words; define load-bearing terms once. Lists over walls of text.
+- Lists over walls of text.
+- Always ask one question at a time.
 
 Precision stays (names, numbers) — unpack across sentences, don't drop detail.
 
@@ -28,11 +29,7 @@ Precision stays (names, numbers) — unpack across sentences, don't drop detail.
 - **Frame the tradeoff**: "This makes [X] easier, but [Y] harder. Okay with that?"
 - **Offer a concrete alternative** only when you have a better path: "[alt] trades [X] for [Y] but avoids [problem]."
 
-**Read the code.** CLAUDE.md, AGENTS.md, and spec.md orient you; read the relevant files for current behavior, downstream consumers, branching points, and existing assumptions.
-
-**Surface every ambiguity that materially changes the design**, grounded in what you found. If the approach is solid, say so. Raise a concern only when the code or requirement shows one — not one you invented to look thorough.
-
-**This is one conversation.** Move to spec production only when risks are accepted or mitigated, the approach is unambiguous, and the boundaries are set.
+**Read the code.** read the relevant files for current behavior, downstream consumers, branching points, and existing assumptions.
 
 **On a mid-stream pivot, re-sweep — don't just re-wire.** When the user changes source or target, new inputs bring new statistics and failure modes, not just a new connector. Re-run the full risk sweep on the new thing.
 
@@ -44,7 +41,7 @@ Precision stays (names, numbers) — unpack across sentences, don't drop detail.
 
 **Branch check.** Run `git rev-parse --abbrev-ref HEAD`. On `main`/`master`, create a spec branch before writing anything to disk in Phase 2. Never write spec files or update the Spec Index on main.
 
-Read `$ARGUMENTS`, plus the **constitution** (`standards.md`, or whichever of `CLAUDE.md` / `AGENTS.md` the repo uses as its constitution), and `spec.md` if they exist. The constitution holds the invariants, six areas, and boundaries every slice must comply with — you excerpt the slice-relevant parts into each slice later. Note which filename the repo uses; that exact form goes in every slice's `standards:` front-matter and prose.
+Read `$ARGUMENTS`, plus the **constitution** (`standards.md`, or whichever of `CLAUDE.md` / `AGENTS.md` the repo uses as its constitution)
 
 **Check for existing features.** If `docs/specs/spec.md` exists, read its Features table. If the change **closely matches an existing feature**, ask the user whether to **modify** it or **create new** — don't decide for them. Modifying takes one of two shapes:
 
@@ -53,26 +50,18 @@ Read `$ARGUMENTS`, plus the **constitution** (`standards.md`, or whichever of `C
 
 Either way, refresh the feature's Spec Index row (Updated date, and rollup status if it changed).
 
-Read along the path the user described. Reflect back what you found in 2–3 sentences and raise your **top concerns**, grounded in the code. Let the user respond before continuing. Don't ask what the code can answer.
-
-If the change is trivial, say so:
-
-> "This is straightforward — I don't see risks worth discussing. Skip to producing the spec, or straight to plan mode?"
-
 ### Conversation
 
-This phase has **two gates, and they are separate turns.** Present concerns (Gate 1). **Stop. Let the user discuss and reply.** Only after concerns are resolved do you slice and present the plan (Gate 2). Never dump concerns and the slice plan in one message — that wall of text is the failure this structure prevents.
+Read along the path the user described. Reflect back what you found in 2–3 sentences and raise your **top concerns**, along with **every ambiguity that materially changes the design**, grounded in what you found. If the approach is solid, say so. Raise a concern only when the code or requirement shows one — not one you invented to look thorough.
 
-#### Gate 1 — Surface and discuss concerns
-
-Sweep silently, then present. Two sources feed your concerns:
+#### Raising Concerns
+Two sources feed your concerns:
 
 1. **The six dimensions below.** Walk all six, top to bottom — they ground your concerns, they aren't an output format, so don't present them. Check each one's parenthetical trigger; if present, work that dimension; if absent, move on.
 2. **Everything else you uncovered walking the change path** — why the approach might be wrong, a design flaw, a better path, a hidden assumption. The dimensions are a floor, not a ceiling.
-
 Present the grounded concerns — the finding, then its consequence, per "How to behave." **Then stop and let the user respond.** Discuss, refine, and resolve each with them. Don't slice until risks are accepted or mitigated, the approach is unambiguous, and the boundaries are set.
 
-**Grill with a budget: up to ~8 questions, the highest-uncertainty ones.** Don't ask 40; don't ask a fixed list. Choose the questions that, answered, most reduce the risk of building the wrong thing — adaptively, per this task. Coverage varies by design, and that's correct.
+**Grill with a budget: up to ~8 questions, the highest-uncertainty ones.** Choose the questions that, answered, most reduce the risk of building the wrong thing — adaptively, per this task. Coverage varies by design, and that's correct.
 
 **Capture the interrogation — it becomes each slice's `Clarifications` table.** Record every material question you surface and how it resolved: a decision (→ goes to Alternatives / Principles), a risk you'll assume (→ an Assumptions row), or still open (→ a `[NEEDS CLARIFICATION]` / OPEN assumption). This preserves alignment instead of laundering it. A question that resolved to "the user just decided X" is a decision, not an assumption — keep the two separate. You'll write the per-slice subset of this record into that slice's `Clarifications` section in Phase 2.
 
@@ -115,10 +104,18 @@ Record each answer as a resolved `## Assumptions` entry or a measurement step �
 
 > "What's explicitly NOT part of this change?"
 
-#### Gate 2 — Slice and present the plan
+Let the user respond before continuing. Don't ask what the code can answer.
 
-Enter only once Gate 1's concerns are resolved — a **separate turn** from the concern discussion.
+If the change is trivial, say so:
 
+> "This is straightforward — I don't see risks worth discussing. Skip to producing the spec, or straight to plan mode?"
+
+**This is one conversation.** Move to spec production only when risks are accepted or mitigated, the approach is unambiguous, and the boundaries are set.
+
+
+#### Slice and present the plan
+
+Enter only once all concerns are resolved.
 Every feature ships as **ordered slices**, never one big spec — even a one-slice feature uses the folder + `_index.md` format. There is no bare-`spec.md` path.
 
 A **slice** is one PR. Size each so it:
@@ -127,8 +124,6 @@ A **slice** is one PR. Size each so it:
 - **one person reviews in a sitting** — the per-slice budget: ~400 changed lines, ≤4 files modified, ≤3 concerns.
 
 **Slice on vertical, shippable seams.** Prefer a thin vertical slice over a horizontal layer when a layer can't ship safely alone. A lower layer that lands first but is user-invisible is fine — note that in the slice's own spec and in the index ordering.
-
-**A cutover is not one slice.** Swapping one implementation for another in a single slice forces a big-bang rewrite of the end-to-end tests. Slice it **expand → migrate → contract** instead: add the new path beside the old (its tests in a **New** file), flip the default, then delete the old path and its tests. Churn spreads as `New` + `Removed` files, not one giant `Modified` rewrite. The tell: a slice whose "Files that matter" says "rewrite `tests/test_x.py`" on a large file.
 
 **Name and order the slices.** Plain-slug filenames (`data-model`, `api-endpoint`); each unique in the folder; never the feature slug; never `_index`. Work out ordering and prerequisites now — this becomes the `_index.md` Slices table and each slice's `depends_on`.
 

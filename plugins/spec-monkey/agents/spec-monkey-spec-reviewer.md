@@ -18,11 +18,9 @@ You review a spec file for known failure modes.
 
 ## Input
 
-You receive the path to a single **slice** spec file (e.g., `docs/specs/features/{slug}/{slice}.md`). A feature is sliced; you review ONE slice. The folder's `_index.md` is **out of scope** here — the reference linter validates it and create-spec reviews it editorially.
+You receive the path to a single **slice** spec file (e.g., `docs/specs/features/{slug}/{slice}.md`). A feature is sliced; you review ONE slice. The folder's `_index.md` is **out of scope** here.
 
 Read it in full. If the file does not exist or is not a spec file, report the error and stop. Do not attempt to review non-spec content.
-
-**Two schemas.** Branch on the front-matter. A **v3** slice opens with `schema_version: v3` and has 16 sections in two layers (Narrative: Why, Summary, Success metric, Context; Contract: Principles, Data model & contracts, Alternatives rejected, Assumptions, Clarifications, Boundaries, Constraints, Approach, Edge cases, Files, Tasks, Verification). A legacy **v2** slice opens with `schema: v2` and uses the older sections (Current behavior, Files that matter, an Implementation-contract divider). The checks below apply to both; where a check names a v2 section, the v3 equivalent is: "Files that matter" → **Files** (a table); the prose Assumptions list → the **Assumptions** table; Verification's English checklist → the **EARS** assertions. Per-check v3 notes are inline.
 
 ## The Checks
 
@@ -55,8 +53,6 @@ Contradictions force the agent to resolve ambiguity, and it may resolve it wrong
 - **Parallel tasks vs shared files**: two Tasks both marked `[P]` whose `files` cells name the same file. `[P]` claims they run in parallel, but concurrent agents editing one file collide — the marking is a contradiction. Quote the task IDs and the shared file; say which to de-`[P]` or commit serially.
 
 **FAIL if any contradiction found.** Quote both statements.
-
-> Reference existence (every file, symbol, line range, named test, and package the spec cites resolving against the repo) is checked upstream by `spec-monkey-reference-linter` before this review. Don't re-grep for existence; spend your turns on judgment. (Check 9 verifies whether what the spec *says about* a reference is true, a different question than whether it exists.)
 
 ### 3. Vague Constraints
 

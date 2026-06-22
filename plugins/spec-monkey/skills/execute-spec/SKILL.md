@@ -65,7 +65,7 @@ It runs and returns a compact digest; **you** judge which failures matter and wh
 
 ## Implementation
 
-"The spec" below means the chosen slice file, not `_index.md` or its siblings. Read its Approach, Constraints, and Edge cases — your boundaries. For a v3 slice, also read its `Boundaries (this slice)` (the ✅/⚠️/🚫 tiers — never do a 🚫, ask before a ⚠️) and its `Tasks` table (your ordered worklist).
+"The spec" below means the chosen slice file, not `_index.md` or its siblings. Read its Approach, Constraints, and Edge cases — your boundaries. For a slice, also read its `Boundaries (this slice)` (the ✅/⚠️/🚫 tiers — never do a 🚫, ask before a ⚠️) and its `Tasks` table (your ordered worklist).
 
 ### Principles
 
@@ -80,14 +80,14 @@ It runs and returns a compact digest; **you** judge which failures matter and wh
 
 The **Files** manifest is an index, not a reading list. The investigation already located each symbol — don't re-read whole files to rediscover it. Navigate by the symbol anchor and each entry's mode.
 
-For a **v3** slice, Files is a table with a `mode` column:
+For a slice, Files is a table with a `mode` column:
  - **modify** → read the cited symbol and nearby lines, then edit
  - **context** → read just enough to orient; do NOT change it
  - **new** → read nothing, you're creating it
 
 (Legacy v2 slices group entries under **Modified** / **Context** / **Removed** / **New** subheadings — same navigation, plus **Removed** → read just enough to delete it cleanly.)
 
-**v3 Tasks checklist.** A v3 slice carries a `Tasks` table (`id | task | files | [P] | done`) in dependency order. Work it top to bottom; a `[P]` task may run alongside its siblings. As you finish each task, flip its `done` cell to `x` in the slice file — the checklist is resumable, so a re-run picks up where you left off.
+**Tasks checklist.** A slice carries a `Tasks` table (`id | task | files | [P] | done`) in dependency order. Work it top to bottom; a `[P]` task may run alongside its siblings. As you finish each task, flip its `done` cell to `x` in the slice file — the checklist is resumable, so a re-run picks up where you left off.
 
 If an anchor is wrong or too thin to change the code safely, widen the read — then record it as a spec gap in the retrospective, because the index should have been enough.
 

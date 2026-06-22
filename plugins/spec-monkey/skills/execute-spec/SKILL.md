@@ -26,18 +26,18 @@ Read the spec. Do the work.
 A feature is a folder of **slices** (`docs/specs/features/{slug}/` — an `_index.md` plus one `{slice}.md` each). Run **one slice per call**; that slice file is your contract, not `_index.md` or its siblings. Resolve `$ARGUMENTS`:
 
 1. **Full path to a slice**: use directly.
-2. **A feature folder or its `_index.md`**: read `_index.md`, pick the **next unblocked slice** — the first row with `Status: Waiting Implementation` whose `Depends on` slices are all `Implemented`. Several eligible → present a menu and ask.
+2. **A feature folder or its `_index.md`**: read `_index.md`, pick the **next unblocked slice** — the first row in a ready-to-implement state whose `Depends on` slices are all `Implemented`. The ready state is `Reviewed` for v3 features (`schema_version: v3`) and `Waiting Implementation` for legacy v2 features (`schema: v2`). Several eligible → present a menu and ask.
 3. **A bare slug**: resolve `docs/specs/features/{slug}/_index.md`, then pick as in (2).
-4. **No input**: find waiting slices in one shell pass — don't read every slice into context just to filter:
+4. **No input**: find ready slices in one shell pass — don't read every slice into context just to filter. Match both the v3 ready state (`Reviewed`) and the legacy v2 one (`Waiting Implementation`):
 
    ```bash
-   grep -liE '(\*\*)?status(\*\*)?:[[:space:]]*Waiting Implementation' \
+   grep -liE '(\*\*)?status(\*\*)?:[[:space:]]*(Reviewed|Waiting Implementation)' \
      docs/specs/features/*/*.md docs/specs/bugs/*/*.md 2>/dev/null | grep -v '/_index.md'
    ```
 
    For each match read its front-matter `summary`. Group by feature, show only unblocked slices (slug + summary), and ask. None → tell the user.
 
-Read the chosen slice **in full** — this is your contract. Also read `CLAUDE.md` and `AGENTS.md` (if present) for conventions and build/test commands.
+Read the chosen slice **in full** — this is your contract. For a v3 slice, also read the **constitution** its `standards:` front-matter names (`standards.md` / `CLAUDE.md` / `AGENTS.md`) — it holds the invariants, commands, and boundaries the slice's `Principles` and `Boundaries` excerpt. Also read `CLAUDE.md` and `AGENTS.md` (if present) for conventions and build/test commands.
 
 ---
 
@@ -65,7 +65,7 @@ It runs and returns a compact digest; **you** judge which failures matter and wh
 
 ## Implementation
 
-"The spec" below means the chosen slice file, not `_index.md` or its siblings. Read its Approach, Constraints, and Edge cases — your boundaries.
+"The spec" below means the chosen slice file, not `_index.md` or its siblings. Read its Approach, Constraints, and Edge cases — your boundaries. For a v3 slice, also read its `Boundaries (this slice)` (the ✅/⚠️/🚫 tiers — never do a 🚫, ask before a ⚠️) and its `Tasks` table (your ordered worklist).
 
 ### Principles
 
@@ -78,12 +78,17 @@ It runs and returns a compact digest; **you** judge which failures matter and wh
 
 ### Doing the work
 
-"Files that matter" is an index, not a reading list. The investigation already located each symbol and pinned it to a line — don't re-read whole files to rediscover it. Navigate by the anchors and each entry's group: 
- - **Modified** → read the cited symbol and nearby lines 
- - **Context** → read the cited range to orient
- - **Removed** → read just enough to delete it cleanly
- - **New** → read nothing, you're creating it
-  
+The **Files** manifest is an index, not a reading list. The investigation already located each symbol — don't re-read whole files to rediscover it. Navigate by the symbol anchor and each entry's mode.
+
+For a **v3** slice, Files is a table with a `mode` column:
+ - **modify** → read the cited symbol and nearby lines, then edit
+ - **context** → read just enough to orient; do NOT change it
+ - **new** → read nothing, you're creating it
+
+(Legacy v2 slices group entries under **Modified** / **Context** / **Removed** / **New** subheadings — same navigation, plus **Removed** → read just enough to delete it cleanly.)
+
+**v3 Tasks checklist.** A v3 slice carries a `Tasks` table (`id | task | files | [P] | done`) in dependency order. Work it top to bottom; a `[P]` task may run alongside its siblings. As you finish each task, flip its `done` cell to `x` in the slice file — the checklist is resumable, so a re-run picks up where you left off.
+
 If an anchor is wrong or too thin to change the code safely, widen the read — then record it as a spec gap in the retrospective, because the index should have been enough.
 
 Implement what the spec describes: "Current behavior" is your starting point, "Constraints" and "Edge cases" keep you in scope, follow the "Approach". Hit a blocker the Approach didn't anticipate → stop and report; don't silently switch approaches. Never use an approach listed under "Alternatives rejected" — it was rejected during planning.
@@ -106,7 +111,7 @@ Then commit with a clear message. Keep commits under 400 changed lines (review e
 
 **You are not done until the spec's verification criteria pass.**
 
-Have the test-runner run the spec's verification command and check every assertion: all listed existing tests still pass, all new behaviors are verified, and any failure gets fixed and re-verified. Run linters and type checkers again; fix new violations. Don't trust your own judgment that the code is correct — run the actual commands.
+Have the test-runner run the spec's verification command and check every assertion: all listed existing tests still pass, all new behaviors are verified, and any failure gets fixed and re-verified. For a **v3** slice, each EARS assertion (`V1`, `V2`, …) must map to exactly one passing test — including every `[error — required]` path — and you then run the slice's own **Self-check** (re-walk every assertion, confirm every Constraint is met, confirm the Files manifest equals the changed files). Run linters and type checkers again; fix new violations. Don't trust your own judgment that the code is correct — run the actual commands.
 
 Stop and report when verification still fails after **five** fix attempts, or when you're re-applying a substantially similar fix. Five different hypotheses is healthy debugging; repeating one fix means you're stuck — watch for repetition, not just the attempt count.
 
@@ -114,7 +119,7 @@ Stop and report when verification still fails after **five** fix attempts, or wh
 
 ## Final Review
 
-**First, re-read the spec's Constraints and Edge cases.** This command runs long (implementation, four reviewers, up to three fix rounds) — exactly where compaction silently drops constraints. Re-anchor on the contract, don't trust a summary to have kept it.
+**First, re-read the spec's Constraints and Edge cases** (and, for a v3 slice, its `Boundaries (this slice)` and the `Self-check`). This command runs long (implementation, four reviewers, up to three fix rounds) — exactly where compaction silently drops constraints. Re-anchor on the contract, don't trust a summary to have kept it.
 
 Then launch four review agents **in parallel** (one message, four Agent calls). Delegate every review — don't review your own diff, since models fail to correct their own errors.
 
@@ -144,8 +149,8 @@ After verification passes:
 2. Update the slice's front-matter `modified` to today if implementation revealed new constraints or edge cases worth recording (or compliance prompted amendments). Leave the `execution` block for step 5.
 
 3. **Flip status in three places** — slice, `_index.md`, Spec Index. **If the slice was amended during execution, don't flip to `Implemented` without explicit user confirmation** (present the amendments in step 4 first). Otherwise:
-   a. **Slice front-matter**: `status` → `Implemented`.
-   b. **`_index.md`**: flip this slice's `Status` cell, then recompute the front-matter rollup `status` from the table (`In Progress — {k}/{N} slices implemented`, or `Implemented` if all are done; see `index-template.md`). Bump `modified` to today.
+   a. **Slice front-matter**: `status` → `Implemented` (from `Reviewed` for v3, or `Waiting Implementation` for v2).
+   b. **`_index.md`**: flip this slice's `Status` cell, then recompute the front-matter rollup `status` from the table. v3 rollup rules: any slice still `Draft` → `Draft`; all `Reviewed`, none implemented → `Reviewed`; some implemented → `In Progress — {k}/{N} slices implemented`; all implemented → `Implemented` (see `index-template-v3.md`). v2 features use `index-template.md`'s rules. Bump `modified` to today.
    c. **Spec Index** (`docs/specs/spec.md`): copy the new rollup into the feature row's Status, set `Updated` to today. A feature under `docs/specs/bugs/` updates the Bugs table; otherwise Features.
 
 4. Present a summary:

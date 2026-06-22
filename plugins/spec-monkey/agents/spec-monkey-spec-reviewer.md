@@ -22,6 +22,8 @@ You receive the path to a single **slice** spec file (e.g., `docs/specs/features
 
 Read it in full. If the file does not exist or is not a spec file, report the error and stop. Do not attempt to review non-spec content.
 
+**Two schemas.** Branch on the front-matter. A **v3** slice opens with `schema_version: v3` and has 16 sections in two layers (Narrative: Why, Summary, Success metric, Context; Contract: Principles, Data model & contracts, Alternatives rejected, Assumptions, Clarifications, Boundaries, Constraints, Approach, Edge cases, Files, Tasks, Verification). A legacy **v2** slice opens with `schema: v2` and uses the older sections (Current behavior, Files that matter, an Implementation-contract divider). The checks below apply to both; where a check names a v2 section, the v3 equivalent is: "Files that matter" → **Files** (a table); the prose Assumptions list → the **Assumptions** table; Verification's English checklist → the **EARS** assertions. Per-check v3 notes are inline.
+
 ## The Checks
 
 Work all 13 checks, in order, one at a time: complete each before starting the next, and while you're in one check ignore issues that belong to another. Checks 6, 8, 9, 11, and 12 need you to open the cited code (Read/Grep); the rest judge the spec text alone.
@@ -75,6 +77,12 @@ Check the Verification section for:
 - New behaviors to verify (concrete, observable assertions, not "verify it works").
 - Each new assertion specific enough to write a test from (expected input, expected output).
 
+**v3 — EARS guardrails.** v3 Verification is a list of EARS assertions (`WHEN … THE SYSTEM SHALL …`) with stable IDs, plus a worked case, a Seams list, and a Self-check. Additionally FAIL:
+- a **non-atomic** assertion that bundles multiple `AND` responses into one `SHALL` (it must be split — each is independently testable);
+- an **untestable shall** — `optionally SHALL`, or a `SHALL` with no threshold/observable ("log when it looks long" with no defined heuristic);
+- a missing **`[error — required]`** tag on a failure-path assertion, when the change has fail-open/error branches;
+- a **worked example that sources its mock dimensions/length from the constant under test** (e.g. builds a mock vector as `range(EMBEDDING_DIM)`) — that test passes tautologically; the Seams list must forbid it.
+
 **FAIL if verification is vague.** Quote the vague parts and suggest replacements based on what the spec describes.
 
 ### 5. Untestable NFRs
@@ -90,14 +98,14 @@ Vague non-functional requirements add tokens without improving outcomes. Scan fo
 
 This is one slice — one PR. Review effectiveness drops sharply beyond 400 lines, and adherence to each requirement drops as requirements multiply. Catching an oversized slice here is cheaper than after implementation.
 
-- Count files in "Files that matter" under **New + Modified + Removed** (Context is read-only — exclude it).
+- Count the changed files. **v3:** rows in the `Files` table with `mode` = `new` or `modify` (`context` is read-only — exclude it). **v2:** entries under **New + Modified + Removed** (exclude Context).
 - Count distinct concerns. A "concern" is a logically separable change (e.g., "swap model" and "remove tool calling" are two).
-- **Sum the `estimated lines` the spec states** for each New/Modified/Removed entry — don't re-estimate from prose; the author committed a number per file. Then audit it: for any entry the spec says to **rewrite, replace, or delete wholesale**, the honest estimate is the file's **real current line count** — open the file (or `wc -l`) and confirm the stated number isn't an under-count. A four-word "rewrite `tests/test_x.py`" that hides 1,140 changed lines is the exact failure this check exists to catch. An entry that clearly changes a file but carries no estimate is itself a FAIL — the author skipped the field.
+- **Estimate the change size.** **v2** specs commit an `estimated lines` per entry — sum them; don't re-estimate from prose. **v3** Files tables carry no line column, so estimate from scope: for any file the spec says to **rewrite, replace, or delete wholesale**, open it (`wc -l`) — that real line count is the honest estimate. Either way, a four-word "rewrite `tests/test_x.py`" that hides 1,140 changed lines is the exact failure this check exists to catch. For v2, an entry that clearly changes a file but carries no estimate is itself a FAIL — the author skipped the field.
 
 **FAIL if any threshold is exceeded:**
-- **>4 files** changed (New + Modified + Removed)
+- **>4 files** changed (v3: `new`+`modify` rows; v2: New + Modified + Removed)
 - **>3 distinct concerns**
-- **>400 summed estimated lines of change**
+- **>400 estimated lines of change** (summed for v2; scope-estimated for v3)
 
 On failure, recommend **re-slicing the feature** — split this slice into more, smaller slices in the same folder, not a separate feature. Say which concerns or files go into which new slice, with a one-line description and the ordering/`depends_on` between them. Each resulting slice should ship on its own without breaking production and be independently verifiable.
 
@@ -105,7 +113,7 @@ On failure, recommend **re-slicing the feature** — split this slice into more,
 
 A spec whose decisions are all asserted and none defended hands the implementing agent choices no one can explain or safely revisit.
 
-- **Assumptions**: the spec MUST have a non-empty `## Assumptions` section, each as "{assumption}; if wrong → {what changes}". FAIL if absent, empty, or a placeholder.
+- **Assumptions**: the spec MUST have a non-empty `## Assumptions` section. **v2** states each as "{assumption}; if wrong → {what changes}". **v3** uses a table — `claim | if_wrong → | confidence | verify` — and **every row MUST carry an `if_wrong`**; FAIL a row missing it. Also FAIL the section if absent, empty, or a placeholder. For v3, a `med`/`low`-confidence row that is NOT marked OPEN / `[NEEDS CLARIFICATION]` and carries no verify-plan is a FAIL — it launders an open question as a settled assumption.
 - **Alternatives rejected**: any non-trivial change (more than a one-file, single-concern edit) MUST name at least one real alternative and why it lost. FAIL if absent or empty. A genuinely trivial change may PASS with an explicit one-line "no alternatives considered (trivial)."
 
 **FAIL if the required rationale is missing.** Name the missing section. Don't accept assertion in place of rationale.

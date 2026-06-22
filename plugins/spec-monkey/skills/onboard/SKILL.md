@@ -1,6 +1,6 @@
 ---
 name: onboard
-description: "Use when onboarding a new or existing repository — setting up, initializing, or documenting a repo for the first time. Creates CLAUDE.md (quick-reference context), spec.md (living project specification), and .claude/rules/ files (spec maintenance and domain-scoped context loading). For multi-domain projects, also creates technical domain-scoped spec.md files."
+description: "Use when onboarding a new or existing repository — setting up, initializing, or documenting a repo for the first time. Creates standards.md (the project constitution — invariants, commands, testing, structure, code style, git workflow, and agent boundaries), a thin CLAUDE.md pointer, spec.md (living project specification), and .claude/rules/ files (spec maintenance and domain-scoped context loading). For multi-domain projects, also creates technical domain-scoped spec.md files."
 disable-model-invocation: true
 argument-hint: "[output-path]"
 model: opus
@@ -11,21 +11,29 @@ effort: high
 
 ## What Goes Where
 
-| spec.md | CLAUDE.md |
-|---------|-----------|
-| Current state — what's actually implemented (goes first) | Tech stack and versions |
-| What's NOT yet implemented — stubs and placeholders | Directory structure |
-| Architecture overview and external dependencies | Development commands |
-| Deployment & infrastructure | Build/test/lint commands |
-| Testing strategy (what exists and what's missing) | Package manager |
-| Boundaries & constraints | Environment setup |
-| Gotchas — institutional knowledge not in the code | Critical constraints |
-| System context (if part of a larger platform) | — |
-| Ownership, known issues, tech debt | — |
+This skill produces three artifacts. Each owns one job. Never duplicate content across them — a fact lives in exactly one file, and the other two point at it.
+
+| standards.md — the constitution | spec.md — current state | CLAUDE.md — thin pointer |
+|---------------------------------|-------------------------|--------------------------|
+| Invariants — the non-negotiable rules that gate every change | Current state — what's actually implemented (goes first) | Pointer to `standards.md` (the constitution) |
+| Commands — exact invocations with flags | What's NOT yet implemented — stubs and placeholders | Pointer to `docs/specs/spec.md` (current state) |
+| Testing — framework, layout, how to run | Architecture overview and external dependencies | Project Identity — what/why/who (human judgment) |
+| Project structure — top-level dirs, entry point | Deployment & infrastructure | Genuinely quick-reference context an agent needs at a glance |
+| Code style — config + ONE real snippet from this repo | Testing strategy (what exists and what's missing) | — |
+| Git workflow — branch, commit, PR rules | Boundaries section — points at `standards.md`, does not restate it | — |
+| Boundaries — three tiers: ✅ always / ⚠️ ask-first / 🚫 never | Gotchas — institutional knowledge not in the code | — |
+| — | System context (if part of a larger platform) | — |
+| — | Ownership, known issues, tech debt | — |
+
+**`standards.md` is the DRY master.** It holds the invariants and the six areas (Commands, Testing, Project structure, Code style, Git workflow, Boundaries). Every v3 slice spec references it via `standards:` front-matter and inlines only a short, slice-relevant excerpt. The commands, structure, and boundaries that used to live in CLAUDE.md now live here. Do not restate the six areas in CLAUDE.md — that breaks the DRY-constitution rule.
+
+**The file is named `standards.md` by default.** If the repo already uses `CLAUDE.md` or `AGENTS.md` as its agent constitution, you may keep that name instead. Pick **one** name and use that exact form everywhere — in each slice's `standards:` front-matter and in every in-prose mention.
 
 ---
 
-**Write the prose to be read on one pass.** When you draft the prose in these docs — Current State, Architecture overview, Gotchas, Project Identity — follow the readable style in `references/writing-style.md` (read it when you reach Phase 3 and Phase 4). It shapes sentences only. It complements — it does not loosen — the density rules in `references/quality-guide.md` and `references/spec-standards.md` (semantic density, named lists, exact commands, "Not yet implemented" lists).
+**Write the prose to be read on one pass.** When you draft the prose in these docs — standards.md invariants, Current State, Architecture overview, Gotchas, Project Identity — follow the readable style in `references/writing-style.md` (read it when you reach Phase 3 and Phase 4). It shapes sentences only. It complements — it does not loosen — the density rules in `references/quality-guide.md` and `references/spec-standards.md` (semantic density, named lists, exact commands, "Not yet implemented" lists).
+
+`standards.md` is drafted from the `create-spec` skill's `reference/standards-template.md` — the source of truth for its structure. Read that template when you reach Phase 3.
 
 ## Workflow
 
@@ -33,12 +41,16 @@ effort: high
 
 One exploration pass gathers everything needed for both documents. Focus on the project root and first-level subdirectories. Do not recurse past the second directory level unless you need to verify a specific technical domain boundary (e.g., checking whether `src/auth/middleware/` imports from `src/billing/` to determine if they communicate through direct imports or contracts). When you go deeper, state what you're checking and return to the top level. **Stop exploring during this phase once you have concrete answers for each category below** — do not continue reading files for additional supporting evidence. Over-retrieval wastes context and delays the user. (Phase 5's decision-gap check may require targeted follow-up reads — that is a separate, scoped activity.)
 
-**Gather for CLAUDE.md:**
+**Gather for standards.md (the constitution):**
 - Primary language(s), frameworks, and their versions
 - Package manager and build system
-- Linter/formatter configs (`.eslintrc*`, `ruff.toml`, `pyproject.toml [tool.ruff]`, etc.)
-- Top-level directory structure with one-line purposes
-- Build/test/lint/format/run commands
+- Linter/formatter configs (`.eslintrc*`, `ruff.toml`, `pyproject.toml [tool.ruff]`, etc.) — note any lint rule that encodes an invariant (e.g. a ban on bare `except` that enforces fail-loud)
+- Top-level directory structure with one-line purposes, and the main entry-point file
+- Build/test/lint/format/run commands, with their exact flags — these become the Commands area
+- Git workflow signals — pre-commit hooks, the CI workflow (`.github/workflows/`), staging conventions
+- **One representative code-style snippet** — find the house idiom for the thing that matters most (usually error handling) in a representative module. Lift it verbatim; it becomes the single real snippet in the Code style area. One short, real snippet beats three paragraphs.
+- **Invariants** — how the code actually behaves at its edges. Read for: fail-open vs. fail-loud on errors, ordering guarantees (e.g. write-then-mark-seen), secret handling (env-only vs. committed config). These become the non-negotiable rules. Pull them from behavior, not aspiration.
+- **Boundaries** — what an agent must always do, ask first about, and never do. These become the three-tier Boundaries area.
 
 **Gather for spec.md:**
 - Test configuration — framework, conventions, coverage gaps
@@ -106,40 +118,53 @@ Present all mature-codebase questions at once (unlike the new-project interview 
 
 If the exploration found existing files, ask about each in a single interaction:
 
-- **CLAUDE.md found**: "A CLAUDE.md already exists. Would you like to **(a)** update it to match best-practice format while preserving your content, or **(b)** start fresh?"
+- **CLAUDE.md found**: This workflow moves the commands, structure, and boundaries that CLAUDE.md used to hold into `standards.md`, then shrinks CLAUDE.md to a thin pointer. **Propose this before overwriting.** Ask: "A CLAUDE.md already exists. The v3 model moves its commands, structure, and boundaries into a new `standards.md` constitution, then shrinks CLAUDE.md to a pointer at `standards.md` and `spec.md`. Would you like to **(a)** do that (I'll carry your content into the right file), or **(b)** leave CLAUDE.md as-is and only add `standards.md`?" If the repo already uses CLAUDE.md (or AGENTS.md) as its constitution, ask whether to keep that as the constitution's filename instead of `standards.md`.
+- **standards.md found** (also check `AGENTS.md`): "A `{filename}` already exists. Would you like to **(a)** update it to the v3 constitution format while preserving your content, or **(b)** start fresh?" Use the existing filename as the constitution's canonical form.
 - **spec.md found** (also check `SPEC.md`, `PROJECT-SPEC.md`): Before asking the user, compare the Current State section against what discovery found. If they diverge, show the specific drift: "spec.md exists but its Current State appears stale: - Spec says: '[quote from Current State]' - Code shows: '[what discovery found]' Would you like to **(a)** update it (I'll fix the drift and match best-practice format), or **(b)** start fresh?"
 
-Then ask: **"This workflow creates both CLAUDE.md and spec.md. If you only need CLAUDE.md, say so now — otherwise we'll proceed with both."**
+Then ask: **"This workflow creates standards.md (the constitution), spec.md (current state), and a thin CLAUDE.md. If you only need the constitution and CLAUDE.md, say so now — otherwise we'll proceed with all three."**
 
 If the user opts out of spec.md, skip Phases 4, 5, and the spec.md portions of Phases 6-7.
 
 **Merge rules when updating existing files:**
-- **Existing content wins** for human-judgment sections (Project Identity, Critical Constraints, motivation, ownership, boundaries)
-- **Discovery data wins** for factual sections (versions, commands, current state, testing strategy, deployment)
-- **Blend rule** for sections that mix both (Architecture Decisions, Gotchas): keep the existing *rationale and judgment* (the "why"), but update *factual claims* (paths, versions, what exists) from discovery silently. When discovery contradicts an existing *rationale* (not just a factual claim), flag the conflict to the user rather than overwriting.
+- **Existing content wins** for human-judgment sections (Project Identity, motivation, ownership, the invariants and boundaries in `standards.md`)
+- **Discovery data wins** for factual sections (versions, commands, current state, testing strategy, deployment, the Commands and Project structure areas in `standards.md`)
+- **Blend rule** for sections that mix both (Architecture Decisions, Gotchas, the Code style snippet in `standards.md`): keep the existing *rationale and judgment* (the "why"), but update *factual claims* (paths, versions, what exists) from discovery silently. When discovery contradicts an existing *rationale* (not just a factual claim), flag the conflict to the user rather than overwriting.
 
-### Phase 3: Draft CLAUDE.md
+### Phase 3: Draft standards.md and a thin CLAUDE.md
 
-Read [references/quality-guide.md](references/quality-guide.md) for principles. Use [references/claude-md-format.md](references/claude-md-format.md) for the exact section structure.
+Draft the constitution first, then point CLAUDE.md at it. Read [references/quality-guide.md](references/quality-guide.md) for CLAUDE.md principles, and the `create-spec` skill's `reference/standards-template.md` for the constitution's exact structure.
 
-- **Fill from exploration data**: Tech Stack and Codebase Map, Operational Commands, Pointers to Deeper Docs. If a command category was not found, include a placeholder comment like `<!-- add test command -->`.
-- **Leave blank with HTML comment placeholder**: Project Identity — this requires human judgment and cannot be reliably inferred.
-- **Critical Constraints**: Leave blank with a placeholder comment unless spec.md is being created in this run. If spec.md is being created, pre-populate with:
-  ```
-  - After significant implementation changes, update docs/specs/spec.md Current State
-    (and subsystem spec.md if the change is subsystem-scoped). Stale specs are
-    worse than no specs.
-  ```
-  Add a second placeholder comment for any additional human-judgment constraints.
-- **If spec.md is being created in this run**, include a pointer in Pointers to Deeper Docs: `` `docs/specs/spec.md` — project spec, architecture overview, and spec index ``. If the user opted out of spec.md in Phase 2, omit this pointer.
+**Step 1 — Draft standards.md from the template.** Fill every section from Phase 1 discovery. Keep the template's seven headings and their order: Invariants, then the six areas (Commands, Testing, Project structure, Code style, Git workflow, Boundaries).
 
-**CLAUDE.md self-review** before proceeding to Phase 4:
-- [ ] Under 200 lines
-- [ ] Every command is exact and copy-pasteable (no "run the tests" — the actual command)
-- [ ] No content that belongs in spec.md (architecture, boundaries, current state, external deps)
-- [ ] No linter-enforced style rules (those belong in linter config)
+- **Invariants** — the 3-6 non-negotiable rules you pulled from how the code behaves at its edges (fail-open vs. fail-loud, ordering guarantees, secret handling). State each as one rule plus why it exists.
+- **Commands** — the exact invocations with flags, copy-pasteable, grouped install/run/test/typecheck/lint/format. End with "the gate": the single command run before every PR. **Never invent a command** — if a category has no command, say so with a placeholder comment.
+- **Testing** — framework, where tests live, how to run them, the real test conventions.
+- **Project structure** — top-level directories with one-line purposes, and the entry-point file. No deep tree.
+- **Code style** — the enforced config, plus the ONE real snippet you lifted verbatim from this repo. Note any lint rule that encodes an invariant.
+- **Git workflow** — branch, commit, and PR rules pulled from the real hooks and CI.
+- **Boundaries** — the three tiers (✅ always / ⚠️ ask-first / 🚫 never). Always include an ask-first catch-all: "anything not covered by this constitution." If spec.md is being created in this run, add to ✅ always: "after significant implementation changes, update `docs/specs/spec.md` Current State (and the subsystem spec if the change is subsystem-scoped) — stale specs are worse than no specs."
+
+Name the file `standards.md` by default. If Phase 2 found the repo uses `CLAUDE.md` or `AGENTS.md` as its constitution, use that name instead — and use that one exact form everywhere.
+
+**Step 2 — Write CLAUDE.md as a thin pointer.** CLAUDE.md no longer holds the commands, structure, or boundaries — those live in standards.md now. Do not duplicate the six areas here. Use [references/claude-md-format.md](references/claude-md-format.md) for the section skeleton, but keep it short:
+
+- **Project Identity** — leave blank with an HTML comment placeholder; this requires human judgment.
+- **Pointers to Deeper Docs** — point at both the constitution and the current state:
+  - `` `standards.md` — the constitution: invariants, commands, testing, structure, code style, git workflow, and agent boundaries `` (use the actual filename if you chose `CLAUDE.md`/`AGENTS.md`).
+  - If spec.md is being created in this run: `` `docs/specs/spec.md` — project spec, architecture overview, and spec index ``. Omit if the user opted out of spec.md.
+- **Genuinely CLAUDE.md-specific quick-reference** — only context an agent needs at a glance that is not already in standards.md or spec.md. If there is none, that is fine — a thin pointer is the goal.
+
+If the chosen constitution filename is `CLAUDE.md` itself, then the constitution IS the CLAUDE.md — skip writing a separate pointer file and add the spec.md pointer to the constitution's own Pointers section.
+
+**Self-review** before proceeding to Phase 4:
+- [ ] standards.md fills every template section from discovery — no invented commands; absent categories use a placeholder comment
+- [ ] standards.md Code style includes ONE real snippet lifted from this repo
+- [ ] standards.md Boundaries has all three tiers and an ask-first catch-all
+- [ ] CLAUDE.md is under 200 lines
+- [ ] CLAUDE.md does NOT restate the six areas — commands, structure, and boundaries live in standards.md
+- [ ] CLAUDE.md Pointers section points at both standards.md and (if created) spec.md
 - [ ] Project Identity is either filled with what/why/who or left as a placeholder — not filled with technology descriptions
-- [ ] Directory layout is top-level only — no deep subdirectory trees
 
 Fix any issues found. One pass only.
 
@@ -160,7 +185,9 @@ Draft using [spec-template.md](references/spec-template.md) for structure, [spec
 **If single-technical-domain project:** Include everything in the root spec (target 100-200 lines).
 Skip Phase 8.
 
-Do not include tech stack, directory structure, or dev commands — those belong in CLAUDE.md.
+**Boundaries section — point at standards.md, do not restate it.** The project-wide boundaries now live in `standards.md` (the constitution). spec.md's Boundaries section becomes a one-line pointer: "Agent boundaries (✅ always / ⚠️ ask-first / 🚫 never) live in `standards.md` — the constitution." Do not duplicate the three tiers here. (Domain specs in Phase 8 may still add domain-specific boundaries that extend the constitution.)
+
+Do not include tech stack, directory structure, dev commands, or the boundary tiers — those belong in standards.md and CLAUDE.md.
 
 ### Phase 5: Self-Review
 
@@ -171,16 +198,16 @@ Before presenting to the user, review the whole spec.md draft against these chec
 - [ ] Architecture Overview
 - [ ] External Dependencies (shared only, if multi-technical-domain)
 - [ ] Testing Strategy (infrastructure only, if multi-technical-domain)
-- [ ] Boundaries & Constraints (project-wide only, if multi-technical-domain)
+- [ ] Boundaries section points at `standards.md` — it does not restate the three tiers
 - [ ] Spec Index section with Subsystems and Features tables
 
 **Content quality:**
 - [ ] Current State uses past/present tense only — no "will", "planned", "upcoming"
 - [ ] Stubs and incomplete features are in a named "Not yet implemented" list in Current State (not buried in prose)
-- [ ] No tech stack, directory structure, or dev commands (those belong in CLAUDE.md)
+- [ ] No tech stack, directory structure, or dev commands (those belong in standards.md / CLAUDE.md)
 - [ ] No content that restates what the code already shows
 - [ ] External dependency table includes "Constraints / Can't Do" column (not just failure behavior)
-- [ ] Boundaries & Constraints includes "ask if not covered by this spec" in Ask First
+- [ ] No restated boundary tiers — the Boundaries section points at `standards.md` (which carries the ask-first catch-all)
 - [ ] Each line answers "what agent decision does this inform?" — remove lines that can't answer
 
 **Density check:**
@@ -191,7 +218,7 @@ Before presenting to the user, review the whole spec.md draft against these chec
 **Split check (multi-technical-domain only):**
 - [ ] No technical domain-specific external deps in root (they go in technical domain specs)
 - [ ] No technical domain-specific known issues or tech debt in root
-- [ ] No technical domain-specific boundaries in root
+- [ ] No technical domain-specific boundaries in root (project-wide boundaries live in standards.md; domain-specific ones extend it from domain specs)
 - [ ] Root spec under 100 lines
 
 **Anti-patterns to remove:**
@@ -217,10 +244,11 @@ Each question must reference the specific file, pattern, or discovery that promp
 ### Phase 6: Write Files
 
 1. If `$ARGUMENTS` provides an output path, use it for CLAUDE.md. Otherwise default to the project root.
-2. Write CLAUDE.md to the project root.
-3. Write spec.md to `docs/specs/spec.md`. Create the `docs/specs/` directory if it doesn't exist.
-4. Verify the CLAUDE.md Pointers to Deeper Docs section includes a pointer to `docs/specs/spec.md`.
-5. Add a `## Spec Index` section at the end of `docs/specs/spec.md` with the header and an empty subsystems table (populated in Phase 8 if applicable) and an empty features table:
+2. Write `standards.md` (or the chosen constitution filename) to the project root, next to CLAUDE.md.
+3. Write CLAUDE.md to the project root. (If the chosen constitution filename is `CLAUDE.md` itself, the constitution is the only file at root — there is no separate pointer file.)
+4. Write spec.md to `docs/specs/spec.md`. Create the `docs/specs/` directory if it doesn't exist.
+5. Verify the cross-references: CLAUDE.md's Pointers to Deeper Docs section points at both `standards.md` (the constitution) and `docs/specs/spec.md` (current state). Confirm spec.md's Boundaries section points at `standards.md` rather than restating the tiers.
+6. Add a `## Spec Index` section at the end of `docs/specs/spec.md` with the header and an empty subsystems table (populated in Phase 8 if applicable) and an empty features table:
 
 ```markdown
 ## Spec Index
@@ -240,8 +268,15 @@ This index is the discovery mechanism for all specs in the project. The `/spec-m
 
 Tell the user the files are written and ask them to review. Prompt them to check:
 
+**For standards.md (the constitution):**
+- Are the invariants right? These are the non-negotiable rules that gate every change — an agent will refuse work that violates one.
+- Is every command exact and copy-pasteable, with no invented commands?
+- Do the three boundary tiers (✅ always / ⚠️ ask-first / 🚫 never) match how the team actually works?
+- Is the code-style snippet the idiom you want agents to copy?
+
 **For CLAUDE.md:**
-- Which sections have placeholders they should fill in (Project Identity, Critical Constraints, or any others left blank)
+- Which sections have placeholders they should fill in (Project Identity, or any others left blank)
+- Confirm it is a thin pointer at standards.md and spec.md — not a second copy of the commands and boundaries
 
 **For spec.md:**
 - Does the Current State section accurately describe what is implemented and working today, with nothing aspirational or future-tense?
@@ -254,11 +289,11 @@ Tell the user the files are written and ask them to review. Prompt them to check
 
 Iterate — applying their feedback as edits to the files. End each round of changes by asking: **"Any other changes, or reply 'approved' to finalise?"**
 
-**When to push back on feedback:** if user feedback would violate a quality principle (CLAUDE.md over 200 lines, adding linter rules, duplicating spec.md content, adding future-tense items to Current State), flag the conflict:
+**When to push back on feedback:** if user feedback would violate a quality principle (CLAUDE.md over 200 lines, adding linter rules, duplicating the six areas across standards.md and CLAUDE.md, duplicating spec.md content, adding future-tense items to Current State), flag the conflict:
 > "That would [specific violation]. The quality guide recommends [alternative]. Want to proceed anyway, or adjust?"
 When feedback would degrade the file, flag the conflict and ask before applying it — as shown above. Cap revision at 3 rounds; after that, suggest approving and iterating in a future session.
 
-Once the user replies "approved", update the **Status** field in spec.md (and any technical domain specs) from `Draft` to `Active`, and update the **Last verified** date to today.
+Once the user replies "approved", update the **Status** field in spec.md (and any technical domain specs) from `Draft` to `Active`, and update the **Last verified** date to today. In standards.md, replace the "draft for review" status line with the accepted date — the constitution is now in force.
 
 ### Phase 8: Technical Domain-Scoped Specs
 
@@ -276,7 +311,7 @@ Write each to `docs/specs/subsystems/{domain-slug}/spec.md` using [domain-spec-t
 5. **Known Issues** — currently broken things
 6. **Domain Conventions** — naming, patterns (lowest priority — these are derivable from the code)
 
-**Do not duplicate the root spec.md.** Shared conventions, project-wide boundaries, and deployment info stay at root. Omit empty sections.
+**Do not duplicate the root spec.md or standards.md.** Shared conventions and deployment info stay in the root spec; project-wide boundaries live in standards.md. A domain spec's Domain Boundaries section adds only domain-specific rules that **extend** the constitution — never restate the project-wide tiers. Omit empty sections.
 
 Present drafts to the user for review before finalizing.
 
@@ -324,12 +359,14 @@ Also add a pointer in CLAUDE.md's "Pointers to Deeper Docs" section to `docs/spe
 
 ## Gotchas
 
-- **Don't guess commands** — If you can't find evidence of a command in config files, scripts, or docs, use a placeholder comment (`<!-- add test command -->`) instead of inventing one. Getting the package manager wrong (`npm` vs `pnpm` vs `yarn`) is a common failure.
-- **Leave human-judgment sections as placeholders** — Project Identity and Critical Constraints require human input. Do not fill these with generic advice.
+- **Don't duplicate the six areas across standards.md and CLAUDE.md** — Commands, structure, and boundaries live in standards.md (the constitution). CLAUDE.md is a thin pointer at standards.md and spec.md. Restating the six areas in both files breaks the DRY-constitution rule and creates two places to go stale.
+- **Don't guess commands** — If you can't find evidence of a command in config files, scripts, or docs, use a placeholder comment (`<!-- add test command -->`) instead of inventing one. The commands now live in standards.md's Commands area. Getting the package manager wrong (`npm` vs `pnpm` vs `yarn`) is a common failure.
+- **Pick ONE constitution filename and keep it exact** — Default to `standards.md`. Use `CLAUDE.md` or `AGENTS.md` only if the repo already uses one as its constitution. Whatever you pick, use that exact form in every slice's `standards:` front-matter and in every in-prose mention — no `/standards.md`-vs-`standards.md` drift.
+- **Leave human-judgment sections as placeholders** — Project Identity (CLAUDE.md) requires human input. Do not fill it with generic advice.
 - **Keep CLAUDE.md under 200 lines** — A CLAUDE.md that's too long defeats its purpose as quick-reference context.
 - **Don't skip discovery for existing projects** — Even when the user describes the project verbally, explore the codebase first — the code is the source of truth.
 - **Don't confuse project spec with change spec** — If the user starts describing a specific feature or bug fix mid-interview, redirect them to `/spec-monkey:create-spec` or `/spec-monkey:bug` for that work.
-- **Keep cross-references in sync** — When writing or moving files, verify CLAUDE.md's pointer to `docs/specs/spec.md` is correct and the Spec Index is up to date.
+- **Keep cross-references in sync** — When writing or moving files, verify CLAUDE.md points at both `standards.md` and `docs/specs/spec.md`, that spec.md's Boundaries section points at `standards.md`, and that the Spec Index is up to date.
 - **Don't conflate layers with technical domains** — `src/lambda_fn/` and `src/backend/` may look like siblings in a directory listing, but if they deploy separately or have divergent constraints, they are separate technical domains. Conversely, `src/models/`, `src/controllers/`, `src/routes/` share a deployment target, import each other directly, and have no divergent constraints — they are layers within one technical domain. Always apply the litmus test and signals from Phase 1, not directory names.
 - **This skill targets the root CLAUDE.md** — For subdirectory CLAUDE.md files in a monorepo, scope content to that package's technical domain.
 

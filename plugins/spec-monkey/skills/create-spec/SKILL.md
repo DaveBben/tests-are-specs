@@ -44,7 +44,7 @@ Precision stays (names, numbers) — unpack across sentences, don't drop detail.
 
 **Branch check.** Run `git rev-parse --abbrev-ref HEAD`. On `main`/`master`, create a spec branch before writing anything to disk in Phase 2. Never write spec files or update the Spec Index on main.
 
-Read `$ARGUMENTS`, plus `CLAUDE.md`, `AGENTS.md`, and `spec.md` if they exist.
+Read `$ARGUMENTS`, plus the **constitution** (`standards.md`, or whichever of `CLAUDE.md` / `AGENTS.md` the repo uses as its constitution), and `spec.md` if they exist. The constitution holds the invariants, six areas, and boundaries every slice must comply with — you excerpt the slice-relevant parts into each slice later. Note which filename the repo uses; that exact form goes in every slice's `standards:` front-matter and prose.
 
 **Check for existing features.** If `docs/specs/spec.md` exists, read its Features table. If the change **closely matches an existing feature**, ask the user whether to **modify** it or **create new** — don't decide for them. Modifying takes one of two shapes:
 
@@ -71,6 +71,10 @@ Sweep silently, then present. Two sources feed your concerns:
 2. **Everything else you uncovered walking the change path** — why the approach might be wrong, a design flaw, a better path, a hidden assumption. The dimensions are a floor, not a ceiling.
 
 Present the grounded concerns — the finding, then its consequence, per "How to behave." **Then stop and let the user respond.** Discuss, refine, and resolve each with them. Don't slice until risks are accepted or mitigated, the approach is unambiguous, and the boundaries are set.
+
+**Grill with a budget: up to ~8 questions, the highest-uncertainty ones.** Don't ask 40; don't ask a fixed list. Choose the questions that, answered, most reduce the risk of building the wrong thing — adaptively, per this task. Coverage varies by design, and that's correct.
+
+**Capture the interrogation — it becomes each slice's `Clarifications` table.** Record every material question you surface and how it resolved: a decision (→ goes to Alternatives / Principles), a risk you'll assume (→ an Assumptions row), or still open (→ a `[NEEDS CLARIFICATION]` / OPEN assumption). This preserves alignment instead of laundering it. A question that resolved to "the user just decided X" is a decision, not an assumption — keep the two separate. You'll write the per-slice subset of this record into that slice's `Clarifications` section in Phase 2.
 
 The dimensions:
 
@@ -148,22 +152,35 @@ Every slice's approach, constraints, and alternatives must respect these — re-
 
 **Branch first.** Before writing any file — `_index.md` or a slice — check the branch. On `main`/`master`, create and switch to `spec/{slug}`; on another branch, confirm with the user. Author the whole feature on this one branch; per-slice branching is an execute-time concern.
 
-Then write `_index.md` to `docs/specs/features/{slug}/_index.md` per `reference/index-template.md`. Front-matter: `schema: v2`; `name: {slug}` matching the folder; `status: Waiting Implementation`; `created` and `modified` both today; `drafter` from `git config user.name`; `slices: {N}`; `depends_on: []` (or the slugs of other features this depends on); leave `spec_creation` blank (recorded from the drafting session's API summary afterward). Fill the Slices table from the approved plan — one row per slice (slug, file, depends-on, `Status: Waiting Implementation`, one-liner). This is the ordering record the slices and `/spec-monkey:execute-spec` both read.
+Then write `_index.md` to `docs/specs/features/{slug}/_index.md` per `reference/index-template-v3.md`. Front-matter: `schema_version: v3`; `name: {slug}` matching the folder; `status: Draft` (the rollup); `created` and `modified` both today; `drafter` from `git config user.name`; `slices: {N}`; `depends_on: []` (or the slugs of other features this depends on); leave `spec_creation` blank (recorded from the drafting session's API summary afterward). Fill the Slices table from the approved plan — one row per slice (slug, file, depends-on, `Status: Draft`, one-liner). Then write the **Definition of Done** checklist: the feature-level acceptance bar (end-to-end outcome, cross-slice integration, the success metric, deferred cleanup) that holds once every slice is implemented. This is the ordering record and DoD the slices and `/spec-monkey:execute-spec` both read.
 
 ### Draft each slice's sections
 
-Draft slices **sequentially, in dependency order** — sequential drafting bounds your context and lets an earlier slice's decisions inform the next. Draft each slice's sections into `docs/specs/features/{slug}/{slice}.md`.
+Draft slices **sequentially, in dependency order** — sequential drafting bounds your context and lets an earlier slice's decisions inform the next. Draft each slice's sections into `docs/specs/features/{slug}/{slice}.md`. Read `reference/spec-template-v3.md` and `reference/writing-style.md` now if you haven't this session — the template carries the canonical section order and a worked example per section; match it exactly.
 
-Dispatch steps 2–4 to `spec-monkey-spec-investigator` (`subagent_type: "spec-monkey-spec-investigator"`) with the change description and relevant symbols. Write steps 1 and 5 yourself — they need your full mental model.
+A v3 slice has **16 sections in two layers**, in canonical order. Never reorder; a section with nothing to say carries `N/A — {reason}`. Most need your full mental model — write them yourself. Dispatch only the code-grounded parts (the symbols in **Data model & contracts**, the **Files** manifest, and the existing-test mapping in **Verification**) to `spec-monkey-spec-investigator` (`subagent_type: "spec-monkey-spec-investigator"`) with the change description and relevant symbols; the investigator flags references it can't locate, so resolve any phantom before you write the manifest.
 
-1. **Current behavior**: plain prose a newcomer can follow. Use `file:line` sparingly.
-2. **Files that matter**: every symbol the change touches — callers, type definitions, related tests. Target 6–10 files. Group each under **New** / **Modified** / **Removed** / **Context** (see the template), and tag every changed entry with `estimated lines`; a thing you "add to" must exist or it's New. For a file you rewrite, replace, or delete wholesale, the estimate is its real current line count, not a guess. The investigator flags references it can't locate — resolve any phantom before grouping.
-3. **Patterns to follow**: name the existing pattern with a `file:line` example, or note there's no precedent. When the "pattern" is really a data contract (a message, event, or request/response shape), pin the actual shape — paste it or link the producer/consumer — not just its name. If another repo owns it, say so and cite the source.
-4. **Tests**: existing tests that must keep passing, plus new tests for Phase 1 edge cases. Name the test file whose structure new tests should mirror, so the implementer copies it instead of guessing. Real fixtures over mocks. Call for property-based tests for invariants or bounds.
-5. **Verification command**: the exact setup-and-run sequence — dependency install with the extras the tests need, service start, or env step, then the command — then a checklist: Given/When/Then for user-facing behavior, plain bullets otherwise. Include at least one error-path bullet for I/O or untrusted input. At a verification *seam* — a criterion that depends on a test mechanism whose limits the criterion alone hides — name the mechanism, not just the property. See the template's "Seams to make concrete" list.
-6. **Optional domain sections**: structured artifacts (schema definitions, state tables, migration plans) between "Current behavior" and "Alternatives rejected" if they aid review.
+**Layer 1 · Narrative** (you write these — outcome-oriented, transport-free):
+1. **Why** — intent, conclusion-first; what becomes possible, not how.
+2. **Summary** — what ships, 1–3 sentences. Keep clients/URLs/return-types out (they go in Data model).
+3. **Success metric** — the measurable outcome this slice enables, plus its local proof. `N/A — {reason}` only for a pure refactor.
+4. **Context** — current behavior in plain prose; a small budget of `file:line`. `N/A — {reason}` if wholly new.
 
-Write each slice per `reference/spec-template.md` and `reference/writing-style.md` (read both if you haven't this session). Front-matter: `schema: v2`; `name: {slice}` matching the filename; `summary` — one line, drives the execute-spec menu; `status: Waiting Implementation`; `created` and `modified` both today; `drafter` from `git config user.name`; `depends_on: [sibling slugs]` matching the `_index.md` row. Leave `execution` blank — recorded at execute time.
+**Layer 2 · Contract** (parseable, lint-ready):
+5. **Principles (this slice)** — a SHORT excerpt of the constitution's invariants that gate THIS slice (open with a one-line pointer to the constitution file; close with the anti-drift line). Not the whole constitution.
+6. **Data model & contracts** — typed signature blocks (Pydantic/dataclass/DDL) = the source of truth; pin a wire-shape literal when the slice produces/consumes external data. Investigator-assisted.
+7. **Alternatives rejected** — prose bullets; the real paths considered and why they lost.
+8. **Assumptions** — TABLE `claim | if_wrong → | confidence | verify`. Every row needs an `if_wrong`. Med/low confidence → mark OPEN / `[NEEDS CLARIFICATION]` with a verify-plan and owner.
+9. **Clarifications** — TABLE `# | question | resolution | status`. The per-slice subset of the Phase-1 grill you captured — what was asked before code and how it resolved. Open items link to an OPEN assumption.
+10. **Boundaries (this slice)** — three tiers ✅ always / ⚠️ ask-first / 🚫 never, slice-relevant (the 🚫 absorbs the old "don't-touch").
+11. **Constraints** — flat, hard, testable MUSTs; pin log-event contracts (event name + fields) a fail-open design relies on.
+12. **Approach** — micro-schema Mirror / Ordering / Gotchas. Decisions and seams, NOT pseudocode.
+13. **Edge cases** — bulleted "condition: expected behavior"; probe dependency-failure, malformed/oversized input, empty/boundary.
+14. **Files** — TABLE `id | path | mode(new|modify|context) | symbol | why`. Symbol-first. `new` must not exist; `modify`/`context` must. Aim for 6–10 rows. Investigator-assisted.
+15. **Tasks** — TABLE `id | task | files | [P] | done`. Ordered: types → tests/contracts → impl → wire → cleanup; `[P]` for parallelizable; `done` blank.
+16. **Verification** — the exact setup-and-run command, then atomic **EARS** assertions (`WHEN … THE SYSTEM SHALL …`) with stable IDs. Tag error paths `[error — required]`; include one WORKED case with real values; a **Seams** list (anti-tautology: a worked example must NOT source its mock dimensions from the constant under test); and a **Self-check** (re-walk every assertion, every Constraint, the Files manifest). Investigator maps the existing tests that must keep passing.
+
+Front-matter (per the template): `schema_version: v3`; `name: {slice}` matching the filename; `summary` — one line, drives the execute-spec menu; `status: Draft`; `created` and `modified` both today; `drafter` from `git config user.name`; `standards:` the constitution filename in its one canonical form (same as `_index.md`'s feature uses); `depends_on: [sibling slugs]` matching the `_index.md` row. Leave `execution` blank — recorded at execute time.
 
 ### Review each slice
 
@@ -175,7 +192,7 @@ Run `spec-monkey-spec-reviewer` (`subagent_type: "spec-monkey-spec-reviewer"`) w
 
 **A scope-creep FAIL means re-slice, not split into a new feature.** If a slice is too big, break it into smaller slices in this same folder — update `_index.md` (and the slices count) and each affected `depends_on`.
 
-Record each slice's **2–3 load-bearing assumptions** in its `## Assumptions` section.
+Record each slice's load-bearing assumptions in its `## Assumptions` **table** — every row carries `claim | if_wrong → | confidence | verify`. A med/low-confidence row is an open question: mark it OPEN / `[NEEDS CLARIFICATION]` and give it a verify-plan with an owner. Keep `[NEEDS CLARIFICATION]` markers in place while the slice is `Draft`; they must be resolved before it goes `Reviewed`.
 
 ### Confirm the feature
 
@@ -192,11 +209,13 @@ Once every slice passes its linter and reviewer, present the whole feature at on
 >
 > Approve the feature as-is, or want changes?"
 
-When the user resolves an assumption, update that slice's section. When they accept one, mark it `(accepted by {who})` in Assumptions and inline at the relevant seam in the slice's Constraints or Approach.
+When the user resolves an assumption, update that slice's `Assumptions` table and the matching `Clarifications` row (status → resolved, pointing at the section that absorbed it). **Separate a decision from a risk:** if the user *decides* something ("yes, do X"), that's a decision — move it to Alternatives rejected or Principles and pin it at its seam in Constraints; don't leave it dressed as a med-confidence assumption. If the user *accepts a risk unverified*, keep it an Assumptions row at the stated confidence with its `if_wrong` intact. Either way, the `Clarifications` table preserves that the question was asked — never launder an open question into a settled-looking line.
 
 For changes: minor edits (wording, typos, one bullet) — apply and re-present. Substantial edits (scope shift, new constraints, approach change, re-slicing) — re-run the reviewer on the changed slice, fix findings, re-present. Loop until the user explicitly approves.
 
-Update the Spec Index in `docs/specs/spec.md` with one rollup row for the feature, status `Waiting Implementation`, path → `_index.md`, per `reference/spec-index.md`. The Index "Updated" column mirrors `_index.md`'s front-matter `modified` date.
+**On approval, flip the feature to `Reviewed`** — the v3 ready-to-implement state. First resolve any remaining `[NEEDS CLARIFICATION]` / OPEN assumption; a slice may not go `Reviewed` while one is open. Then: each slice's front-matter `status` → `Reviewed`; in `_index.md`, flip every slice's `Status` cell to `Reviewed` and recompute the rollup (`Reviewed`); bump `modified` to today.
+
+Update the Spec Index in `docs/specs/spec.md` with one rollup row for the feature, status `Reviewed`, path → `_index.md`, per `reference/spec-index.md`. The Index "Updated" column mirrors `_index.md`'s front-matter `modified` date.
 
 Then tell the user:
 
@@ -212,5 +231,9 @@ If the user pastes `/cost` output, fill `_index.md`'s `spec_creation` block from
 
 ## Templates
 
-- `reference/index-template.md` — the feature's `_index.md`: front-matter, the Slices table (the authoritative ordering record), and the rollup-status rules.
-- `reference/spec-template.md` — one slice spec. Below its "Implementation contract" divider, Constraints, Files that matter, and Verification are deliberately redundant: a constraint repeated across them survives context compaction during a long implementation. Keep that redundancy; defend it if a reviewer flags it as bloat.
+- `reference/spec-template-v3.md` — one v3 slice spec: the 16 sections in two layers (Narrative + Contract), in canonical order, with a worked example per section. This is the format create-spec emits.
+- `reference/index-template-v3.md` — the feature's `_index.md`: front-matter, the Slices table (the authoritative ordering record), the rollup-status rules, and the Definition-of-Done checklist.
+- `reference/standards-template.md` — the project constitution (`standards.md`): invariants, six areas, three-tier boundaries. Each slice references it (`standards:`) and inlines a short, slice-relevant excerpt; the master lives there, not in the slice. Generated by `/spec-monkey:onboard`.
+- The contract sections (Constraints, Files, Verification) are deliberately redundant with each other: a constraint repeated across them survives context compaction during a long implementation. Keep that redundancy; defend it if a reviewer flags it as bloat.
+
+> **Legacy:** `reference/spec-template.md` and `reference/index-template.md` are the frozen `schema: v2` format. Existing v2 specs are never backfilled to v3; only new specs are v3. Don't author new specs from the v2 templates.

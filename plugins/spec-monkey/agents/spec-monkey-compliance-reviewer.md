@@ -34,9 +34,12 @@ the prior deviations — mark each RESOLVED or NOT_RESOLVED with `file:line` evi
 
 Run all five. Report each OK or FAIL with specific `file:line` evidence.
 
-1. **Requirements & acceptance criteria.** For each functional requirement, trace the code that
-   satisfies its acceptance criteria (`#N`); then run the **Verification** command and confirm
-   each criterion has a passing test. An unmet criterion is a FAIL.
+1. **Requirements — functional and non-functional.** For each **FR**, trace the code that
+   satisfies its acceptance criteria (`#N`); run the **Verification** command and confirm each
+   criterion has a passing test. For each **NFR**, confirm the code provides the mechanism it
+   demands and that its **Measurement** is met — cite the test or benchmark that measures it. An
+   unmet FR criterion or NFR is a FAIL; an NFR whose Measurement can't be confirmed from the diff
+   (a latency or scale target needing a benchmark) is REVIEW, never a silent pass.
 2. **Approach.** The code followed the spec's **Approach** — the agreed strategy, not a
    different one that happens to pass. A step skipped or swapped is a FAIL.
 3. **Constraints & Scope.** Each **Constraint** is satisfied (cite where); nothing under

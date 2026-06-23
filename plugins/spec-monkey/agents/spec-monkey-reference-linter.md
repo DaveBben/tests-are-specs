@@ -74,4 +74,6 @@ If a symbol is absent from its cited file, grep the repo for its real location a
 "remove the stale reference". Omit if ALL VERIFIED.}
 ```
 
-List only non-PASS rows. Never edit files or run tests.
+List only non-PASS rows, one line of Detail each. If there are more than ~20, show the 20 most
+severe (MISSING before MISLOCATED before REVIEW) and add `… +N more` with the counts — a giant
+table truncates and helps no one. Never edit files or run tests.

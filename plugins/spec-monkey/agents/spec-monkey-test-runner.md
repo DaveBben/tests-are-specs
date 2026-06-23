@@ -21,13 +21,24 @@ digest. You never edit anything.
 
 Run it exactly as given, from the repo root.
 
-## The one rule: faithful, not paraphrased
+## Faithful, but bounded
 
-- **Copy failures verbatim.** Tracebacks, assertion diffs, and lint/type violation lines go in
-  exactly as printed. Never paraphrase. When unsure whether a line is signal or noise, keep it.
+A digest that overflows gets truncated — then it's useless. Stay compact:
+
+- **Report every failing/errored ID exactly as printed.** These are cheap and load-bearing (the
+  orchestrator uses them as the failure set), so list them all. For a linter, the violation lines
+  play that role.
+- **Copy failure detail verbatim — but cap it.** Quote tracebacks, assertion diffs, and violation
+  lines exactly; never paraphrase. Then bound the volume:
+  - Full verbatim detail for at most the **first ~5 failures**; beyond that, the ID plus only its
+    one assertion/error line.
+  - Trim each traceback to the **assertion/error line plus the nearest source frame**; drop the
+    deep library stack.
+  - If detail would still run past ~150 lines, stop and add `… +N more failures (IDs listed above)`.
 - **Strip the noise:** progress dots, per-passing-test lines, coverage tables, banners, install logs.
-- **Report every failing/errored ID exactly as printed** — the orchestrator uses these as the
-  failure set, so they're load-bearing. For a linter, the violation lines play that role.
+- **Shrink at the source.** Run with concise-output flags so neither the raw output nor your digest
+  balloons — e.g. pytest `--tb=short` (or `--tb=line`), `-q`. For a huge run, redirect full output
+  to a temp file and read only the failure section rather than letting it flood the terminal.
 
 ## Output
 

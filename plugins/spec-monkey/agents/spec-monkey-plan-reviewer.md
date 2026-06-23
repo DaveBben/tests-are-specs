@@ -84,8 +84,8 @@ Work through each. Cite evidence for every finding.
   justification for the obvious.
 
 **6. Traceability & consistency**
-- Does every functional requirement have at least one verification?
-- Does every acceptance criterion (`#N`) map to a concrete check?
+- Does every requirement trace to a verification — each FR's acceptance criteria (`#N`) and
+  each NFR's **Measurement**?
 - Are there internal contradictions — a value stated two ways, an assumption that fights a
   requirement?
 - Are low/med-confidence assumptions surfaced as assumptions, or laundered as decisions?

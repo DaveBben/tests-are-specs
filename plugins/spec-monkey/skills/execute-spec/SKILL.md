@@ -1,9 +1,8 @@
 ---
 name: execute-spec
-disable-model-invocation: true
-model: sonnet
+model: opus
 effort: high
-argument-hint: "[path to spec file]"
+argument-hint: "[spec slug or path, optionally a task id]"
 allowed-tools:
   - Read
   - Glob
@@ -12,158 +11,122 @@ allowed-tools:
   - Edit
   - Write
   - Task
-description: "Implements a spec produced by /spec-monkey:create-spec. Reads the spec, creates a feature branch, implements the changes with self-verification, then runs parallel staff and QA reviews. Does not push or create PRs."
+description: "Implement an approved spec produced by /spec-monkey:create-spec. Finds the spec, lets you pick which task(s) to implement, builds them exactly as specified, runs parallel reviews. One task is one MR-sized unit. Does not push or create PRs."
 ---
 
 # Execute — Implement a Spec
 
-Read the spec. Do the work.
+Read the spec. Implement the task you're given, exactly as written. Review. Record.
 
----
+The spec is your contract. If reality contradicts it, **stop and report** — never silently
+switch approaches or edit the spec to match the code.
 
-## Input
+## Phase 1 — Find the spec
 
-A feature is a folder of **slices** (`docs/specs/features/{slug}/` — an `_index.md` plus one `{slice}.md` each). Run **one slice per call**; that slice file is your contract, not `_index.md` or its siblings. Resolve `$ARGUMENTS`:
+A spec is one file at `docs/specs/{slug}/spec.md`. Resolve `$ARGUMENTS`:
 
-1. **Full path to a slice**: use directly.
-2. **A feature folder or its `_index.md`**: read `_index.md`, pick the **next unblocked slice** — the first row in a ready-to-implement state whose `Depends on` slices are all `Implemented`. The ready state is `Reviewed` for v3 features (`schema_version: v3`) and `Waiting Implementation` for legacy v2 features (`schema: v2`). Several eligible → present a menu and ask.
-3. **A bare slug**: resolve `docs/specs/features/{slug}/_index.md`, then pick as in (2).
-4. **No input**: find ready slices in one shell pass — don't read every slice into context just to filter. Match both the v3 ready state (`Reviewed`) and the legacy v2 one (`Waiting Implementation`):
+1. **Full path to a `spec.md`** → use it.
+2. **A bare slug** → `docs/specs/{slug}/spec.md`.
+3. **A slug + task id** (e.g. `auth T2`) → that spec, that task.
+4. **No input** → list implementable specs in one shell pass, then ask:
 
    ```bash
-   grep -liE '(\*\*)?status(\*\*)?:[[:space:]]*(Reviewed|Waiting Implementation)' \
-     docs/specs/features/*/*.md docs/specs/bugs/*/*.md 2>/dev/null | grep -v '/_index.md'
+   grep -lE '^status:[[:space:]]*(reviewed|applied)' docs/specs/*/spec.md 2>/dev/null
    ```
 
-   For each match read its front-matter `summary`. Group by feature, show only unblocked slices (slug + summary), and ask. None → tell the user.
+   A `reviewed` or `applied` spec with un-done tasks is implementable.
 
-Read the chosen slice **in full** — this is your contract. For a v3 slice, also read the **constitution** its `standards:` front-matter names (`standards.md` / `CLAUDE.md` / `AGENTS.md`) — it holds the invariants, commands, and boundaries the slice's `Principles` and `Boundaries` excerpt. Also read `CLAUDE.md` and `AGENTS.md` (if present) for conventions and build/test commands.
+Read the spec **in full** — it's your contract. Read the constitution its `standards:`
+frontmatter names (`standards.md` / `CLAUDE.md` / `AGENTS.md`) for invariants, commands, and
+boundaries.
 
----
+## Phase 2 — Pick the task(s)
 
-## Running tests and checks (always delegate)
+Read the spec's **Tasks** table (`id | task | files | AC | depends_on | wave | est_diff | done`).
 
-**Never run a test suite, linter, or type-checker inline** — the output is large and noisy. **Every time** you need one (verification command, baseline, pre-commit, fix-loop, finalize), dispatch `spec-monkey-test-runner` (`subagent_type: "spec-monkey-test-runner"`) with the exact command and repo root.
+- Show the user the un-done tasks: id, summary, `est_diff`, `wave`, and whether each task's
+  `depends_on` are already `done`.
+- Ask which to implement. **Default: one task = one MR.**
+- Be mindful of size and context. If the user picks several, warn when the combined
+  `est_diff` or the files to load would blow past ~400 diff lines or a large context. A
+  `wave` marks tasks that *can* go in parallel, but each is still its own MR unless the user
+  says otherwise.
+- Refuse a task whose `depends_on` aren't `done` — name what must land first.
 
-It runs and returns a compact digest; **you** judge which failures matter and what to fix. If a digest lacks the detail to debug a failure, ask the runner to re-run that one test with more verbosity (`-vv`) — not the whole suite inline.
+## Phase 3 — Implement, exactly as specified
 
----
+Build the selected task(s) per the spec's **Approach**, the **Files / Change Manifest** rows
+the task names, the **Data Model & Contracts**, and the acceptance criteria the task covers.
 
-## Pre-flight
+Pre-flight:
 
-1. **Prerequisites**: read `_index.md`, find the slice's row, collect its `Depends on` slugs. (Cross-check the slice's front-matter `depends_on`; on disagreement `_index.md` wins — warn the user.) Read each prerequisite's `Status`. If any is **not `Implemented`**, warn which come first and ask whether to proceed — don't auto-abort or auto-proceed.
+- **Branch.** Create a branch for the task only when you're on `main`/`master` **and** in
+  the primary checkout — not a linked worktree. A linked worktree is already an isolated
+  workspace, so stay on its branch even if it's `main`. Detect it: a linked worktree has
+  `git rev-parse --git-dir` differing from `git rev-parse --git-common-dir`. On a non-main
+  branch, confirm before proceeding.
+- **Baseline.** Have `spec-monkey:test-runner` run the spec's verification command. Record
+  already-failing tests; they're excluded from must-pass. Nothing else may regress.
+- **Validate.** Dispatch `spec-monkey:reference-linter` on the spec. On any MISSING or
+  MISLOCATED reference, stop and report — a stale manifest is a stale contract.
 
-2. **Branch**: on `main`/`master`, create `feature/{slug}/{slice}` so this slice is its own PR. On another branch, confirm with the user. **Never execute on main.**
+Doing the work:
 
-3. **Test baseline**: have the test-runner run the slice's verification command. Record pass/fail and the **exact names of already-failing tests** — that is the pre-existing-failure set, excluded from must-pass. Every other test must pass and none may regress. Don't expand this set later to excuse a failure you introduced.
+- Navigate by the manifest, don't re-read whole files: `modify` → read the symbol + edit;
+  `context` → read to orient, don't change; `new` → create; `delete` → read enough to remove
+  cleanly. Stay within the task's rows — the diff should match them.
+- **Fail loud.** Catch only the specific exceptions raised; never ship a stub that fakes
+  success. **Least code that works.** Match how this codebase already solves the problem.
+- **Test real behavior.** Realistic inputs through real libraries; each test must be able to
+  fail (name the line that, deleted, reddens it); derive expected values independently — never
+  from the code's own constants; exercise an error path. Never weaken a test to make it pass.
+- **Always delegate** test / lint / type runs to `spec-monkey:test-runner` — never inline,
+  the output is noisy and floods context. Keep each commit ≤ ~400 changed lines.
 
-4. **Validate the spec**: dispatch `spec-monkey-reference-linter` (`subagent_type: "spec-monkey-reference-linter"`) with the slice path. It checks that the files, symbols, named tests, and dependencies the slice cites still exist in the *current* repo. On any MISSING or MISLOCATED reference, stop and report before implementing — a slice pointing at moved or vanished code is a stale contract. (REVIEW rows are usually things the slice intends to create.)
+Hit a blocker the Approach didn't anticipate → stop and report.
 
-5. **Lint/type baseline**: if the project has linters or type checkers (per CLAUDE.md/AGENTS.md), run them via the test-runner and record baseline.
+## Phase 4 — Verify
 
----
+You are not done until the spec's **Verification** passes.
 
-## Implementation
+- Run the Verification commands (via the spec-monkey:test-runner). Every acceptance criterion the task
+  covers maps to a passing check — including each error path. If the task implements an NFR,
+  confirm its **Measurement** is met, or flag that it needs a benchmark you can't run here.
+- Run the spec's **Self-check**: re-walk every criterion, confirm each Constraint is met, and
+  confirm `git diff` touches only the task's manifest rows.
+- Stop and report after five fix attempts, or once you're repeating a fix.
 
-"The spec" below means the chosen slice file, not `_index.md` or its siblings. Read its Approach, Constraints, and Edge cases — your boundaries. For a slice, also read its `Boundaries (this slice)` (the ✅/⚠️/🚫 tiers — never do a 🚫, ask before a ⚠️) and its `Tasks` table (your ordered worklist).
+## Phase 5 — Review (parallel)
 
-### Principles
+Re-read the spec's **Constraints** and **Edge Cases** first — this run is long, and that's
+exactly where a summary silently drops the contract.
 
-- One logical change per commit.
-- **Fail loud.** Catch only the specific exceptions the code can raise; never base classes; never ship a stub that fakes success.
-- **Match this codebase.** Follow how the project already solves similar problems; consolidate near-duplicates instead of adding parallel implementations.
-- **Least code that works.** No speculative abstractions, no indirection for single callers, stdlib over hand-rolling; delete dead code outright (git is the backup).
-- **Comments explain why, never what.** Delete a comment that restates the code; update adjacent comments when behavior changes.
-- **Test real behavior.** Realistic inputs through real libraries, deterministic sync (no sleeps), fixtures with real-world mess. Each test must be able to fail — name the production line that, deleted, reddens it. Derive expected values independently; don't import the code's own constants or messages as the assertion target. Exercise an error path with genuinely bad input. When sibling tests share an observable contract (a log line, an error field), every one asserts it. Never modify a test to make it pass; flag it instead.
+Launch four reviewers **in parallel** (one message, four Task calls). Never review your own
+diff. Pass each the same inputs — `diff`: `git diff <base-branch>...HEAD`; `spec_path`: the
+spec file.
 
-### Doing the work
+1. **`spec-monkey:staff-reviewer`** — security, correctness, performance, reliability.
+2. **`spec-monkey:code-quality-reviewer`** — architectural hallucinations in AI code.
+3. **`spec-monkey:qa-reviewer`** — test quality, coverage, edge cases.
+4. **`spec-monkey:compliance-reviewer`** — did we build what the spec said?
 
-The **Files** manifest is an index, not a reading list. The investigation already located each symbol — don't re-read whole files to rediscover it. Navigate by the symbol anchor and each entry's mode.
+Merge findings (dedup). Fix all BLOCKING and SHOULD_FIX from staff/qa/code-quality;
+SUGGESTIONS may be deferred (note which and why). For compliance: if the spec is right and
+the code drifted, fix the code; a real deviation may be a **proposed** amendment — never edit
+the spec to match the code and call it compliant. Re-review in scoped re-verification mode
+(only the reviewers whose findings you addressed). Default one re-round; ceiling three.
 
-For a slice, Files is a table with a `mode` column:
- - **modify** → read the cited symbol and nearby lines, then edit
- - **context** → read just enough to orient; do NOT change it
- - **new** → read nothing, you're creating it
+## Phase 6 — Finalize
 
-(Legacy v2 slices group entries under **Modified** / **Context** / **Removed** / **New** subheadings — same navigation, plus **Removed** → read just enough to delete it cleanly.)
+- Run the **full** test suite (via the spec-monkey:test-runner) for regressions beyond the task's scope.
+- Mark the task(s) `done` in the spec's Tasks table.
+- If **every** task is now `done`, flip the spec's `status` → `applied`; otherwise leave it
+  `reviewed`. If you amended the spec during execution, get explicit user confirmation before
+  flipping.
+- Append to the **Activity Log**: what shipped, every test file touched (with its
+  justification), spec gaps you hit, and any proposed amendments.
+- Present a summary: branch + commit count; what was done (2–3 sentences); verification
+  result (with the pre-existing-failure set); review findings fixed; tests touched; compliance;
+  spec gaps ("none" if the spec was sufficient); needs-attention (amendments, anything to review).
 
-**Tasks checklist.** A slice carries a `Tasks` table (`id | task | files | [P] | done`) in dependency order. Work it top to bottom; a `[P]` task may run alongside its siblings. As you finish each task, flip its `done` cell to `x` in the slice file — the checklist is resumable, so a re-run picks up where you left off.
-
-If an anchor is wrong or too thin to change the code safely, widen the read — then record it as a spec gap in the retrospective, because the index should have been enough.
-
-Implement what the spec describes: "Current behavior" is your starting point, "Constraints" and "Edge cases" keep you in scope, follow the "Approach". Hit a blocker the Approach didn't anticipate → stop and report; don't silently switch approaches. Never use an approach listed under "Alternatives rejected" — it was rejected during planning.
-
----
-
-## Before Each Commit
-
-After each logical unit of work, before committing:
-
-1. **Lint and type-check** (via the test-runner). Fix new violations.
-2. **Run the relevant tests** (via the test-runner) — at minimum the spec's verification scope. All must pass; never commit on a red state you introduced.
-3. **Diff the tests.** `git diff`/`git status` the test directories. For every test file modified, deleted, or skipped, confirm the spec justifies it — not a weakened assertion papering over a failure. Record each touched test file and its justification for the summary. A test changed only to make it pass → revert it and fix the code. Confirm each new or changed test can fail (name the line that, deleted, reddens it); a test that cannot fail is a finding.
-
-Then commit with a clear message. Keep commits under 400 changed lines (review effectiveness drops sharply beyond that); split a larger change into smaller commits.
-
----
-
-## Verification
-
-**You are not done until the spec's verification criteria pass.**
-
-Have the test-runner run the spec's verification command and check every assertion: all listed existing tests still pass, all new behaviors are verified, and any failure gets fixed and re-verified. For a **v3** slice, each EARS assertion (`V1`, `V2`, …) must map to exactly one passing test — including every `[error — required]` path — and you then run the slice's own **Self-check** (re-walk every assertion, confirm every Constraint is met, confirm the Files manifest equals the changed files). Run linters and type checkers again; fix new violations. Don't trust your own judgment that the code is correct — run the actual commands.
-
-Stop and report when verification still fails after **five** fix attempts, or when you're re-applying a substantially similar fix. Five different hypotheses is healthy debugging; repeating one fix means you're stuck — watch for repetition, not just the attempt count.
-
----
-
-## Final Review
-
-**First, re-read the spec's Constraints and Edge cases** (and, for a v3 slice, its `Boundaries (this slice)` and the `Self-check`). This command runs long (implementation, four reviewers, up to three fix rounds) — exactly where compaction silently drops constraints. Re-anchor on the contract, don't trust a summary to have kept it.
-
-Then launch four review agents **in parallel** (one message, four Agent calls). Delegate every review — don't review your own diff, since models fail to correct their own errors.
-
-1. **`spec-monkey-staff-reviewer`**: security, correctness, performance, reliability.
-2. **`spec-monkey-code-quality-reviewer`**: architectural hallucinations in AI-generated code.
-3. **`spec-monkey-qa-reviewer`**: test quality, coverage, edge-case handling.
-4. **`spec-monkey-compliance-reviewer`**: did we build what the spec said?
-
-Pass all four the same inputs — `diff`: `git diff <base-branch>...HEAD` (base = the `main`/`master` this slice cut from); `spec_path`: the slice file.
-
-When all four return, merge their findings (dedup overlap) and resolve:
-- **Staff / QA / code-quality**: fix all BLOCKING and SHOULD_FIX. SUGGESTIONS may be deferred or skipped if out of scope — note which and why.
-- **Compliance (NON_COMPLIANT)**: if the spec is right and the code drifted, fix the code. A deviation may instead be a reasonable amendment — an edge case the spec missed, or a constraint that proved wrong. You may **propose** an amendment; you may not decide one yourself and then mark the work compliant, and never edit the spec to match the code and call that compliance. List every proposed amendment under **Needs attention**. If you modified the spec during execution, get explicit user confirmation before flipping `Status` to `Implemented`. Don't finalize while any uncorrected non-compliance remains.
-
-After fixing, re-review in **re-verification mode** — a scoped re-check of your fixes, not a fresh full review. Re-dispatch only the reviewers whose findings you addressed, passing each `fix_diff` (the diff of just your fixes), `prior_findings` (their findings you claim resolved), and `spec_path`. They mark each RESOLVED/NOT_RESOLVED and scan only `fix_diff` for regressions — a fresh full review re-pays the entire diff + spec; the scoped check doesn't.
-
-**Default to one re-review round.** Later rounds mostly surface low-confidence false positives, not real bugs. Open a second only on a **new BLOCKING** finding absent from the original review. The three-round ceiling is a backstop, not a target — stop and report any BLOCKING that remains after it. Continue until staff, code-quality, and QA APPROVE and compliance is COMPLIANT (or you hit the ceiling).
-
----
-
-## Finalize
-
-After verification passes:
-
-1. Run the **full** test suite (CLAUDE.md's operational commands, via the test-runner) to catch regressions beyond the spec's scope. Fix any before finalizing.
-
-2. Update the slice's front-matter `modified` to today if implementation revealed new constraints or edge cases worth recording (or compliance prompted amendments). Leave the `execution` block for step 5.
-
-3. **Flip status in three places** — slice, `_index.md`, Spec Index. **If the slice was amended during execution, don't flip to `Implemented` without explicit user confirmation** (present the amendments in step 4 first). Otherwise:
-   a. **Slice front-matter**: `status` → `Implemented` (from `Reviewed` for v3, or `Waiting Implementation` for v2).
-   b. **`_index.md`**: flip this slice's `Status` cell, then recompute the front-matter rollup `status` from the table. v3 rollup rules: any slice still `Draft` → `Draft`; all `Reviewed`, none implemented → `Reviewed`; some implemented → `In Progress — {k}/{N} slices implemented`; all implemented → `Implemented` (see `index-template-v3.md`). v2 features use `index-template.md`'s rules. Bump `modified` to today.
-   c. **Spec Index** (`docs/specs/spec.md`): copy the new rollup into the feature row's Status, set `Updated` to today. A feature under `docs/specs/bugs/` updates the Bugs table; otherwise Features.
-
-4. Present a summary:
-   - **Branch**: name (`feature/{slug}/{slice}`) and commit count
-   - **Next slice**: the next unblocked slice from `_index.md`, or "all slices implemented — feature complete"
-   - **What was done**: 2–3 sentences
-   - **Verification**: pass/fail, plus the pre-existing-failure set excluded at baseline
-   - **Final review findings**: issues caught and fixed by the reviews
-   - **Tests touched**: every test file modified, deleted, or skipped, each with its spec justification (or "none")
-   - **Compliance**: COMPLIANT, or list of resolved deviations
-   - **Spec gaps** (if any): context you had to discover beyond the spec — a reference you re-located, a file it didn't point to, behavior or a data contract you reverse-engineered, setup it omitted. One concrete line each; this is the spec's retrospective. "none" if the spec was sufficient — report a gap only when you hit one, not to look thorough.
-   - **Needs attention** (if any): every spec amendment proposed or made, plus anything the user should review
-
-5. Offer to record the run's cost: "If you want this run's cost recorded in the slice's `execution` block, run `/cost` and paste the output." If pasted, fill the `execution` block — `total_cost` from "Total cost", `total_duration` from the wall duration, one `usage_by_models` entry per model (`model`, `input`, `output`, `cache_read`, `cache_write`, `cost`). Bump the slice's `modified` to today.
-
-**Do NOT push or create a PR.** The user handles this.
+**Do NOT push or create a PR. The user handles that.**

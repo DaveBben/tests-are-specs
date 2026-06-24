@@ -30,7 +30,7 @@ the parse contract you must conform to. Refer to sections by header name, never 
   Rewording launders meaning.
 - **Invent nothing** — no guessed requirements, edge cases, metrics, or file paths.
 - **Don't read the codebase.** Trust the handoff's manifest; symbol-resolution is the linter's job.
-- **Leave deferred fields blank:** the Tasks section and the `usage:` block empty; `status: draft`.
+- **Leave deferred fields blank:** the Tasks section empty; `status: draft`.
 - **Fail loudly on gaps** (see below).
 
 ## Procedure
@@ -53,7 +53,7 @@ the parse contract you must conform to. Refer to sections by header name, never 
 - Every required section present and in order; an absent one is `N/A — reason` (only if the handoff
   says so) or a failure — never a silent omission.
 - Every table has its header row; AC markers balanced, each criterion `#N`; every ID unique.
-- `status: draft`; the Tasks section and the `usage:` block are empty.
+- `status: draft`; the Tasks section is empty.
 
 ## Failure — fail loudly, never paper over
 

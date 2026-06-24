@@ -32,7 +32,7 @@ the prior deviations — mark each RESOLVED or NOT_RESOLVED with `file:line` evi
 
 ## Checks
 
-Run all five. Report each OK or FAIL with specific `file:line` evidence.
+Run all six. Report each OK or FAIL with specific `file:line` evidence.
 
 1. **Requirements — functional and non-functional.** For each **FR**, trace the code that
    satisfies its acceptance criteria (`#N`); run the **Verification** command and confirm each
@@ -51,6 +51,11 @@ Run all five. Report each OK or FAIL with specific `file:line` evidence.
    `context` file in the diff (it's read-only). A `delete` file still present is a FAIL. NOT
    failures: new test files implied by the manifest; lockfiles, generated, or formatting-only
    changes (note, don't fail); the spec file itself if updated to reflect what was built.
+6. **Success Criteria measurability.** For each Success Criterion, confirm the instrumentation to
+   evaluate it post-ship exists — a log, counter, event, or dashboard hook (in this diff or already
+   in the system). Nothing measures it → FAIL: the feature ships blind. Can't tell whether existing
+   external instrumentation covers it → REVIEW. Do NOT assert the criterion is *met* — whether the
+   number was hit is a post-deploy judgment, out of scope here.
 
 ## Before reporting, verify each finding
 

@@ -9,7 +9,7 @@ tools:
   - Skill
 model: opus
 maxTurns: 60
-effort: high
+effort: xhigh
 ---
 
 # Plan Reviewer

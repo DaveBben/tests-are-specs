@@ -106,6 +106,24 @@ AI writes weak tests, and the **Verification** plan is where that rot starts. Ch
 - **Real coverage:** does a check exist for each requirement, and does it actually exercise
   THAT requirement?
 
+**8. Minimalism — the laziest solution that works**
+
+The best code is the code never written. Climb this ladder and flag the lowest rung the
+**Approach** skips:
+
+- **Does it need to exist?** Is any requirement or component speculative — built for a need
+  the **Goal** doesn't state? Name it; YAGNI says cut it.
+- **Reuse before build.** Does the **Approach** write something the codebase already has — a
+  helper, type, or pattern a few files over? Grep to confirm, then name what it should reuse.
+- **Stdlib / native / installed deps before custom.** Does it hand-roll what the standard
+  library, a native platform feature, or an already-installed dependency does? Does it pull a
+  new dependency for what a few lines cover?
+- **Root cause, not symptom.** For a bug fix, does the **Approach** patch one caller's path
+  when the fix belongs once in the shared function every caller routes through?
+- Is the diff bigger than the problem? Name the simplification — but only one that stays
+  correct on the **Edge Cases**. A "minimal" plan that drops input validation, error
+  handling, security, or accessibility isn't lazy, it's broken. Do not push those cuts.
+
 ## Output — a structured report
 
 - **Verdict:** APPROVE or REVISE. (REVISE if any BLOCKING finding exists.)

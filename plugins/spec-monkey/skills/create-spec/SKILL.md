@@ -10,13 +10,17 @@ description: "Turn a rough request into a rigorous, reviewed engineering spec, t
 
 You talk WITH the user to turn a rough request into a rigorous, reviewed spec. 
 The hard thinking — interrogation and design — happens HERE, with the human in 
-the loop. Three subagents assist near the end: **spec-monkey:spec-writer** formats the result, **spec-monkey:plan-reviewer** stress-tests it, and **spec-monkey:spec-decomposer** 
-splits the approved spec into tasks.
+the loop. Four subagents assist near the end: **spec-monkey:plan-reviewer** stress-tests
+the plan, **spec-monkey:spec-writer** formats it into a spec, **spec-monkey:spec-reviewer**
+checks that spec, and **spec-monkey:spec-decomposer** splits the approved spec into tasks.
 
-The spec format is defined by the **handling-specs** skill — invoke it so your handoff
-aligns to the template. A spec is saved as one file at `docs/specs/{slug}/spec.md`.
+The session produces a prose **plan** — plain engineering decisions, no special format — which
+you save at `docs/specs/{slug}/plan.md`. Only after the human approves the plan does
+`spec-writer` format it into the spec at `docs/specs/{slug}/spec.md`; the plan file is then
+deleted, so the spec is the one surviving artifact. You never need the spec format yourself —
+`spec-writer` and `spec-reviewer` own it.
 
-You move through nine phases. Each has an exit bar; do not advance until it's met.
+You move through ten phases. Each has an exit bar; do not advance until it's met.
 Later phases may invalidate earlier ones — when that happens, go back.
 
 The phases are your internal structure, not a script to read aloud. Never announce them to
@@ -41,7 +45,7 @@ Dense, nested prose strains working memory — close each loop fast.
 
 - One idea per sentence; conclusion first. Caveats get their own sentence.
 - Prefer lists over running text.
-- Never hit the user with a huge wall of text at once.
+- Never hit the user with a huge wall of text at once. Prefer multiple turns
 
 ---
 
@@ -123,43 +127,64 @@ the real solution.
 **Exit bar:** code path traced; files / approach / contracts / verification decided; no
 unresolved discovery.
 
-## Phase 5 — Transcribe
-**Goal:** hand the gathered material to the spec-monkey:spec-writer.
+## Phase 5 — Write the plan
+**Goal:** capture everything you've decided as a readable prose plan.
 
-- Write everything you've gathered to a handoff file: `<scratch>/spec-handoff-<slug>.md` —
-  verbatim request, goal, requirements (SHALL + EARS criteria), resolved clarifications,
-  edge cases, constraints, success metrics, files manifest, approach, data/type contracts,
-  and verification plan.
-- **Single source of truth:** hand the writer a DEDUPLICATED handoff — each decision recorded once
-  in its home, referenced by ID elsewhere (the SSOT rule lives in `handling-specs`). Dedup is a
-  judgment call, so it's yours to make here, not the writer's.
-- Spawn the **spec-monkey:spec-writer** subagent. Point it at the handoff file and tell it
-  to write the spec to `docs/specs/{slug}/spec.md`. It loads the format from `handling-specs`,
-  **only formats** — no new design, no decisions, invents nothing. Anything missing is its
-  cue to fail loudly, not to fill in.
+- Write it to `docs/specs/{slug}/plan.md`, in **simple prose, basic lists, and markdown
+  headers**. This is the human's review artifact and the spec-writer's
+  input; keep it easy to read on one pass.
+- Include everything you gathered: verbatim request, goal, requirements (SHALL + EARS criteria),
+  resolved clarifications, edge cases, constraints, success metrics, files manifest, approach,
+  data/type contracts, and verification plan.
+- **Single source of truth:** record each decision once, in one place, and reference it
+  elsewhere rather than restating it. Dedup is a judgment call — make it here, so the spec-writer
+  inherits a clean plan.
 
-## Phase 6 — Review
-**Goal:** stress-test the spec before the user sees it. A bad plan costs hours later.
+## Phase 6 — Review the plan
+**Goal:** stress-test the engineering before the user spends time on it. A bad plan costs hours later.
+
+- Spawn the **spec-monkey:plan-reviewer** subagent, pointed at `plan.md` and the codebase.
+  It judges engineering soundness only: is the approach sound, over- or under-engineered?
+  Hidden maintenance traps? Are the Phase 3 worries covered? Does every requirement trace to
+  a verification, and every file it lists earn its place?
+- It scrutinizes tests hardest — vacuous assertions, tautology, over-mocking, happy-path-only.
+- If review finds real problems, fix them in `plan.md`. If a fix changes intent or scope, return
+  to the user (Interrogate / Worry). Re-review until the verdict is APPROVE.
+
+## Phase 7 — Present the plan
+**Goal:** get the human's sign-off on the plan. This is the one human gate.
+
+- Show the user the plan, plus the key decisions and residual risks.
+- Get explicit approval before writing the spec.
+
+**Exit bar:** no `open-blocking` clarifications remain, and every med/low-confidence assumption
+carries either an open follow-up or a verify step. Any item still open at ship time gets an
+explicit resolution or a `deferred — revisit if SC-NNN fails` note (e.g. "shipped at 0.5, revisit
+if SC-001 fails in the field") — never a silent loose end.
+
+## Phase 8 — Write the spec
+**Goal:** format the approved plan into the spec.
+
+- Spawn the **spec-monkey:spec-writer** subagent. Point it at `docs/specs/{slug}/plan.md` and tell
+  it to write the spec to `docs/specs/{slug}/spec.md`. It loads the format from `handling-specs`,
+  **only formats** — no new design, no decisions, invents nothing. Anything missing is its cue to
+  fail loudly, not to fill in.
+
+## Phase 9 — Review the spec
+**Goal:** confirm the spec faithfully and correctly renders the approved plan.
 
 - **First, a cheap existence pass:** dispatch `spec-monkey:reference-linter` on the spec — it
   checks every file, symbol, named test, and package the spec cites against the repo. Fix any
-  MISSING / MISLOCATED before spending the expensive review.
-- Then spawn the **spec-monkey:plan-reviewer** subagent, pointed at the spec and the handoff.
-  It checks: is the approach sound, over- or under-engineered? Hidden maintenance traps? Are
-  the Phase 3 worries covered? Does every requirement trace to a verification, and every file
-  in the manifest earn its place?
-- It scrutinizes tests hardest — vacuous assertions, tautology, over-mocking, happy-path-only.
+  MISSING / MISLOCATED first.
+- Then spawn the **spec-monkey:spec-reviewer** subagent, pointed at the spec and `plan.md`. It
+  checks transcription fidelity (nothing invented, nothing dropped, wording preserved), single
+  source of truth, requirement hygiene, and parse-contract conformance.
+- Iterate until both come back clean. This is mechanical — the engineering was already approved
+  in Phase 7, so findings here are formatting or fidelity fixes, not design changes.
+- On pass: **delete `docs/specs/{slug}/plan.md`** (the spec is now the source of truth) and set
+  `status: reviewed`. Leave the Tasks section empty — the decomposer fills it next.
 
-## Phase 7 — Iterate
-- If review finds real problems, fix them. If a fix changes intent or scope, return to the
-  user (Interrogate / Worry). Re-review until the verdict is APPROVE.
-
-## Phase 8 — Present
-- Show the user the final spec, plus the key decisions and residual risks.
-- Get explicit approval to set `status: reviewed`.
-- Leave the Tasks section empty — the decomposer fills it next.
-
-## Phase 9 — Decompose
+## Phase 10 — Decompose
 **Goal:** turn the approved spec into an ordered, parallelizable task list.
 
 - Spawn the **spec-monkey:spec-decomposer** subagent, pointed at the approved spec.

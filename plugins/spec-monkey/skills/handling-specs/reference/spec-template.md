@@ -1,6 +1,6 @@
 <!--
 SPEC TEMPLATE — the canonical engineering-spec format.
-This is the shape every spec takes. It is outcome-first, not user-story-first — it works
+This is the shape every spec takes. It is outcome-first — it works
 for renames, schema changes, and refactors as well as features. The spec is the WHAT and
 WHY; deep design (diagrams, full schemas) lives in a linked design doc — keep it out.
 Fill the < > placeholders. Delete guidance comments before review.
@@ -30,6 +30,7 @@ supersedes: []                   # SPEC-NNN this replaces (delta lineage)
 
 > **Original request:** "<paste the user's ask verbatim — never paraphrase>"
 > **In one line:** <one-sentence summary; this is the cheap-context version of the spec>
+> **Reviewing the design?** Read *Goal* → *Assumptions*. **Building it?** *Files / Change Manifest* onward.
 
 ## 1. Goal
 <!-- ONE precise, measurable sentence. State a delta: "X moves from A to B."
@@ -201,7 +202,10 @@ class <Name>(BaseModel):
 
 ## 14. Activity Log *(append-only; spans the spec's whole life — draft, review, build)*
 <!-- Lightweight audit trail. Written by whoever (human or agent) touches the spec.
-     Never rewrite history here — append. This is the qualitative log of what happened. -->
+     Never rewrite history here — append. This is the qualitative log of what happened.
+     A "spec gap / proposed amendment" noted here MUST also be recorded as an `open` row in
+     Clarifications — that's where open decisions surface for the next reader; don't leave one
+     buried in a log paragraph. -->
 - **Decisions & notes:** <date — what was decided, what changed, blockers hit>
 - **Files changed:** <paths>
 - **Final summary:** <what shipped, what was deferred, links to PR/commit>

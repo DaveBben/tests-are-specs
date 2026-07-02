@@ -57,8 +57,14 @@ per-task format you write. Read `reference/tasks-template.md`.
 
 When the constraints conflict, resolve in this order:
 
-- **Correctness and ordering first.** Data-contract and mirror ordering (e.g. a type before its
-  use, create-before-delete) is non-negotiable. Never parallelize it.
+- **Correctness, ordering, and a green build first.** Data-contract and mirror ordering (a type
+  before its use, create-before-delete) is non-negotiable; never parallelize it. And **every task
+  must leave tests AND linting green on its own commit** — no task may lean on a later one to go
+  green. Watch the subtle trap: a symbol (function, type, const, import) a task ADDS but only a
+  *later* task USES reads as **dead code to a linter** (ruff `F401`/`F841`, TS `noUnusedLocals`,
+  Go's unused check, and the like) and reddens that commit. So keep a definition and its first real
+  use — or a test that exercises it — in the **same task**, or sequence so producer and consumer
+  land together. Never split "define now, wire up later."
 - **Then MR size.** Split to stay near 400. If a change genuinely can't be split without breaking
   coherence, keep it whole and flag it.
 - **Then parallelism and context.** Fewer file collisions buys parallelism; smaller per-task
@@ -80,9 +86,11 @@ When the constraints conflict, resolve in this order:
 4. **Cluster into tasks.** Group pieces into tasks that: stay at or under ~400 diff lines; are a
    single coherent concern; own their files where you want parallelism (a file belongs to one
    parallel task); carry their own tests, meaning the verification for the `FR-NNN` a task
-   implements lives in that task; and leave the build green on their own where possible. Split one
-   over-large file across sequential tasks rather than collide. Avoid over-decomposition: a
-   30-line task that only adds coordination overhead should merge with its neighbor.
+   implements lives in that task; and **leave tests and linting green on their own commit** (the
+   green-build rule above — not "where possible" but every time; a "define now, use later" split
+   that trips dead-code lint is the classic miss). Split one over-large file across sequential tasks
+   rather than collide. Avoid over-decomposition: a 30-line task that only adds coordination
+   overhead should merge with its neighbor.
 5. **Order into waves.** Topologically sort the graph. Tasks with no unmet dependency and no file
    collision share a wave and run in parallel. Maximize wave width.
 6. **Map traceability.** Each task cites the requirements (`FR-NNN`) it implements and the success
@@ -129,8 +137,8 @@ table. Each task:
 - **Waves:** the parallel batches, widest first, so the user sees the concurrency on offer.
 - **Trade-offs:** every place the three constraints fought, and how you resolved it (e.g. "T4 and
   T5 both touch `config.py`, so they can't parallelize; sequenced T5 after T4").
-- **Flags:** any task you could not keep under ~400 lines, or that looks context-heavy. Say why,
-  and what it would take to split it.
+- **Flags:** any task you could not keep under ~400 lines, that looks context-heavy, or that can't
+  stand green (tests + lint) on its own commit. Say why, and what it would take to split it.
 - **Coverage check:** confirm every `FR-NNN` and its success criteria land in a task.
 
 Do not implement the tasks. Derive the manifest, decompose, write the sections, report.

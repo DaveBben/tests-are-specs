@@ -165,6 +165,14 @@ unresolved discovery.
 ## Phase 7: Present for approval
 **Goal:** get the human's sign-off on the spec. This is the one human gate.
 
+- **Polish first (cosmetic only).** Before showing the spec, spawn a **general-purpose** subagent on
+  **sonnet** to tidy `spec.md`. It must **invoke the `humanizer` skill if it is available** to smooth
+  the prose, and fix awkward line breaks and ragged rewrapping (they sometimes come out weird). If
+  the skill isn't available, do the line-break cleanup anyway. Readability only: it
+  must NOT touch any decision, requirement wording (the `SHALL` lines), ID (`FR-`/`SC-`), section
+  header or order, table, or fenced Data-contract block, and must leave the frontmatter intact. Skim
+  the result to confirm nothing material moved. (Re-run only after substantial prose edits, not tiny
+  fixes.)
 - Show the user the spec, plus the key decisions and residual risks.
 - **Ask for approval in plain text — no menu, no `AskUserQuestion`.** The user must **type the word
   `approve`** to proceed. That deliberate act is the gate; a clicked option or a casual "looks good"

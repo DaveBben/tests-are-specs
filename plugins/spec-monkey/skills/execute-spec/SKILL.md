@@ -52,9 +52,7 @@ Read the per-task sections from `tasks.md`. Each `## T#` carries a trace line
 
 - Show the user the un-done tasks: id, summary, `~LOC`, `wave`, and whether each task's
   `depends_on` are already done.
-- Ask which to implement, **in plain text — never `AskUserQuestion`.** Its menu carries a hard,
-  non-configurable **60-second timeout** that cuts the user off and continues on a default; a
-  plain-text question waits as long as they need. **Default: one task = one MR.**
+- Ask which to implement. **Default: one task = one MR.**
 - Be mindful of size and context. A `wave` marks tasks that *can* go in parallel, but each is still
   its own MR unless the user says otherwise. If the user picks several **independent** same-wave
   tasks, you'll fan them out to parallel sonnet subagents in Phase 3 — so per-task context is not a

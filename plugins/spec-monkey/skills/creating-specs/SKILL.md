@@ -1,24 +1,18 @@
 ---
 name: creating-specs
-version: "1.0.0"
+version: "1.0.1"
 description: "Turn a rough request into an engineering spec. Use before coding any non-trivial feature, change, refactor or when the user wants to write a spec or design docuement. Runs an interactive interview through a question-driven template covering codebase orientation, clarifying questions, and risk analysis. Do NOT trigger for trivial fixes (typos, one-line bugs) or when the user just wants to start coding."
 license: MIT
 compatibility: any-agent
-allowed-tools:
-  - Read
-  - Grep
-  - Glob
-  - Bash
-  - Write
-  - Edit
 ---
 
 # Creating Specs
 
 You talk with the user to turn a rough request into a rigorous, approved spec.
 
-There is **one artifact**: the spec at `docs/specs/{slug}/spec.md`. You write it directly
-in the question-driven template. The template lives at 
+There is **one artifact**: the spec. It lives at `docs/specs/{slug}/spec.md` by default;
+if the user or the repo's own convention names a different home, that wins. You write it
+directly in the question-driven template. The template lives at
 [`references/spec-template.md`](references/spec-template.md); load it before you write.
 
 ## The key idea: the template IS the discovery
@@ -58,18 +52,16 @@ earlier ones; when that happens, go back to the section that owns the decision.
    enough about how this change will affect the codebase so you have some background
    before working through the template. During the template sections you might need
    additional discovery and deeper trace calls.
-3. **Interview through the template, with the human.** Ask the highest-uncertainty questions
-   first, in small thematic batches rather than a 40-question dump. Reflect interpretations back:
-   "I think you mean X, which implies Y, correct?" Record decisions vs assumptions; the residue
-   lands in *Open questions & assumptions*.
+3. **Interview through the template, with the human.** Interview me relentlessly about every 
+   aspect of this plan until we reach a shared understanding. Walk down each decision branch. Ask questions one at a time. Reflect interpretations back: "I think you mean X, which implies Y, correct?" Record decisions vs assumptions; the residue lands in *Open questions & assumptions*.
 4. **Work every risk lens** in *What could go wrong*: Failure & scale, Operational readiness,
    Trust boundary, Implied work, Better way. Each surfaced risk gets a decision: HANDLE / ACCEPT /
    OUT-OF-SCOPE. Fill *When it happens* fully: triggers, ordering, rollout conditions, reversibility.
-5. **Write the single spec** at `docs/specs/{slug}/spec.md`, filling every section. Stay at
-   WHAT+WHEN altitude and apply the litmus: no file manifest, no exact symbols, no typed code
-   block. Verification is the exception: put the actual run commands that prove success in *How I
-   know it works*. Record each decision once; reference it by ID (`FR-001`, `SC-001`) elsewhere.
-   Set `status: draft`.
+5. **Write the single spec** to its home (default `docs/specs/{slug}/spec.md`), filling every
+   section. Stay at WHAT+WHEN altitude and apply the litmus: no file manifest, no exact symbols,
+   no typed code block. Verification is the exception: put the actual run commands that prove
+   success in *How I know it works*. Record each decision once; reference it by ID (`FR-001`,
+   `SC-001`) elsewhere. Set `status: draft`.
 6. **Polish** Do an editing pass: remove signs of AI-generated writing so the prose reads
    natural and human-written, and fix ragged line breaks. Readability only: touch no decision, no `SHALL` line, no ID,
    no header, no fenced block, and leave the frontmatter intact.

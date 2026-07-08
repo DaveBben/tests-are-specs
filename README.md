@@ -38,7 +38,7 @@ claude --plugin-dir ./plugins/spec-monkey
 
 | Skill | What it does | Produces |
 |---|---|---|
-| `creating-specs` | An interactive plain-text interview that turns a rough request into an approved spec. The template's questions ARE the discovery: orientation, clarifying interrogation, and five risk lenses. Gates on the human typing `approve`. | `docs/specs/{slug}/spec.md` |
+| `creating-specs` | An interactive plain-text interview that turns a rough request into an approved spec. The template's questions ARE the discovery: orientation, clarifying interrogation, and five risk lenses. Gates on the human typing `approve`. | `docs/specs/{slug}/spec.md` (the default; a user-named path wins) |
 | `reviewing-specs` | A skeptical, report-only critique of a drafted spec: soundness, grounding against the real code, edge-case coverage, traceability, weak success criteria, and any HOW that leaked past design altitude. Returns findings + an APPROVE / REVISE verdict. | A review report (never edits the spec) |
 | `implementing-specs` | Takes an approved spec and builds it: works out the HOW from the spec and the real code, then verifies against the spec's own success criteria and commands. Stops before pushing or opening a PR. | Working code + a commit that points back to the spec |
 | `auditing-specs` | Audits a finished implementation against the approved spec: traces every requirement to code, runs the spec's own verification, and confirms the success criteria, data contracts, constraints, and scope boundaries actually hold. Report-only. | A COMPLIANT / NON_COMPLIANT report with evidence |

@@ -1,14 +1,9 @@
 ---
 name: reviewing-specs
-version: "1.0.0"
+version: "1.0.1"
 description: "Review an engineering spec. Use when a spec needs to be reviewed, critiqued, or sanity-checked. Do NOT use for generic code review or documents which are not specs."
 license: MIT
 compatibility: any-agent
-allowed-tools:
-  - Read
-  - Grep
-  - Glob
-  - Bash
 ---
 
 # Reviewing Specs
@@ -16,8 +11,8 @@ allowed-tools:
 You review an engineering spec before anyone builds it. A bad spec costs hours of maintenance
 later. Your job is to find the flaws now, while they are cheap. You **never rewrite**. 
 
-The spec (`docs/specs/{slug}/spec.md`) sits at design altitude: it states WHAT to do and WHEN,
-never HOW.
+The spec lives at `docs/specs/{slug}/spec.md` by default; when the user points you at another path,
+review that one. The spec sits at design altitude: it states WHAT to do and WHEN, never HOW.
 
 ## Stance
 

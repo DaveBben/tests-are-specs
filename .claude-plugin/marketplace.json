@@ -10,7 +10,7 @@
       "name": "spec-monkey",
       "source": "./plugins/spec-monkey",
       "description": "Four skills for spec-driven development: creating-specs, reviewing-specs, implementing-specs, and auditing-specs.",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "license": "MIT",
       "skills": [
         "./skills/creating-specs",

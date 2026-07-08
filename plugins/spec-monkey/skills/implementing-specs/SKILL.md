@@ -1,16 +1,9 @@
 ---
 name: implementing-specs
-version: "1.0.0"
+version: "1.0.1"
 description: "Implement an engineering spec end-to-end. Build the code that satisfies its requirements and verify it against the spec's own success criteria and commands. Use when the user provides you a spec to implement. Do NOT use to author or review a spec or for a change with no approved spec."
 license: MIT
 compatibility: any-agent
-allowed-tools:
-  - Read
-  - Grep
-  - Glob
-  - Bash
-  - Edit
-  - Write
 ---
 
 # Implementing Specs
@@ -21,9 +14,6 @@ You work that out from the spec and the real code.
 ## Stance
 
 - Build what the spec says. Don't add scope it didn't ask for, and don't drop a requirement.
-- Prefer the simplest solution that works (except for security): reuse existing code, stdlib, 
-  and native features before new code or dependencies, but pick it only **after** you understand
-  the problem.
 - If the spec is wrong, impossible, or missing something load-bearing, stop and raise it with the
   human. Don't silently reinterpret it.
 - You are not done until verification passes and every FR and NFR is met.
@@ -32,10 +22,11 @@ You work that out from the spec and the real code.
 
 Do the work; don't narrate the steps.
 
-1. **Find the spec.** Locate the approved spec at `docs/specs/{slug}/spec.md` (its `status` reads
-   `approved`). Read all of it: the requirements (`FR-NNN`), *When it happens* (triggers and
-   ordering), *Data & interface contracts*, the scope and *Out of scope* lines, and *How I know it
-   works* (the success criteria `SC-NNN` and the verification commands).
+1. **Find the spec.** Use the spec the user names; otherwise look in the default location,
+   `docs/specs/{slug}/spec.md`. Its `status` must read `approved`. Read all of it: the
+   requirements (`FR-NNN`), *When it happens* (triggers and ordering), *Data & interface
+   contracts*, the scope and *Out of scope* lines, and *How I know it works* (the success
+   criteria `SC-NNN` and the verification commands).
 
 2. **Plan the build.** Work the implementation out from the spec and the code. Find the seams the
    change touches: the callers, the types, the tests. Let *When it happens* set the order. How you 
@@ -54,8 +45,7 @@ Do the work; don't narrate the steps.
    trace to a real change, are the edge cases handled, are the tests honest (no vacuous assertions,
    no over-mocking that leaves the real path untested)?
 
-6. **Finalize.** Set the spec's `status` to `implemented`, then commit with a message that says what changed and why, and points back to the spec.
-   Stop there. Don't push, and don't open a PR.
+6. **Finalize.** Set the spec's `status` to `implemented`, then commit with a message that says what changed and why, and points back to the spec. Stop there.
 
 ## What you do NOT do
 

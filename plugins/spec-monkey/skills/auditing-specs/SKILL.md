@@ -1,14 +1,9 @@
 ---
 name: auditing-specs
-version: "1.0.0"
+version: "1.0.1"
 description: "Audit an implementation against its spec. Use after a spec has been implemented to confirm whether it was truly built to match its requirements. Do NOT use to author or review a spec, or for generic code review or bug hunting."
 license: MIT
 compatibility: any-agent
-allowed-tools:
-  - Read
-  - Grep
-  - Glob
-  - Bash
 ---
 
 # Auditing Specs
@@ -29,8 +24,8 @@ and does the spec's own verification actually pass?
 
 ## Inputs
 
-- **The spec** (`docs/specs/{slug}/spec.md`), `status: implemented`: the binding contract you audit
-  against. Read all of it.
+- **The spec** (`docs/specs/{slug}/spec.md` by default; the user may name another path),
+  `status: implemented`: the binding contract you audit against. Read all of it.
 - **The diff** (e.g. `git diff <base>...HEAD`): what was actually built.
 - **The codebase** (read-only) and its verification commands: to trace requirements and run the checks.
 

@@ -1,7 +1,7 @@
 ---
 name: creating-specs
-version: "1.0.0"
-description: "Turn a rough request into an engineering spec. Use before coding any non-trivial feature, change, refactor or when the user wants to write a spec or design docuement. Runs an interactive, question-driven interview covering codebase orientation, clarifying questions, and risk analysis, then composes the answers into a spec. Do NOT trigger for trivial fixes (typos, one-line bugs) or when the user just wants to start coding."
+version: "1.2.0"
+description: "Turn a rough request into an engineering spec. Use before coding any non-trivial feature, change, refactor or when the user wants to write a spec or design document. Runs an interactive, question-driven interview covering codebase orientation, clarifying questions, and risk analysis, then composes the answers into a spec. Do NOT trigger for trivial fixes (typos, one-line bugs) or when the user just wants to start coding."
 license: MIT
 compatibility: any-agent
 ---
@@ -10,8 +10,9 @@ compatibility: any-agent
 
 You talk with the user to turn a rough request into a rigorous, approved spec.
 
-There is **one artifact**: the spec folder at `docs/specs/{slug}/` — `spec.md` (the decision brief and a
-table of contents) plus `detail/` (one file per section).
+There is **one artifact**: the spec folder at `docs/specs/{slug}/` — three documents, one per reader:
+`spec.md` (the decision brief the reviewer approves from), `detail/contract.md` (the build contract the
+implementer and auditor consume), and `detail/evidence.md` (the review-time reasoning, opened on doubt).
 
 ## The key idea: interview first, compose second
 
@@ -57,14 +58,15 @@ ones; when that happens, go back to the section that owns the decision.
    Implied work, Better way. Each surfaced risk gets a decision: HANDLE (→ an FR), ACCEPT (→ Known
    limitations & honest gaps), or OUT-OF-SCOPE. The lenses live in the questions file; don't skip one.
 4. **Compose the spec** as a folder at `docs/specs/{slug}/` from the answers. Load
-   [`references/spec-template.md`](references/spec-template.md) and follow its layout. Write
-   `spec.md` — the standalone decision brief plus a table of contents — and one `detail/<name>.md` per
-   section, each linked from the Contents table. Keep the brief readable on its own; group the requirements
-   by subsystem/seam and place each success criterion beside the requirement it verifies. Stay at WHAT+WHEN
-   altitude (no file manifest, no exact symbols, no typed code block); the exception is the commands in
-   `detail/verification.md`, which are concrete. Record each fact once and reference it by ID (`FR-001`,
-   `SC-001`), section name, or link elsewhere. Every `< >` placeholder gets a real answer or a justified
-   `N/A — reason`. Set `status: draft`.
+   [`references/spec-template.md`](references/spec-template.md) and follow its layout: `spec.md` — the
+   standalone decision brief plus the Contents reading contract — `detail/contract.md` (the sections the
+   implementer and auditor consume), and `detail/evidence.md` (the review-time reasoning), every canonical
+   section under its canonical heading in its home file. Keep the brief readable on its own; group the
+   requirements by subsystem/seam and place each success criterion beside the requirement it verifies. Stay
+   at WHAT+WHEN altitude (no file manifest, no exact symbols, no typed code block); the exception is the
+   commands under *Verification approach & commands* in `detail/contract.md`, which are concrete. Record
+   each fact once and reference it by ID (`FR-001`, `SC-001`), section name, or link elsewhere. Every `< >`
+   placeholder gets a real answer or a justified `N/A — reason`. Set `status: draft`.
 5. **Final pass — four self-consistency sweeps.** Apply each good practice everywhere it's warranted, not
    just where you first thought of it:
    A. **Claim ↔ mechanism.** Every guarantee word (every, only, always, never, cannot) traces to an FR
@@ -72,10 +74,11 @@ ones; when that happens, go back to the section that owns the decision.
       instance of a weakness, not just the first.
    B. **Atomicity.** One FR = one verifiable obligation. Split any SHALL that needs more than one pass/fail
       test.
-   C. **Coverage.** Every FR has an SC beside it, or a reason under *Coverage*. No silent blanks.
-   D. **Normative vs. contingent.** Move "only if X fails" fallbacks to *Contingencies*
-      (`detail/contingencies.md`); the requirements list holds only what the release must satisfy and can
-      verify now.
+   C. **Coverage.** Every FR has an SC beside it, or a reason under **Coverage exceptions** in
+      *Known limitations & honest gaps*. No silent blanks.
+   D. **Normative vs. contingent.** Move "only if X fails" fallbacks to the **Contingencies** block
+      of *Failure modes* (in `detail/evidence.md`); the requirements list holds only what the release
+      must satisfy and can verify now.
 6. **Polish.** Do an editing pass: remove signs of AI-generated writing so the prose reads naturally,
    and fix ragged line breaks. Readability only: touch no decision, no `SHALL` line, no ID, no header,
    no fenced block, and leave the frontmatter intact.

@@ -1,6 +1,6 @@
 ---
 name: implementing-specs
-version: "1.0.0"
+version: "1.2.0"
 description: "Implement an engineering spec end-to-end. Build the code that satisfies its requirements and verify it against the spec's own success criteria and commands. Use when the user provides you a spec to implement. Do NOT use to author or review a spec or for a change with no approved spec."
 license: MIT
 compatibility: any-agent
@@ -23,9 +23,12 @@ that out from the spec and the real code.
 Do the work; don't narrate the steps.
 
 1. **Find the spec.** Locate the approved spec folder at `docs/specs/{slug}/` (its `spec.md` `status` reads
-   `approved`). Read all of it — `spec.md` and every file in `detail/`: the requirements (`FR-NNN`) and
-   their success criteria (`SC-NNN`), *When it happens* (triggers and ordering), the *Data & interface
-   contract*, the scope and *Out of scope* lines, and *Verification approach & commands*.
+   `approved`). Read `spec.md` and `detail/contract.md` — together they are the full build contract: the
+   requirements (`FR-NNN`) and their success criteria (`SC-NNN`), *When it happens* (triggers and ordering),
+   the *Data & interface contract*, the scope and *Out of scope* lines, and *Verification approach &
+   commands*. `detail/evidence.md` is review-time reasoning; open it only when the contract leaves a
+   decision unclear. (A spec written under format 1.0.0 spreads these sections one-per-file in `detail/`;
+   locate them by heading and read them all.)
 
 2. **Plan the build.** Work the implementation out from the spec and the code. Find the seams the change
    touches: the callers, the types, the tests. Let *When it happens* set the order. How you break the work

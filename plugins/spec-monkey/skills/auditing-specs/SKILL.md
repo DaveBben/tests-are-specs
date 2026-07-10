@@ -1,6 +1,6 @@
 ---
 name: auditing-specs
-version: "1.0.0"
+version: "1.2.0"
 description: "Audit an implementation against its spec. Use after a spec has been implemented to confirm whether it was truly built to match its requirements. Do NOT use to author or review a spec, or for generic code review or bug hunting."
 license: MIT
 compatibility: any-agent
@@ -24,8 +24,11 @@ the spec's own verification actually pass?
 
 ## Inputs
 
-- **The spec** (`docs/specs/{slug}/`: `spec.md` plus `detail/`), `status: implemented`: the binding
-  contract you audit against. Read all of it.
+- **The spec** (`docs/specs/{slug}/`: `spec.md` plus `detail/contract.md` and `detail/evidence.md`),
+  `status: implemented`: the binding contract you audit against. `spec.md` and `detail/contract.md` carry
+  everything that binds; open `detail/evidence.md` for the *Failure modes* index that check 7 traces
+  through its contract homes. (A spec written under format 1.0.0 spreads the same sections one-per-file
+  in `detail/`; locate by heading.)
 - **The diff** (e.g. `git diff <base>...HEAD`): what was actually built.
 - **The codebase** (read-only) and its verification commands: to trace requirements and run the checks.
 
@@ -43,7 +46,7 @@ The checks in one line each:
 3. No faked done: the tests behind the FRs and SCs exercise the real path and would fail if it broke.
 4. Data & interface contract: §*Data & interface contract* built as specified, field and signature for
    field.
-5. Constraints & non-functional bounds: each *Constraint* and *Non-functional bound* is met.
+5. Constraints & non-functional bounds: every item under *Constraints* and *Non-functional bounds* is met.
 6. Scope discipline: nothing on *Out of scope* was built, no requirement dropped, no silent scope creep.
 7. Edge cases handled: every *Failure modes* case marked HANDLE is handled in the code.
 8. Ordering & triggers: where *When it happens* pins order, triggers, or rollout conditions, the build

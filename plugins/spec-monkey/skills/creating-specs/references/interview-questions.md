@@ -47,7 +47,7 @@ The areas below run in a natural discovery order. Each notes the template field(
 - If the sweep turns up scope you hadn't accounted for, loop back to the human before continuing.
 
 ## C. Behavior, requirements & proof
-*(fills: Requirements & success criteria (by subsystem) · Coverage)*
+*(fills: Requirements & success criteria (by subsystem) · Coverage exceptions)*
 
 - Walk me through what an outside observer sees happen, step by step. Not the code; the visible flow.
 - Does this span more than one subsystem or seam? Name them; they become the requirement groups.
@@ -107,7 +107,7 @@ OUT-OF-SCOPE (where does it live?).
   approach wins.
 
 ## H. Proof mechanics
-*(fills: Verification approach & commands · Worked case)*
+*(fills: Verification approach & commands, incl. the worked case)*
 
 - What evidence would convince a skeptic the requirements actually hold?
 - Does any behavior cross a real boundary (a database, an HTTP call, a queue, a contract between two

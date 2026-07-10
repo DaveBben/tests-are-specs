@@ -29,7 +29,7 @@ A spec states **WHAT to do and WHEN, never HOW.**
 - **HOW never belongs in the spec:** which file or symbol to edit, the algorithm, the concrete type or
   struct, the branch, the rollback script, the task breakdown. The implementor owns all of it. The one
   exception is verification: the run commands that prove success DO belong in the spec, under *Verification
-  approach & commands* (in `detail/`).
+  approach & commands* (in `detail/contract.md`).
 - **Litmus:** if a line tells an implementer which file, symbol, or type to edit, it's a leaked HOW. A
   reviewer approves direction, not line edits. (Verification run commands are the exception; they belong in
   the spec.)

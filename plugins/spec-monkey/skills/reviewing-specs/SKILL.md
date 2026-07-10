@@ -1,6 +1,6 @@
 ---
 name: reviewing-specs
-version: "1.0.0"
+version: "1.2.0"
 description: "Review an engineering spec. Use when a spec needs to be reviewed, critiqued, or sanity-checked. Do NOT use for generic code review or documents which are not specs."
 license: MIT
 compatibility: any-agent
@@ -11,7 +11,9 @@ compatibility: any-agent
 You review an engineering spec before anyone builds it. A bad spec costs hours of maintenance later. Your
 job is to find the flaws now, while they are cheap. You **never rewrite**.
 
-The spec (`docs/specs/{slug}/`: `spec.md` plus `detail/`) sits at design altitude: it states WHAT to do and WHEN, never HOW.
+The spec (`docs/specs/{slug}/`: `spec.md` plus `detail/contract.md` and `detail/evidence.md`) sits at
+design altitude: it states WHAT to do and WHEN, never HOW. A human approves from `spec.md` alone; you are
+the deep pass, so you read all three documents.
 
 ## Stance
 
@@ -25,7 +27,8 @@ The spec (`docs/specs/{slug}/`: `spec.md` plus `detail/`) sits at design altitud
 
 ## Inputs
 
-- **The spec** (`spec.md` plus its `detail/` files): the artifact you judge.
+- **The spec** (`spec.md` plus its `detail/` files): the artifact you judge. Read all of it. (A spec
+  written under format 1.0.0 spreads the same sections one-per-file in `detail/`; cite by heading either way.)
 - **The codebase** (read-only): use it to check the spec against reality.
 
 ## How to review

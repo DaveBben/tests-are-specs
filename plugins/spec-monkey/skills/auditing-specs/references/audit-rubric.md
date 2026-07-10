@@ -4,12 +4,14 @@
 
 The spec states WHAT and WHEN. These parts of it are the contract you audit against:
 
-- **Requirements** (`FR-NNN`, in `detail/requirements.md`): the behavior that had to be built.
+- **Requirements** (`FR-NNN`, under *Requirements & success criteria* in `detail/contract.md`): the
+  behavior that had to be built.
 - **Success criteria** (`SC-NNN`, beside their requirements) and **Verification approach & commands** (the
   commands and the worked case): the proof it works.
 - **Data & interface contract**: the shapes and signatures other code depends on.
 - **Constraints & non-functional bounds**: the limits the build had to respect.
-- **Out of scope**, and the **Failure modes** decisions: the boundaries and the failure handling.
+- **Out of scope**, and the **Failure modes** decisions as landed in their contract homes (an FR,
+  *Known limitations & honest gaps*, or *Out of scope*): the boundaries and the failure handling.
 - **When it happens**: ordering, triggers, rollout conditions.
 
 You do NOT judge code quality, security, or performance beyond what that contract and those bounds require:
@@ -46,7 +48,7 @@ Run each. Mark OK, FAIL, or REVIEW (couldn't determine it here), each with evide
   invariant is a FAIL. Cite the consuming code that expects the specified shape.
 
 **5. Constraints & non-functional bounds**
-- Each **Constraint** and **Non-functional bound** in *Constraints & non-functional bounds* is satisfied;
+- Each item under **Constraints** and **Non-functional bounds** in *Constraints & non-functional bounds* is satisfied;
   cite where. For a bound whose threshold needs a benchmark or a production measurement you can't run here,
   mark REVIEW and name the measurement a human must take.
 
@@ -57,8 +59,11 @@ Run each. Mark OK, FAIL, or REVIEW (couldn't determine it here), each with evide
   not. Lockfiles, generated files, and formatting-only churn are not scope creep; note, don't fail.
 
 **7. Edge cases handled**
-- For each case in *Failure modes* marked HANDLE, trace the input through the code to where it is handled
-  per the decision. Missing HANDLE handling is a FAIL. A case marked ACCEPT or OUT-OF-SCOPE needs no code;
+- *Failure modes* (in `detail/evidence.md`) is the index of risk decisions; each decision binds through its
+  contract home (HANDLE → an FR, ACCEPT → *Known limitations & honest gaps*, OUT-OF-SCOPE → *Out of scope*).
+  Skip its **Contingencies** block; fallbacks carry a trigger, not a decision, and bind nothing.
+- For each case marked HANDLE, trace the input through the code to where its FR handles it per the
+  decision. Missing HANDLE handling is a FAIL. A case marked ACCEPT or OUT-OF-SCOPE needs no code;
   confirm it was genuinely left alone, not half-built.
 
 **8. Ordering & triggers**

@@ -1,10 +1,12 @@
 ---
-spec_monkey: "1.3.0"
+spec_monkey: "1.5.0"
 id: SPEC-000
 kind: project
 title: Sentiment classifier training pipeline
 status: approved
 version: 1
+approved_by: [@dave]
+approved_date: 2026-07-14
 created: 2026-07-14
 updated: 2026-07-14
 owners: [@dave]
@@ -59,6 +61,7 @@ artifacts (out of scope here).
 - **dataset-loader** — ingest a HuggingFace dataset into a leak-free, versioned Dataset — depends_on: [] — status: drafted
 - **trainer** — train the classifier on a Dataset version, write a ModelArtifact — depends_on: [dataset-loader] — status: planned
 - **evaluator** — score a model on the test split and record its metrics — depends_on: [trainer] — status: planned
+- **run-summary-log** — log a one-line run summary when the loader finishes (trivial lane, light profile) — depends_on: [dataset-loader] — status: approved
 
 ## Out of scope
 

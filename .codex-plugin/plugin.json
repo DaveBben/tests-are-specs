@@ -1,0 +1,23 @@
+{
+  "name": "spec-monkey",
+  "version": "2.0.0",
+  "description": "Eight portable skills for spec-driven development: running-lifecycle drives the full flow, and grounding-specs, shaping-specs, reviewing-design, writing-specs, reviewing-specs, implementing-specs, and auditing-specs are its phases. Specs state WHAT to build and WHEN, never HOW.",
+  "author": {
+    "name": "DaveBben"
+  },
+  "homepage": "https://github.com/DaveBben/spec-monkey",
+  "repository": "https://github.com/DaveBben/spec-monkey",
+  "license": "MIT",
+  "keywords": [
+    "specs",
+    "spec-driven-development",
+    "skills",
+    "planning",
+    "requirements",
+    "review",
+    "audit",
+    "workflow"
+  ],
+  "skills": "./plugins/spec-monkey/skills/",
+  "hooks": {}
+}

@@ -42,7 +42,7 @@ Run each. Mark OK, FAIL, or REVIEW (couldn't determine it here), each with evide
 - No requirement was silently dropped, and no behavior was added that the spec never asked for. Real scope creep is a deviation: recommend "amend spec" if the addition is warranted, "fix code" (remove it) if not. Lockfiles, generated files, and formatting-only churn are not scope creep; note, don't fail.
 
 **7. Edge cases handled**
-- *Failure modes* (in `detail/evidence.md`) is the index of risk decisions; each decision binds through its contract home (HANDLE → an FR, ACCEPT → *Known limitations & honest gaps*, OUT-OF-SCOPE → *Out of scope*). Skip its **Contingencies** block; fallbacks carry a trigger, not a decision, and bind nothing.
+- *Failure modes* (in `detail/design.md`) is the index of risk decisions; each decision binds through its contract home (HANDLE → an FR, ACCEPT → *Known limitations & honest gaps*, OUT-OF-SCOPE → *Out of scope*). Skip its **Contingencies** block; fallbacks carry a trigger, not a decision, and bind nothing.
 - For each case marked HANDLE, trace the input through the code to where its FR handles it per the decision. Missing HANDLE handling is a FAIL. A case marked ACCEPT or OUT-OF-SCOPE needs no code; confirm it was genuinely left alone, not half-built.
 
 **8. Ordering & triggers**

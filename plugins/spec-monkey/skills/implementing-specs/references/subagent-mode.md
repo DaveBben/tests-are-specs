@@ -2,6 +2,16 @@
 
 The single-agent workflow in `SKILL.md` is the default and works in any harness. This mode is an option for harnesses that dispatch subagents, on specs large enough to earn it (three or more FR-groups). It never replaces the default; remove this file and the skill still reads complete.
 
+"Dispatch a subagent" here is an action, never a tool name: spawn a fresh agent with an isolated context, hand it a brief, read its result back. Which tool that is — and which agent type to pass — is your harness's business; the per-harness mapping lives outside the skills, in the spec-monkey repository's `docs/harness-tools/`. If your harness has no such tool, this whole mode is unavailable: run the single-agent workflow in `SKILL.md` instead, and never fabricate a dispatch call.
+
+**The three dispatch prompts ship ready to use.** You don't re-derive them per build; you fill the bracketed slots and dispatch:
+
+- [`implementer-prompt.md`](implementer-prompt.md) — builds one FR-group against `contract.md`.
+- [`reviewer-prompt.md`](reviewer-prompt.md) — the three-verdict per-group gate (compliance, quality, invariants).
+- [`fixer-prompt.md`](fixer-prompt.md) — resolves a failed verdict in code, never in the check.
+
+The sections below explain the loop those prompts run in. Read them once; then work from the prompt files.
+
 ## Why files, not pasted text
 
 Everything you paste into a dispatch prompt, and everything a subagent prints back, stays resident in the controller's context and is re-read on every later turn. Hand artifacts over as files so bulk content never enters the controller's context. spec-monkey has an advantage here: `detail/contract.md` is already the durable brief, and its *Requirements & success criteria* is already grouped by subsystem/seam. No task-extraction step is needed; the brief is the contract path plus the group name.
@@ -26,7 +36,7 @@ The spec's *Requirements & success criteria* groups FRs by `### <subsystem / sea
 
 ## The implementer dispatch
 
-Hand it a five-part brief and nothing else:
+Use [`implementer-prompt.md`](implementer-prompt.md); it is the five-part brief below, filled in. Hand the subagent that and nothing else:
 - Where it fits (the group name and its place in the order).
 - The `contract.md` path and the group name, with "use the exact FR/SC values verbatim from the contract."
 - The project-spec path and the `INV-NNN` the group's code path must uphold.
@@ -45,7 +55,7 @@ redirected into the file. Use the base recorded before dispatch. No script requi
 
 ## The reviewer dispatch: three verdicts
 
-The reviewer reads the group's diff package once and returns three verdicts, scoped to the group:
+Use [`reviewer-prompt.md`](reviewer-prompt.md). The reviewer reads the group's diff package once and returns three verdicts, scoped to the group:
 1. **Spec compliance**: every FR in the group traces to code that satisfies it; nothing extra, nothing misunderstood.
 2. **Code quality**: clean, honest tests, no vacuous assertions or over-mocking.
 3. **Invariants**: every cited `INV-NNN` the group's code path touches still holds.
@@ -54,7 +64,7 @@ This applies checks 1, 3, and 9 of [`../../auditing-specs/references/audit-rubri
 
 ## The fix loop
 
-The fixer carries the implementer's contract and the failed verdict. It fixes the code, never the check. A finding that conflicts with the contract is the human's call, not the fixer's: reclassify to `amend-spec` and stop.
+Use [`fixer-prompt.md`](fixer-prompt.md). The fixer carries the implementer's contract and the failed verdict. It fixes the code, never the check. A finding that conflicts with the contract is the human's call, not the fixer's: reclassify to `amend-spec` and stop.
 
 ## The ledger
 

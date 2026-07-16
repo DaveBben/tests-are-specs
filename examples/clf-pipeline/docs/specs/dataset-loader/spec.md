@@ -1,10 +1,12 @@
 ---
-spec_monkey: "1.3.0"
+spec_monkey: "1.5.0"
 id: SPEC-001
 kind: work-item
 parent: SPEC-000
 title: Ingest a HuggingFace dataset into leak-free versioned splits
 status: draft
+approved_by: []
+approved_date:
 created: 2026-07-14
 updated: 2026-07-14
 owners: [@dave]
@@ -63,6 +65,6 @@ doubt. The implementer and the auditor load the contract whole. A deep reviewer 
   *Requirements & success criteria* · *Constraints & non-functional bounds* · *Data & interface contract* ·
   *When it happens* · *Out of scope* · *Known limitations & honest gaps* (incl. coverage exceptions) ·
   *Verification approach & commands* (incl. the worked case)
-- [The evidence](detail/evidence.md) — the review-time reasoning:
-  *What's true today* · *Failure modes* (incl. contingencies) · *Who & what this touches* ·
+- [The design](detail/design.md) — shaping's reasoning:
+  *What's true today* · *Approach* · *Failure modes* (incl. contingencies) · *Who & what this touches* ·
   *Open questions & assumptions*

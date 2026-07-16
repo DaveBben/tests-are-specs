@@ -9,12 +9,17 @@ SINGLE SOURCE OF TRUTH: each shared fact lives here once, with an ID (INV-NNN, o
 -->
 
 ---
-spec_monkey: "1.3.0"             # spec-monkey format version; also marks this as a spec-monkey spec
-id: SPEC-000                     # the project spec's stable handle; work items set parent: SPEC-000
+spec_monkey: "1.5.0"             # spec-monkey format version; also marks this as a spec-monkey spec
+id: SPEC-000                     # the project spec's stable handle; work items set parent to it.
+                                 # SPEC-000 is the convention for a single project spec; a monorepo
+                                 # with several gives each a distinct id.
 kind: project                    # project (this template) | work-item (spec-template.md)
 title: <system name>
 status: draft                    # draft → approved (amendments re-approve)
 version: 1                       # living-doc version; bump on every amendment
+approved_by: []                  # who granted the gate; filled when status reaches approved.
+                                 # A self-set flip with no human recorded here is not a gate.
+approved_date:                   # YYYY-MM-DD the human approved; set with approved_by.
 created: <YYYY-MM-DD>
 updated: <YYYY-MM-DD>
 owners: [<@handle>]
@@ -54,7 +59,7 @@ standards: standards.md          # the constitution (ONE of: standards.md | CLAU
 <!--
 PARSE CONTRACT (lightweight):
 1. Location: docs/specs/project/spec.md. `kind: project` in the frontmatter marks it.
-2. Frontmatter YAML holds every queryable scalar: spec_monkey, id (SPEC-000), kind, status, version.
+2. Frontmatter YAML holds every queryable scalar: spec_monkey, id (SPEC-000), kind, status, version, approved_by, approved_date.
 3. IDs are join keys: INV-NNN (one system-wide invariant) and the entity names under Shared data contracts. Work-item specs reference these; they do not copy them.
 4. Sections are the schema: each canonical heading above is a fixed home. A section with nothing to say gets "N/A — reason", never silence.
 -->

@@ -1,16 +1,16 @@
 # Contract questions
 
-This is the discovery instrument for the **binding** part of a spec: the requirements, the contracts, the timing, and the proof. The thinking is already done and recorded in `detail/evidence.md` and the brief's *Decisions to sign off*. Read that first. These questions close only the contract detail the reasoning did not pin down.
+This is the discovery instrument for the **binding** part of a spec: the requirements, the contracts, the timing, and the proof. The thinking is already done and recorded in `detail/design.md` and the brief's *Decisions to sign off*. Read that first. These questions close only the contract detail the reasoning did not pin down.
 
 Discover here; compose the answers into `spec-template.md` afterward. This is **not** the spec's layout: it follows the order you interrogate in, working backwards from the binding fields the template needs filled.
 
 ## How to use it
 
-- **This is a conversation, not a questionnaire.** Prompts, not a script. Skip what the shaped evidence already settles. Reword to fit the user's context, and let each answer reshape what you ask next.
+- **This is a conversation, not a questionnaire.** Prompts, not a script. Skip what the shaped design already settles. Reword to fit the user's context, and let each answer reshape what you ask next.
 - **Ask one question at a time**, in plain language, in the user's own words. Never offer a menu unless the choice is genuinely discrete and low-stakes.
 - **Reflect every answer back.** "I think you mean X, which implies Y, right?" Surface the implication, not just the words.
 - **Recurse.** When an answer opens a sub-decision, chase it before moving on.
-- **Separate decisions from assumptions.** An unverified belief is an assumption, not a fact, until confirmed. If it carries residual risk, it belongs under *Open questions & assumptions* in the shaped `evidence.md`, not buried in the contract.
+- **Separate decisions from assumptions.** An unverified belief is an assumption, not a fact, until confirmed. If it carries residual risk, it belongs under *Open questions & assumptions* in the shaped `design.md`, not buried in the contract.
 
 Each area below notes the template field(s) it fills.
 
@@ -53,4 +53,4 @@ Each area below notes the template field(s) it fills.
 
 ## Note on constraints and fit
 
-The hard limits (platform, volume, must-reuse, compliance) and the current-state facts the design rests on live in `evidence.md` under *What's true today*. Bind them into *Constraints & non-functional bounds* from there; interview again only if a binding threshold is genuinely missing.
+The hard limits (platform, volume, must-reuse, compliance) and the current-state facts the design rests on live in `design.md` under *What's true today*. Bind them into *Constraints & non-functional bounds* from there; interview again only if a binding threshold is genuinely missing.

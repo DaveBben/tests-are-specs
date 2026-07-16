@@ -2,12 +2,13 @@
 
 This is the thinking instrument for a spec. You use it to work out what to build, why, and which approach wins, before anyone writes a binding requirement. It is **not** the spec's layout. Discover here; `writing-specs` composes the contract afterward.
 
-The output of this instrument is the reasoning: `detail/evidence.md` (*What's true today*, *Failure modes*, *Who & what this touches*, *Open questions & assumptions*) plus the brief's *Drivers* and *Decisions to sign off*, and a drafted *Goal* and *The request*. It uses the shared format in `writing-specs/references/spec-template.md`.
+The output of this instrument is `detail/design.md`: *The request*, *Goal*, *Drivers*, *What's true today*, *Approach*, *Failure modes*, *Verification strategy*, *Who & what this touches*, and *Open questions & assumptions*. Its format is in `references/design-template.md`. `writing-specs` composes `spec.md` from it afterward.
 
 ## How to use it
 
 - **This is a conversation, not a questionnaire.** These are prompts, not a script to read out in order. Skip what isn't relevant to this change, reword a question to fit the user's context, and let each answer reshape what you ask next. The goal is shared understanding, not a filled-in form.
-- **Ask relentlessly, one question at a time.** Plain language, in the user's own words. Never offer a menu of options to pick from unless the choice is genuinely discrete and low-stakes; a considered answer beats a grabbed one. This holds even when you present approaches: lead with your recommendation and its reason, then put the choice to the user in their own words.
+- **Ask relentlessly, one question at a time.** Plain language, in the user's own words. Never offer a menu of options to pick from unless the choice is genuinely discrete and low-stakes; a considered answer beats a grabbed one.
+- **Ask for their answer before you give yours.** These prompts pull the engineer's own reasoning out first; they are not for you to answer aloud and have them agree. When you know the answer, resist supplying it — a question they work is worth more than a statement they accept. Fill a gap only after they've tried the leap and missed, and then show your reasoning, not just your conclusion.
 - **Reflect every answer back.** "I think you mean X, which implies Y, right?" Surface the implication, not just the words.
 - **Recurse.** When an answer opens new questions or a sub-decision, chase those before moving on. A branch of the design tree is not done until its leaves are.
 - **Separate decisions from assumptions.** Record "the user decided X" apart from "I'm assuming X". Every unverified belief is an assumption, not a fact, until confirmed.
@@ -61,17 +62,17 @@ Work every lens. Each risk gets a decision: HANDLE (a requirement `writing-specs
 
 Record each risk and its decision under *Failure modes*, one line per lens, citing where a HANDLE lands. The touch-list from the *Implied work* lens plus orientation composes *Who & what this touches*.
 
-## E. Approaches: generate, compare, recommend
-*(feeds: Decisions to sign off, and resolves the Better way lens)*
+## E. Approaches: the engineer proposes, you sharpen
+*(feeds: Approach, and resolves the Better way lens)*
 
-This is the core of shaping. Do not settle on the first approach that works.
+This is the core of shaping. Do not hand them the menu; make them reach for it.
 
-- Name 2-3 genuinely different ways to reach the goal. Real alternatives, not one plan and two strawmen. If the change is trivial and only one sane approach exists, say so and move on; do not manufacture options.
-- For each approach, lay out the tradeoff in plain terms: what it costs, what it risks, what it forecloses, what it makes easy later. Tie each to the failure modes above: which lens does it handle well, which does it expose?
-- State your recommendation and why. Lead with the one you'd pick and the reason, then the alternatives you rejected and why they lose.
-- Put the choice to the human in their own words, not as a multiple-choice list. The recommendation is yours to defend; the decision is theirs to make.
+- **Start with the engineer's approach, not yours.** Ask: *what's your plan, and what did you rule out getting there?* Take their answer as the draft.
+- **Make them generate the alternative.** If they offer one approach, don't list the others — push them toward a genuinely different shape ("what would you do if that database weren't available?"). Real alternatives, not one plan and two strawmen. If the change is trivial and only one sane approach exists, say so and move on; do not manufacture options.
+- **Stress-test the tradeoff they underweighted,** and tie it to the failure modes above: which lens does their approach expose? Push on the cost they waved past.
+- **Ratify a sound choice and move on.** State your own recommendation only after theirs is on the table; if theirs holds, say why and stop — the goal is a choice they can defend, not one they recognize. Lay out the approaches yourself only when they're genuinely stuck, each with the reasoning that separates them.
 
-Each approach decision becomes an entry under *Decisions to sign off*: the tradeoff, why this way, the alternative rejected, and the question for the reviewer. A choice that turns out to need a **new shared fact** (a system-wide invariant, a shared entity, a contract change) is not yours to make locally: that is a project-spec amendment. Route it up to `grounding-specs`, get it approved, then resume. Never invent a shared fact here.
+The weighed approaches and the chosen shape become the *Approach* section: the shape in prose, the non-obvious things about it, each alternative's tradeoff, and why this one wins. (`writing-specs` turns the calls that need sign-off into the brief's *Decisions to sign off*.) A choice that turns out to need a **new shared fact** (a system-wide invariant, a shared entity, a contract change) is not yours to make locally: that is a project-spec amendment. Route it up to `grounding-specs`, get it approved, then resume. Never invent a shared fact here.
 
 ## F. Residue & assumptions
 *(feeds: Open questions & assumptions · the blocking ones writing-specs promotes to the brief · Contingencies)*

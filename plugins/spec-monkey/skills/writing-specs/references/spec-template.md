@@ -1,14 +1,26 @@
 <!--
-A SPEC IS A FOLDER OF THREE DOCUMENTS, ONE PER READER. This reference lays out every file to create. Each block below marked `FILE: <path>` is a separate file, delimited by an HTML comment. Create each at its path under docs/specs/{slug}/:
+A SPEC IS A FOLDER OF THREE DOCUMENTS, ONE PER READER:
 
   docs/specs/{slug}/
     spec.md              the decision brief — the reviewer's document; approve or reject from it alone
     detail/contract.md   the build contract — what the implementer builds and the auditor checks
-    detail/evidence.md   the review-time evidence — reasoning a deep reviewer opens on doubt
+    detail/design.md   the design reasoning — shaping-specs' output, opened on doubt
+
+This reference lays out the two files writing-specs composes: spec.md and detail/contract.md. Each block below marked `FILE: <path>` is a separate file, delimited by an HTML comment; create each at its path under docs/specs/{slug}/. detail/design.md is written by shaping-specs, not here; its format is in shaping-specs/references/design-template.md, and you read it as your input.
 
 WHY THIS SPLIT: each reader wants a different slice, not a different amount: the reviewer the judgment layer, the implementer and auditor the mechanical layer, a deep reviewer the reasoning. Keep spec.md readable on its own; give each detail file a heading and a backlink so it stands alone too.
 
-THE SECTION SET IS THE SCHEMA: every canonical section below must exist in its fixed home file, under its canonical heading; or, for a folded block (Coverage exceptions, Worked case, Contingencies), its canonical `**bold**` key. A detail section with nothing to say gets a justified `N/A — reason`, never silence; only the brief subsections marked as omittable may be dropped. Cite a section by its heading or bold key, never by a number or a position.
+THE SECTION SET IS THE SCHEMA: every canonical section below must exist in its fixed home file, under its canonical heading; or, for a folded block (Coverage exceptions, Worked case, Contingencies), its canonical `**bold**` key. A detail section with nothing to say gets a justified `N/A — reason`, never silence; only the brief subsections marked as omittable may be dropped. Cite a section by its heading or bold key, never by a number or a position. THE ONE EXCEPTION is the light profile below, where the trivial lane genuinely drops the reasoning-and-contract split.
+
+THE LIGHT PROFILE (the trivial lane). running-lifecycle triages a small-but-signable item — one obvious approach, no live failure modes, no new shared fact, a build a reviewer reads in a glance — onto a light contract. This is the profile that lets it be light instead of the full schema hollowed out with `N/A`:
+
+  - Set `profile: light` in the frontmatter (the default, omitted, is `full`). This is the machine-readable flag that says the reduced schema is deliberate; the linter checks a light spec against the reduced set, not the full one.
+  - ONE file: `spec.md`. No `detail/contract.md`, no `detail/design.md` — the split earns its keep only when a reviewer and an implementer want different slices, and a trivial slice has no separate reasoning layer to file away. The FR/SC contract lives directly in `spec.md`.
+  - REQUIRED even when light: the frontmatter (including a real gate record once approved), a `## Goal`, `## The request`, a `## Requirements & success criteria` block with at least one FR and its SC beside it, and `## Verification approach & commands` with a worked case and the commands. A light spec is still signed and still grounds on the project spec (set `parent`, cite its `INV-NNN`).
+  - DROPPED, not stubbed: the design-file sections (What's true today, Failure modes, Who & what this touches, Open questions & assumptions), the Contents reading contract, and any brief section that has genuinely nothing to say (Decisions to sign off, Blocking open questions, Blast radius, Rollout gate). Drop them by leaving them out — do NOT write `N/A` for them; that is the full ceremony with hollow answers, the thing the light profile exists to avoid.
+  - When in doubt, take the full profile. The light lane is for the item whose whole contract fits on one screen; the moment there is a real failure mode to reason about or a second seam, it is not trivial. See examples/clf-pipeline/docs/specs/run-summary-log/spec.md for a worked light spec.
+
+The rest of this template is the FULL profile.
 
 ONE SPEC, ONE DECISION: a spec covers exactly one independent decision. If the work spans several (distinct sign-off owners, reviewers, lifecycles/revert boundaries, or success criteria that partition into disjoint groups), split it into sequenced children linked by depends_on. The shared ground they stand on (the goal, data contracts, and invariants) lives in the project spec (kind: project), authored by grounding-specs; each child sets parent to it and cites its INV-NNN.
 
@@ -16,19 +28,30 @@ SINGLE SOURCE OF TRUTH: each fact lives in ONE section; everywhere else referenc
 
 WHAT AND WHEN, NOT HOW: pin down WHAT to build, WHY, WHEN it happens, what CONSTRAINS it, and how you'll know it worked. Never dictate HOW: that's the implementer's call against the real code. The one exception is verification: the run commands that prove success are concrete (*Verification approach & commands*, in detail/contract.md).
 
-Two interviews fill this template. shaping-specs/references/interview-questions.md works out the reasoning (the evidence file, plus the brief's Drivers and Decisions to sign off); writing-specs/references/interview-questions.md pins down the contract (requirements, data/interface, timing, verification). Work the questions to discover; use this template only to compose the answers.
+Two interviews feed a spec. shaping-specs/references/interview-questions.md works the reasoning out into detail/design.md; writing-specs/references/interview-questions.md pins down the contract (requirements, data/interface, timing, verification). Work the questions to discover; use this template to compose spec.md and detail/contract.md from the design.
 -->
 
 <!-- ===================== FILE: spec.md ===================== -->
 
 ---
-spec_monkey: "1.3.0"             # spec-monkey format version; also marks this as a spec-monkey spec
+spec_monkey: "1.5.0"             # spec-monkey format version; also marks this as a spec-monkey spec
 id: SPEC-NNN                     # stable handle; commits and other specs reference this
 kind: work-item                  # work-item (this template) | project (grounding-specs' project-template.md)
+profile: full                    # full (this template, the default — omit it) | light (the trivial lane:
+                                 # one spec.md, reduced section set; see "THE LIGHT PROFILE" in the header)
 parent: SPEC-000                 # the project spec this grounds on; cite its INV-NNN, never restate them.
+                                 # SPEC-000 is the convention for the one project spec; a repo with more
+                                 # than one gives each a distinct id and points parent at the right one.
                                  # Omit only for a one-off change with no project spec.
 title: <short imperative title>
-status: draft                    # draft → approved → implemented → shipped → archived
+status: draft                    # draft → approved → implemented → shipped → archived.
+                                 # Runs backward on an amendment: an approved+ spec whose contract
+                                 # must change regresses to draft (writing-specs "Amending an
+                                 # approved spec"). archived also ends a superseded spec.
+approved_by: []                  # who granted the gate; filled when status first reaches approved, and
+                                 # cleared if an amendment regresses status to draft. A self-set flip
+                                 # with no human recorded here is not a gate.
+approved_date:                   # YYYY-MM-DD the human approved; set and cleared with approved_by.
 created: <YYYY-MM-DD>
 updated: <YYYY-MM-DD>
 owners: [<@handle>]
@@ -57,11 +80,11 @@ supersedes: []                   # SPEC-NNN this replaces (delta lineage)
 - **<decision>** · owner: <compliance | infra | product | …>: <the tradeoff, why this way, the alternative rejected>. *<the question for the reviewer>*
 
 ### Blocking open questions
-<!-- ONLY the questions that gate the release. The rest live under *Open questions & assumptions* in detail/evidence.md. Omit if none. -->
+<!-- ONLY the questions that gate the release. The rest live under *Open questions & assumptions* in detail/design.md. Omit if none. -->
 - **Open (blocking):** <question>; gates <what it blocks>.
 
 ### Blast radius & reversibility
-<!-- One line each. The full touch-list is *Who & what this touches* (detail/evidence.md); the backout detail is *When it happens* (detail/contract.md). -->
+<!-- One line each. The full touch-list is *Who & what this touches* (detail/design.md); the backout detail is *When it happens* (detail/contract.md). -->
 - **Blast radius:** <one line: the reach if this misbehaves>
 - **Reversibility:** <one line: until when it can be undone, and what becomes permanent once it ships>
 
@@ -74,14 +97,14 @@ supersedes: []                   # SPEC-NNN this replaces (delta lineage)
 **How to read this spec:** the approver can sign off from the brief above alone, opening the files below on doubt. The implementer and the auditor load the contract whole. A deep reviewer reads everything.
 
 - [The contract](detail/contract.md), what the implementer builds and the auditor checks: *Requirements & success criteria* · *Constraints & non-functional bounds* · *Data & interface contract* · *When it happens* · *Out of scope* · *Known limitations & honest gaps* (incl. coverage exceptions) · *Verification approach & commands* (incl. the worked case)
-- [The evidence](detail/evidence.md), the review-time reasoning: *What's true today* · *Failure modes* (incl. contingencies) · *Who & what this touches* · *Open questions & assumptions*
+- [The design](detail/design.md), shaping's reasoning: *What's true today* · *Approach* · *Failure modes* (incl. contingencies) · *Who & what this touches* · *Open questions & assumptions*
 
 <!-- ===================== FILE: detail/contract.md ===================== -->
 
 # The contract
 > Part of [spec.md](../spec.md) — <title>
 
-<!-- The build contract is everything that binds: what the implementer builds against and the auditor checks against. Review-time reasoning goes in evidence.md, not here. This file is loaded whole into an implementing agent's context. -->
+<!-- The build contract is everything that binds: what the implementer builds against and the auditor checks against. Review-time reasoning goes in design.md, not here. This file is loaded whole into an implementing agent's context. -->
 
 ## Requirements & success criteria
 
@@ -128,7 +151,7 @@ supersedes: []                   # SPEC-NNN this replaces (delta lineage)
 
 ## Known limitations & honest gaps
 
-<!-- Part of the contract. Never bury it. What a passing check still would NOT prove, and what covers it instead (a manual check, production log-watching); plus each risk the design ACCEPTs rather than handles. Canonical home for accepted risk; *Failure modes* (evidence.md) references back here rather than restating. -->
+<!-- Part of the contract. Never bury it. What a passing check still would NOT prove, and what covers it instead (a manual check, production log-watching); plus each risk the design ACCEPTs rather than handles. Canonical home for accepted risk; *Failure modes* (design.md) references back here rather than restating. -->
 - <admitted gap or accepted risk>: <what it leaves unproven, and what (if anything) covers it>
 
 **Coverage exceptions**
@@ -146,62 +169,15 @@ supersedes: []                   # SPEC-NNN this replaces (delta lineage)
 
 **Commands:** <the exact commands to run to verify success, so anyone can reproduce the result>
 
-<!-- ===================== FILE: detail/evidence.md ===================== -->
-
-# The evidence
-> Part of [spec.md](../spec.md) — <title>
-
-<!-- The review-time reasoning: what a deep reviewer needs to judge the design, and what the author needed to reach it. After approval this file is rarely opened. Nothing that binds may live only here. A risk decision recorded in *Failure modes* must land in its contract home (an FR, *Known limitations & honest gaps*, or *Out of scope*); this file keeps the per-risk reasoning, and the auditor reads it as the index when tracing those decisions. -->
-
-## What's true today
-
-<!-- The load-bearing facts about current behavior the design rests on. Mark each verified fact or assumption; an assumption with residual risk also appears under *Open questions & assumptions*. -->
-- <fact the design rests on> — <verified fact | assumption>
-
-## Failure modes
-
-<!-- Work EVERY lens. Each risk gets a decision: HANDLE (→ an FR), ACCEPT (→ Known limitations & honest gaps), or OUT-OF-SCOPE (say where it lives). An empty lens is valid only as "considered, none apply". Cite the FR a handled risk relates to. The **Contingencies** block at the end is the exception: fallbacks carry a trigger, not a decision, and bind nothing. -->
-
-**Failure & scale**: behavior at 10× / 1000× load or data; a dependency down, slow, or rate-limited; concurrency, partial failure mid-operation, retries / idempotency; empty, huge, malformed, or hostile input.
-- <risk>: <what happens> → HANDLE | ACCEPT | OUT-OF-SCOPE (FR-0xx)
-
-**Operational readiness**: how it's observed live (logs, metrics, alerts); how a break is noticed; what config or environment it needs.
-- <risk> → decision
-
-**Trust boundary**: where untrusted input crosses into trusted code; who is authorized and what happens on denied or expired credentials; what sensitive or personal data is touched and protected.
-- <risk> → decision
-
-**Implied work**: callers or consumers that must change too; migrations or backfills forced; docs, configs, or types that go stale; what was assumed free but isn't.
-- <risk> → decision
-
-**Better way**: is there a simpler or safer approach? Name it, then resolve: adopt it, or record why this approach wins (→ a Decision to sign off).
-- <finding> → resolution
-
-**Contingencies**
-<!-- Conditional fallbacks that fire ONLY if a trigger hits: not something the release must satisfy to ship, and not verifiable now. Kept OUT of the requirements list. Each sits here with its trigger. Mark as "N/A — reason" if none. -->
-- **WHEN <trigger>**: <the fallback, and who acts>.
-
-## Who & what this touches
-
-**External**: <users, downstream data consumers, operators / runbooks, other services>
-
-**Internal**: <callers, APIs, shared state that changes; what a rename or contract change ripples into, including what breaks at build time>
-
-**Unchanged**: <the thing a reader will fear this breaks but it does NOT; naming it reassures>
-
-## Open questions & assumptions
-
-<!-- The non-blocking residue (blocking ones live in spec.md). Every unverified belief the design leans on. Empty (or each item explicitly deferred with a revisit trigger) before the human approves. Keep "the user decided X" OUT: a decision lives with its FR or its Decision to sign off. -->
-- **Assumption:** <belief>; confidence <low | med | high>; if wrong, <impact>. Verify by <trigger>.
-- **Open:** <question>; deferred, revisit if <SC-0xx fails>.
+<!-- detail/design.md is shaping-specs' output; its format is in shaping-specs/references/design-template.md. writing-specs reads it as input and does not create it. -->
 
 <!-- ===================== END OF FILES ===================== -->
 
 <!--
 PARSE CONTRACT (lightweight). A spec is human-first Markdown across a folder, with a few machine-readable conventions a parser can read without understanding the prose:
 
-1. Layout: docs/specs/{slug}/spec.md plus docs/specs/{slug}/detail/contract.md and docs/specs/{slug}/detail/evidence.md. spec.md is the entry point and holds the frontmatter and the decision brief; contract.md holds the binding sections; evidence.md holds the review-time sections. (Specs written under format 1.0.0 spread the equivalent sections one-per-file under detail/; locate a section by its heading either way.)
-2. Frontmatter: YAML between the leading `---` fences in spec.md holds every queryable scalar (spec_monkey, id, kind, parent, status, depends_on, supersedes). Never bury one in prose.
+1. Layout: docs/specs/{slug}/spec.md plus docs/specs/{slug}/detail/contract.md and docs/specs/{slug}/detail/design.md. spec.md is the entry point and holds the frontmatter and the decision brief; contract.md holds the binding sections; design.md holds the review-time sections. (Specs written under format 1.0.0 spread the equivalent sections one-per-file under detail/; locate a section by its heading either way.)
+2. Frontmatter: YAML between the leading `---` fences in spec.md holds every queryable scalar (spec_monkey, id, kind, profile, parent, status, approved_by, approved_date, depends_on, supersedes). Never bury one in prose. The gate record (approved_by, approved_date) is present once status reaches approved and cleared when an amendment regresses it. `profile` is `full` (default, omit) or `light`; a `light` spec is a single spec.md carrying the FR/SC directly, and the linter pair-checks it there instead of in detail/contract.md.
 3. Sections: the canonical section set is the schema. Each section lives in its fixed home file, under its canonical heading; or, for a folded block, its canonical `**bold**` key (convention 5); the mapping is spec.md's Contents block. Cite a section by its heading or key, never a number.
 4. IDs are the join keys: FR-NNN (one SHALL obligation) and SC-NNN (one verifiable outcome), unique across the spec. Each SC sits directly beneath the FR it verifies under *Requirements & success criteria*.
 5. Light conventions: `- **Key:** value` is a key/value field; `**Group**` on its own line introduces the block that follows. Everything else is opaque prose keyed by its heading.

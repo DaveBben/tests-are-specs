@@ -1,7 +1,7 @@
 ---
 name: grounding-specs
-version: "1.4.0"
-description: "Establish the project spec: the one architecture document every work-item spec grounds on. Runs an interview to capture the shared data contracts, system-wide invariants, trust boundaries, and hard architectural constraints, plus the planned work items and their order. Use once at a project's start before any work-item spec, or when an existing codebase has no project spec yet. Produces a living, versioned document the human approves. Do NOT use for a single feature, change, or work item — that is creating-specs."
+version: "1.5.0"
+description: "Establish the project spec: the one architecture document every work-item spec grounds on. Runs an interview to capture the shared data contracts, system-wide invariants, trust boundaries, and hard architectural constraints, plus the planned work items and their order. Use once at a project's start before any work-item spec, or when an existing codebase has no project spec yet. Produces a living, versioned document the human approves. Do NOT use for a single feature, change, or work item — shape and write that with shaping-specs then writing-specs."
 license: MIT
 compatibility: any-agent
 ---
@@ -10,7 +10,7 @@ compatibility: any-agent
 
 You talk with the user to establish the **project spec**: the shared architecture every work-item spec grounds on. There is **one artifact**: `docs/specs/project/spec.md`.
 
-The project spec holds what every work item shares and must obey: the canonical data contracts, the system-wide invariants (`INV-NNN`), the trust boundaries, and the hard architectural constraints. It does **not** hold work-item requirements. Those live in each work-item spec (`creating-specs`), which links up by `parent` and cites these `INV-NNN` rather than restating them.
+The project spec holds what every work item shares and must obey: the canonical data contracts, the system-wide invariants (`INV-NNN`), the trust boundaries, and the hard architectural constraints. It does **not** hold work-item requirements. Those live in each work-item spec (`writing-specs`), which links up by `parent` and cites these `INV-NNN` rather than restating them.
 
 ## The key idea: shared ground, not feature detail
 
@@ -49,12 +49,12 @@ Once approved, a shared change (a new invariant, a new entity, a contract change
 - Make the change here, bump `version`, and re-approve.
 - Flag every work-item spec written against the old version to re-check against the new one.
 
-`creating-specs` routes a work item that needs a shared change back here before it builds. Do not let a work item invent a shared fact locally; that is how the ground drifts.
+`shaping-specs` routes a work item that needs a shared change back here before it builds. Do not let a work item invent a shared fact locally; that is how the ground drifts.
 
 ## What you do NOT do
 
-- No implementation, and no work-item requirements: a work item's `FR`/`SC` live in `creating-specs`.
+- No implementation, and no work-item requirements: a work item's `FR`/`SC` live in `writing-specs`.
 
 ## Next step
 
-The next step is `creating-specs`: one work-item spec per planned item, each grounded on this project spec. Offer it once the human sets `status: approved`; the ground has to be laid before a work item can stand on it. Point them at the first item in *Work items & sequencing*.
+The next step is `shaping-specs`: think each planned work item through, then `writing-specs` composes its spec, each grounded on this project spec. Offer it once the human sets `status: approved`; the ground has to be laid before a work item can stand on it. Point them at the first item in *Work items & sequencing*.

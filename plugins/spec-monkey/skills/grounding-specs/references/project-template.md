@@ -5,7 +5,7 @@ WHAT BELONGS HERE: facts every work item shares: canonical data contracts, syste
 
 WHAT DOES NOT: work-item requirements (FR/SC), implementation detail, and coding conventions (those live in the constitution: standards.md / CLAUDE.md / AGENTS.md).
 
-SINGLE SOURCE OF TRUTH: each shared fact lives here once, with an ID (INV-NNN, or a named entity). Work-item specs cite the ID; they never restate the fact. The work-item format is a separate file: creating-specs/references/spec-template.md.
+SINGLE SOURCE OF TRUTH: each shared fact lives here once, with an ID (INV-NNN, or a named entity). Work-item specs cite the ID; they never restate the fact. The work-item format is a separate file: writing-specs/references/spec-template.md.
 -->
 
 ---
@@ -44,7 +44,7 @@ standards: standards.md          # the constitution (ONE of: standards.md | CLAU
 - **<constraint>**: <the limit; why this way; the alternative rejected>.
 
 ## Work items & sequencing
-<!-- The planned work-item specs and their order. The cut plan, not a promise: it grows and reorders as the work teaches you. Each becomes a child spec (creating-specs) with parent: SPEC-000. -->
+<!-- The planned work-item specs and their order. The cut plan, not a promise: it grows and reorders as the work teaches you. Each becomes a child spec (shaping-specs then writing-specs) with parent: SPEC-000. -->
 - **<slug>** — <one line: the one decision it owns> — depends_on: [<slug>, …] — status: planned | drafted | implemented
 
 ## Out of scope

@@ -1,6 +1,6 @@
 ---
 name: auditing-specs
-version: "1.4.0"
+version: "1.5.0"
 description: "Audit an implementation against its spec. Use after a spec has been implemented to confirm whether it was truly built to match its requirements. Do NOT use to author or review a spec, or for generic code review or bug hunting."
 license: MIT
 compatibility: any-agent
@@ -51,7 +51,7 @@ The default audit reports and stops. When the user explicitly asks you to fix an
 
 The audit closes the loop; where it points next depends on the verdict.
 
-- COMPLIANT: the work item is done. If items remain in the project spec's *Work items & sequencing*, the next one starts back at `creating-specs`.
-- NON_COMPLIANT: route each deviation by its tag. *fix code* goes back to `implementing-specs`; *amend spec* goes back to `creating-specs` (or `grounding-specs` for a shared-fact change). Then re-audit.
+- COMPLIANT: the work item is done. If items remain in the project spec's *Work items & sequencing*, the next one starts back at `shaping-specs`.
+- NON_COMPLIANT: route each deviation by its tag. *fix code* goes back to `implementing-specs`; *amend spec* goes back to `writing-specs` (or `shaping-specs` for an approach change, or `grounding-specs` for a shared-fact change). Then re-audit.
 
 Report only; you name the step, you don't take it.

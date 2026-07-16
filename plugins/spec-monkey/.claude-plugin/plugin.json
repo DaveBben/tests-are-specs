@@ -1,7 +1,7 @@
 {
   "name": "spec-monkey",
-  "version": "1.4.0",
-  "description": "Spec-driven development in six skills: running-lifecycle drives the full flow end to end, grounding-specs establishes the project spec (the shared architecture every work item grounds on), creating-specs writes a human-approved, thinly-sliced work-item spec that states WHAT to build and WHEN, reviewing-specs stress-tests it, implementing-specs builds it, and auditing-specs verifies the build truly satisfies the spec. The spec never prescribes HOW; that is left to the harness.",
+  "version": "1.5.0",
+  "description": "Spec-driven development in seven skills: running-lifecycle drives the full flow end to end, grounding-specs establishes the project spec (the shared architecture every work item grounds on), shaping-specs thinks a work item through and weighs the approaches, writing-specs composes a human-approved, thinly-sliced work-item spec that states WHAT to build and WHEN, reviewing-specs stress-tests it, implementing-specs builds it, and auditing-specs verifies the build truly satisfies the spec. The spec never prescribes HOW; that is left to the harness.",
   "license": "MIT",
   "author": {
     "name": "DaveBben"

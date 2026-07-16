@@ -1,6 +1,6 @@
 ---
 name: reviewing-specs
-version: "1.4.0"
+version: "1.5.0"
 description: "Review an engineering spec. Use when a spec needs to be reviewed, critiqued, or sanity-checked. Do NOT use for generic code review or documents which are not specs."
 license: MIT
 compatibility: any-agent
@@ -58,13 +58,13 @@ Output a **Verdict** (APPROVE / REVISE), findings by severity, a one-line succes
 
 ## Optional: revise-and-re-review (opt-in)
 
-The default review reports and stops, and you **never rewrite**; that stands. When the user asks you to close the loop, and only then: hand the findings to the author (the human, or `creating-specs`), let them revise, then review the revised spec and re-issue the verdict. You review; you do not author. Resolve BLOCKING findings, or have the human consciously accept one, before the verdict can turn APPROVE. A reviewer who both writes and grades the spec is no longer an independent check.
+The default review reports and stops, and you **never rewrite**; that stands. When the user asks you to close the loop, and only then: hand the findings to the author (the human, or `writing-specs`, or `shaping-specs` when the finding is about the approach or the reasoning), let them revise, then review the revised spec and re-issue the verdict. You review; you do not author. Resolve BLOCKING findings, or have the human consciously accept one, before the verdict can turn APPROVE. A reviewer who both writes and grades the spec is no longer an independent check.
 
 ## Next step
 
 Your verdict routes the work; you don't take the next step yourself.
 
-- APPROVE: hand back to the human. Once they set `status: approved`, `implementing-specs` builds a work-item spec; an approved project spec clears `creating-specs` to start its work items.
-- REVISE: hand back to the authoring skill (`creating-specs`, or `grounding-specs` for a project spec) to resolve the blocking findings, then re-review.
+- APPROVE: hand back to the human. Once they set `status: approved`, `implementing-specs` builds a work-item spec; an approved project spec clears `shaping-specs` to start its work items.
+- REVISE: hand back to the authoring skill (`writing-specs`, or `shaping-specs` when the finding is about the approach or reasoning, or `grounding-specs` for a project spec) to resolve the blocking findings, then re-review.
 
 Name the step; the human or the authoring skill takes it.

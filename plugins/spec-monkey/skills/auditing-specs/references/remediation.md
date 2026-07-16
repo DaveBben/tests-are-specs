@@ -5,7 +5,7 @@ The auditor reports by default. This mode runs only when the user asks for it. I
 ## What this mode may change, and what it may not
 
 - **`fix-code`**: the code diverged from the approved contract. The contract is right; the code is wrong. Apply the fix and re-verify.
-- **`amend-spec` / `amend-project-spec`**: the *contract* should change. Applying one rewrites what the human approved. Never auto-apply it. Surface it, name the change and why, and stop. A spec amendment re-enters `reviewing-specs` / `creating-specs`; a project-spec amendment re-enters `grounding-specs`. This loop does not do that work.
+- **`amend-spec` / `amend-project-spec`**: the *contract* should change. Applying one rewrites what the human approved. Never auto-apply it. Surface it, name the change and why, and stop. A spec amendment re-enters `reviewing-specs` / `writing-specs`; a project-spec amendment re-enters `grounding-specs`. This loop does not do that work.
 - **REVIEW (Open) items**: undetermined here (a benchmark, external instrumentation, a post-deploy metric). The loop cannot close them. Leave them for the human.
 
 ## The loop

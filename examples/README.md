@@ -11,7 +11,7 @@ clf-pipeline/docs/specs/
   project/spec.md              the project spec (kind: project) — grounding-specs' output:
                                shared Dataset/ModelArtifact contracts, INV-001..004, constraints,
                                and the work-item map
-  dataset-loader/              one work-item spec (kind: work-item) — creating-specs' output,
+  dataset-loader/              one work-item spec (kind: work-item) — shaping-specs + writing-specs' output,
     spec.md                    grounded on the project spec (parent: SPEC-000):
     detail/contract.md           the decision brief, the build contract, the review-time evidence
     detail/evidence.md

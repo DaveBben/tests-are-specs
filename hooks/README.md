@@ -12,7 +12,7 @@ The `metadata.best-in: claude-code` field on the `running-lifecycle` skill recor
 
 On session start, it injects one short router line so an agent recognizes a build request and reaches for `running-lifecycle` instead of jumping to code:
 
-> If the user is starting to build a project or feature, invoke the `running-lifecycle` skill to drive the full spec-monkey flow (ground → create → review → implement → audit), pausing at every human approval gate. For a single phase, invoke that phase's skill directly.
+> If the user is starting to build a project or feature, invoke the `running-lifecycle` skill to drive the full spec-monkey flow (ground → shape → write → review → implement → audit), pausing at every human approval gate. For a single phase, invoke that phase's skill directly.
 
 ## How to enable it (opt-in)
 
@@ -32,7 +32,7 @@ Add a SessionStart hook to your Claude Code settings that emits that line as `ad
 `hooks/session-start.sh`
 ```bash
 #!/usr/bin/env bash
-router='If the user is starting to build a project or feature, invoke the running-lifecycle skill to drive the full spec-monkey flow (ground, create, review, implement, audit), pausing at every human approval gate. For a single phase, invoke that phase skill directly.'
+router='If the user is starting to build a project or feature, invoke the running-lifecycle skill to drive the full spec-monkey flow (ground, shape, write, review, implement, audit), pausing at every human approval gate. For a single phase, invoke that phase skill directly.'
 printf '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"%s"}}' "$router"
 ```
 

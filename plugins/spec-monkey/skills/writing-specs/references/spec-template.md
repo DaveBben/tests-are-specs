@@ -16,7 +16,7 @@ SINGLE SOURCE OF TRUTH: each fact lives in ONE section; everywhere else referenc
 
 WHAT AND WHEN, NOT HOW: pin down WHAT to build, WHY, WHEN it happens, what CONSTRAINS it, and how you'll know it worked. Never dictate HOW: that's the implementer's call against the real code. The one exception is verification: the run commands that prove success are concrete (*Verification approach & commands*, in detail/contract.md).
 
-The interview that fills this template lives in interview-questions.md. Work the questions to discover; use this template only to compose the answers.
+Two interviews fill this template. shaping-specs/references/interview-questions.md works out the reasoning (the evidence file, plus the brief's Drivers and Decisions to sign off); writing-specs/references/interview-questions.md pins down the contract (requirements, data/interface, timing, verification). Work the questions to discover; use this template only to compose the answers.
 -->
 
 <!-- ===================== FILE: spec.md ===================== -->

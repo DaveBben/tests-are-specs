@@ -38,8 +38,8 @@ assigning every example to exactly one split, reproducibly from a seed.
 - **FR-005**: WHEN run again with the same `dataset_id`, `source_revision`, and `seed`, the system SHALL
   produce an identical example-to-split assignment. *(grounds INV-003)*
   - **SC-005**: two runs with `seed=42` produce byte-identical split id-sets.
-- **FR-006**: the system SHALL keep each split's per-label frequency within 2 percentage points of the
-  overall label distribution.
+- **FR-006**: on a dataset of at least 1,000 rows, the system SHALL keep each split's per-label frequency
+  within 2 percentage points of the overall label distribution.
   - **SC-006**: for every label and every split, `|split_freq − overall_freq| ≤ 0.02` on a dataset of at
     least 1,000 rows.
 

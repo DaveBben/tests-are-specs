@@ -18,5 +18,7 @@ clf-pipeline/docs/specs/
 ```
 
 Read `project/spec.md` first, then the `dataset-loader` spec. Notice the work item **cites** the project
-spec's invariants by ID (`grounds INV-001`, `grounds INV-002`, …) and references the shared **Dataset**
-contract rather than restating it; the only contract it defines locally is the new **SplitManifest**.
+spec's invariants by ID (`grounds INV-001`, `grounds INV-003`, `grounds INV-004`) and references the shared
+**Dataset** contract rather than restating it; the only contract it defines locally is the new
+**SplitManifest**. It does *not* ground INV-002 — that governs the ModelArtifact the evaluator writes; the
+loader only makes that provenance recordable (see FR-002).

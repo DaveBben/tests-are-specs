@@ -10,6 +10,7 @@ The discovery instrument for the **project spec**. Not its layout: it follows th
 - **Recurse.** When an answer opens a sub-decision, chase it before moving on.
 - **Separate decisions from assumptions.** On an existing codebase, mark each shared fact as *verified from the code* or *assumed*; ratify the assumptions with the human.
 - **Keep it thin.** If a fact isn't shared across work items, or you can't defend it yet, it does not belong in the project spec. Push back on scope creep.
+- **Write for one read.** One idea per sentence; caveats get their own sentence. Lists over running prose; never a wall of text, prefer multiple turns.
 
 The areas below run in a natural discovery order. Each notes the template field(s) it fills.
 

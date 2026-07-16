@@ -7,11 +7,12 @@ The output of this instrument is the reasoning: `detail/evidence.md` (*What's tr
 ## How to use it
 
 - **This is a conversation, not a questionnaire.** These are prompts, not a script to read out in order. Skip what isn't relevant to this change, reword a question to fit the user's context, and let each answer reshape what you ask next. The goal is shared understanding, not a filled-in form.
-- **Ask relentlessly, one question at a time.** Plain language, in the user's own words. Never offer a menu of options to pick from unless the choice is genuinely discrete and low-stakes; a considered answer beats a grabbed one.
+- **Ask relentlessly, one question at a time.** Plain language, in the user's own words. Never offer a menu of options to pick from unless the choice is genuinely discrete and low-stakes; a considered answer beats a grabbed one. This holds even when you present approaches: lead with your recommendation and its reason, then put the choice to the user in their own words.
 - **Reflect every answer back.** "I think you mean X, which implies Y, right?" Surface the implication, not just the words.
 - **Recurse.** When an answer opens new questions or a sub-decision, chase those before moving on. A branch of the design tree is not done until its leaves are.
 - **Separate decisions from assumptions.** Record "the user decided X" apart from "I'm assuming X". Every unverified belief is an assumption, not a fact, until confirmed.
 - **Don't gold-plate or narrow.** If scope, approach, or intent is unclear, ask. Don't guess.
+- **Write for one read.** One idea per sentence; caveats get their own sentence. Lists over running prose; never a wall of text, prefer multiple turns.
 
 The areas below run in a natural discovery order. Each notes the artifact field(s) it feeds.
 

@@ -27,14 +27,6 @@ You leave `status: draft`. You do **not** write the FR/SC contract, the data con
 - **A shared fact is not yours to invent.** When an approach needs a new system-wide invariant, a new shared entity, or a contract change, that is a project-spec amendment. Route it up to `grounding-specs`, get it approved, then resume. Never invent a shared fact locally; that is how the ground drifts.
 - Conclusion-first, plain language. Push back when you see a problem; never flatter. Mark every unverified belief an assumption, not a fact. Keep "the user decided X" separate from "I'm assuming X".
 
-## How to talk with the user
-
-The interview is a conversation. Write so the user gets it on one read.
-
-- One idea per sentence. Caveats get their own sentence.
-- Prefer lists over running prose. Never a wall of text; prefer multiple turns.
-- Ask open questions in plain text; don't offer options to pick from. A fixed menu lets the user grab the first option without weighing it; an answer in their own words is a considered one. Reserve a preset list for a genuinely discrete, low-stakes choice. This holds even when you present approaches: lead with your recommendation and its reason, then put the choice to the user in their own words.
-
 ## Workflow
 
 Do the work; don't announce it. Later answers can invalidate earlier ones; when that happens, go back to the question that owns the decision.

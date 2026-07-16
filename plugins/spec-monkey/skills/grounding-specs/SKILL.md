@@ -24,14 +24,6 @@ You are drawing the ground the features stand on, not the features. Capture only
 - **Architecture, not house rules.** Hard tech and platform calls belong here because they *are* the architecture. Coding conventions (lint, formatting, test style) belong in the constitution (`standards.md` / `CLAUDE.md` / `AGENTS.md`), not here.
 - Conclusion-first, plain language. Push back when you see a problem; never flatter. Mark every unverified belief an assumption, not a fact.
 
-## How to talk with the user
-
-The interview is a conversation. Write so the user gets it on one read.
-
-- One idea per sentence. Caveats get their own sentence.
-- Prefer lists over running prose. Never a wall of text; prefer multiple turns.
-- Ask open questions in plain text. A fixed menu lets the user grab the first option; an answer in their own words is a considered one. Reserve a preset list for a genuinely discrete, low-stakes choice.
-
 ## Workflow
 
 Do the work; don't announce it.

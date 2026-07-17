@@ -23,7 +23,7 @@ Judge the **engineering**, not the prose polish. But a formatting problem is fai
 
 The recurring within-spec defect is **inconsistent application of the spec's own standards**: doing the right thing in one place and skipping it in an identical one. Look for these six early; each is a finding under the normal evidence rule and feeds the same severity buckets as the dimensions.
 
-- **S1: Claim stronger than its mechanism.** A guarantee word (every, only, always, never, cannot) in the Goal, *Drivers*, or a rationale, but the enforcing FR checks something weaker. Name the FR; downgrade the wording or strengthen the check. Call out every uncaveated instance, not just the first.
+- **S1: Claim stronger than its mechanism.** A guarantee word (every, only, always, never, cannot) in the Goal, a *Decisions to sign off* line, or an FR rationale, but the enforcing FR checks something weaker. Name the FR; downgrade the wording or strengthen the check. Call out every uncaveated instance, not just the first.
 - **S2: Non-atomic requirement.** An FR you can't settle with a single pass/fail test: "and"-joined or carrying a list. Split it into one obligation per FR.
 - **S3: Unverified requirement.** Every FR connects to an `SC-NNN` (or the worked case), and each SC states a measurable outcome. An FR with no SC and no declared gap, or a "must preserve" behavior with no dedicated SC, is a blocking gap.
 - **S4: Contingency in the normative list.** A requirement that applies "only if X fails" belongs in *Contingencies* (in `detail/design.md`), not the requirements list.

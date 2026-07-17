@@ -1,5 +1,5 @@
 ---
-spec_monkey: "1.5.0"
+spec_monkey: "1.6.0"
 id: SPEC-000
 kind: project
 title: Sentiment classifier training pipeline

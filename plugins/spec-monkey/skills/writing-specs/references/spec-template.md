@@ -34,7 +34,7 @@ Two interviews feed a spec. shaping-specs/references/interview-questions.md work
 <!-- ===================== FILE: spec.md ===================== -->
 
 ---
-spec_monkey: "1.5.0"             # spec-monkey format version; also marks this as a spec-monkey spec
+spec_monkey: "1.6.0"             # spec-monkey format version; also marks this as a spec-monkey spec
 id: SPEC-NNN                     # stable handle; commits and other specs reference this
 kind: work-item                  # work-item (this template) | project (grounding-specs' project-template.md)
 profile: full                    # full (this template, the default — omit it) | light (the trivial lane:
@@ -63,17 +63,10 @@ supersedes: []                   # SPEC-NNN this replaces (delta lineage)
 # Spec: <title>
 
 ## Decision brief
-<!-- The whole of spec.md a reader must see. Decisions and blocking risk live HERE, not in a detail file. Keep it to about one screen. -->
+<!-- The whole of spec.md a reader must see. The ask, the drivers, and the approach were approved at the design gate and live in detail/design.md; the brief does not restate them. What lives HERE is the goal this contract delivers, the decisions to sign off, and the blocking risk. Keep it to about one screen. -->
 
 ### Goal
-<!-- One sentence: a delta you can check true or false ("X moves from A to B"), tied to an observable outcome a success criterion pins down. Not "improve X". The sentence a reviewer signs. -->
-
-### The request
-> <one-to-two-sentence faithful summary of the ask; lets a reviewer catch drift>
-
-### Drivers
-<!-- The "why", as bullets. More than one unrelated driver is a signal the spec may be doing more than one job. Re-check the one-decision rule. -->
-- <what is broken or missing, what leaving it costs, who benefits when fixed>
+<!-- One sentence: a delta you can check true or false ("X moves from A to B"), tied to an observable outcome a success criterion pins down. Not "improve X". The sentence a reviewer signs, carried from the design's Goal — the design holds the request and drivers behind it. -->
 
 ### Decisions to sign off
 <!-- Approach or operational calls a human must approve. The most important thing to surface. Tag each with its owner. Omit only if genuinely none. -->
@@ -94,10 +87,10 @@ supersedes: []                   # SPEC-NNN this replaces (delta lineage)
 ## Contents
 <!-- The reading contract. Keep the promise lines below in the composed spec. They route each reader. Keep the section lists so a reader routes without opening both files. -->
 
-**How to read this spec:** the approver can sign off from the brief above alone, opening the files below on doubt. The implementer and the auditor load the contract whole. A deep reviewer reads everything.
+**How to read this spec:** the design — the ask, the drivers, the approach — was reviewed and approved at the design gate; the approver signs the contract off from the brief above, opening the files below on doubt. The implementer and the auditor load the contract whole. A deep reviewer reads everything.
 
 - [The contract](detail/contract.md), what the implementer builds and the auditor checks: *Requirements & success criteria* · *Constraints & non-functional bounds* · *Data & interface contract* · *When it happens* · *Out of scope* · *Known limitations & honest gaps* (incl. coverage exceptions) · *Verification approach & commands* (incl. the worked case)
-- [The design](detail/design.md), shaping's reasoning: *What's true today* · *Approach* · *Failure modes* (incl. contingencies) · *Who & what this touches* · *Open questions & assumptions*
+- [The design](detail/design.md), the approved reasoning: *The request* · *Drivers* · *What's true today* · *Approach* · *Failure modes* (incl. contingencies) · *Who & what this touches* · *Open questions & assumptions*
 
 <!-- ===================== FILE: detail/contract.md ===================== -->
 

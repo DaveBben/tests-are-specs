@@ -1,9 +1,0 @@
-{
-  "name": "spec-monkey",
-  "version": "2.0.0",
-  "description": "Spec-driven development in six skills: ideation works an ask through and converges on a design (triaging trivial changes and decomposing large ones into linked work items), reviewing-designs critiques that design before a contract is written, writing-specs composes a human-approved, thinly-sliced work-item spec that states WHAT to build and WHEN, reviewing-specs stress-tests the contract, implementing-specs builds it, and auditing-specs verifies the build truly satisfies the spec. The spec never prescribes HOW; that is left to the harness.",
-  "license": "MIT",
-  "author": {
-    "name": "DaveBben"
-  }
-}

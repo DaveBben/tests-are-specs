@@ -1,1 +1,6 @@
 .DS_Store
+
+# spec-intents: per-change working files stay local; config and PR template are committed
+.spec-intents/*
+!.spec-intents/config.json
+!.spec-intents/pr-template.md

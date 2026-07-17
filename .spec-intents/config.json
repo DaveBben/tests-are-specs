@@ -1,0 +1,5 @@
+{
+  "decision_review": "expensive-only",
+  "task_list": ".spec-intents/task-list.md",
+  "pr_template": ".spec-intents/pr-template.md"
+}

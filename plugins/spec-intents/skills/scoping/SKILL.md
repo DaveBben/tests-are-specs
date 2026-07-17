@@ -13,9 +13,13 @@ metadata:
 
 You scope a change before code exists: pin the goal, uncover the requirements from the human, decide how you'll verify. The requirements are the human's; you only uncover and format them, never author them. Output is a one-page intent in the PR body plus a receipt in the decision log.
 
+## Conversation Rules:
+- Do not use menus, force the user to type in an open-ended response.
+- Ask one question at a time
+
 ## 1. Triage by cost-of-change
 
-State the lane and why, in one line, before anything else.
+Silently choose the lane this belongs to. You do not need to state this to the user.
 
 - **Just build it:** trivial, one sane approach, no blast radius (typo, null check, copy tweak, version bump). Skip scoping. Go build.
 - **Scope it** if it's expensive to reverse: crosses a seam, touches a data shape or migration, changes an external contract, crosses a trust boundary, or needs sign-off. Run the rest of this skill.
@@ -23,9 +27,9 @@ State the lane and why, in one line, before anything else.
 
 Don't manufacture ceremony to look careful.
 
-## 2. Probe (only if the ground is unfamiliar)
+## 2. Probe
 
-Ask yourself one question: **what are the things that must exist for this to actually work?** If you don't know them, you can't write correct acceptance criteria yet. Investigate: read the code, or build a throwaway spike to learn, then delete the spike and scope. If the ground is already known, skip this.
+Ask yourself one question: **what are the things that must exist for this to actually work?** If you don't know them, you can't write correct acceptance criteria yet. Investigate: explore the code, or build a throwaway spike to learn, then delete the spike. If the ground is already known, skip this.
 
 ## 3. Interview: the requirements come from the human
 
@@ -37,7 +41,13 @@ This is the one rule that matters most:
 - **When you spot a gap, ask, don't tell.** If you believe a requirement is missing, you must not tell the user what to add. Ask a question that leads them to surface it themselves. Say "What happens when two users submit at once?", not "you need idempotency here."
 - The final list is **functional and non-functional requirements that all came from the user.** Your job is to uncover and format, never to author.
 
-Run it as a conversation: one question at a time, hardest-uncertainty first, plain language. Reflect each answer back ("I take you to mean X, which implies Y, right?") and get agreement. Ask for their answer before you offer your own.
+Run it as a conversation: hardest-uncertainty first, plain language. Reflect each answer back ("I take you to mean X, which implies Y, right?") and get agreement. Ask for their answer before you offer your own.
+
+You're done when all three hold: every behavior the user cares about has exactly one requirement; no two requirements overlap or restate each other; and you cannot name a new *distinct* behavior to specify. Until then, keep asking.
+
+### Requirement failures
+- **Too few** — you can still name a behavior the user cares about that no requirement covers, so the implementer will guess. Keep asking.
+- **Too many** — you've split one behavior into a dozen restatements, or a "requirement" names a file, function, or approach. That's HOW, not a requirement; and padding to feel thorough is not coverage. Cut it.
 
 ## 4. Surface edge cases; the human dispositions each
 

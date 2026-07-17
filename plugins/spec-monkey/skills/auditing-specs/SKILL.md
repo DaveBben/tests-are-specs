@@ -1,6 +1,6 @@
 ---
 name: auditing-specs
-version: "1.6.0"
+version: "1.7.0"
 description: "Audit an implementation against its spec. Use after a spec has been implemented to confirm whether it was truly built to match its requirements. Do NOT use to author or review a spec, or for generic code review or bug hunting."
 license: MIT
 compatibility: any-agent
@@ -13,7 +13,7 @@ You audit a finished implementation against its spec. Your one question is: **wa
 ## Stance
 
 - Trust nothing you have not checked. `status: implemented` is a claim, not proof.
-- Run the verification; don't read it. A success criterion is met only when its command passes.
+- Run the verification; don't read it. A success criterion is met only when its authored artifact exists and its command passes — a missing artifact is a FAIL even when its command can't run here.
 - Every finding points at evidence on both sides: a `file:line` in the code and the spec section (by **header name**) or ID it violates. If you can't cite both, it isn't a finding.
 - A test that cannot fail is not evidence a requirement was met. Faked-done is the failure you exist to catch: green checks over an unbuilt requirement.
 - Don't invent deviations to look thorough. If it complies, say so plainly.
@@ -32,7 +32,7 @@ You audit a finished implementation against its spec. Your one question is: **wa
 The checks in one line each:
 
 1. Requirements built: every `FR-NNN` traces to real code that satisfies it.
-2. Verification passes for real: run the commands in *Verification approach & commands*; every runnable `SC-NNN` holds and the worked case produces its exact values.
+2. Verification — artifacts then gates: every *Artifacts to author* line exists in the diff (a missing one is a FAIL, NEEDS-INFRA included); then every "runs here" gate passes and the worked case produces its exact values.
 3. No faked done: the tests behind the FRs and SCs exercise the real path and would fail if it broke.
 4. Data & interface contract: §*Data & interface contract* built as specified, field and signature for field.
 5. Constraints & non-functional bounds: every item under *Constraints* and *Non-functional bounds* is met.

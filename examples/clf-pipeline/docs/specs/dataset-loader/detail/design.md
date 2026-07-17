@@ -1,5 +1,5 @@
 ---
-spec_monkey: "1.6.0"
+spec_monkey: "1.7.0"
 id: SPEC-001
 kind: design
 parent: SPEC-000

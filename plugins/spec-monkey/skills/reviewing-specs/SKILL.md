@@ -1,6 +1,6 @@
 ---
 name: reviewing-specs
-version: "1.9.1"
+version: "1.10.0"
 description: "Review the binding contract of a work-item spec before it's built: its requirements and success criteria, the data and interface contract, the timing, and the verification. Use when a spec's contract needs reviewing, critiquing, or sanity-checking. Runs the self-consistency sweep and judges whether the verification is trustworthy and the contract stays at altitude. Report-only; returns APPROVE / REVISE. Do NOT use to review the design or approach (that is reviewing-design), to review a project spec (also reviewing-design), or for generic code review."
 license: MIT
 compatibility: any-agent

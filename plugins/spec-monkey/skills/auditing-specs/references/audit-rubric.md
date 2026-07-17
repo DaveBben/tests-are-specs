@@ -22,9 +22,10 @@ Run each. Mark OK, FAIL, or REVIEW (couldn't determine it here), each with evide
 - For each `FR-NNN`, trace the code that satisfies it. An `FR-NNN` with no implementing code is a FAIL.
 - A partial build is a FAIL against the unbuilt part: the FR's WHEN condition ignored, or one clause of a multi-part SHALL missing.
 
-**2. Verification passes for real**
-- Run the commands under *Verification approach & commands*. Don't trust the prose; execute them.
-- Every runnable `SC-NNN` must hold, and the *Worked case* must produce the exact `Then` values it states from real input. A command that errors, or an SC that doesn't hold, is a FAIL.
+**2. Verification: artifacts authored, then gates passed**
+- FIRST, existence. Every line under *Artifacts to author* must exist in the diff. A missing artifact is a FAIL — even when tagged NEEDS INFRA, and even when a unit test covers the same SC. "Couldn't run here" never excuses "was never written"; an unwritten test is a gap, not an open item. This is the hole a runnable-vs-not binary misses.
+- THEN, execution. Run every gate tagged "runs here" under *Gates to pass*; execute, don't read. Every "runs here" SC must hold and the *Worked case* must produce its exact `Then` values from real input. A command that errors, or an SC that doesn't hold, is a FAIL.
+- For a NEEDS-INFRA gate whose artifact exists: mark its execution REVIEW and name the infra a human must supply. Do NOT pass it, and do NOT report the missing infra as out-of-scope.
 - For an `SC-NNN` only measurable after deploy (a production metric), confirm the instrumentation to evaluate it exists (a log, counter, event, or dashboard hook) in the diff or the system. Nothing measures it → FAIL (it ships blind). Can't tell whether external instrumentation covers it → REVIEW. Do NOT assert the post-deploy number was hit; that is not knowable here.
 
 **3. No faked done**

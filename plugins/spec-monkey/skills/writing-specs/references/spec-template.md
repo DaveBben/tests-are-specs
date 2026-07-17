@@ -10,13 +10,13 @@ This reference lays out the two files writing-specs composes: spec.md and detail
 
 WHY THIS SPLIT: each reader wants a different slice, not a different amount: the reviewer the judgment layer, the implementer and auditor the mechanical layer, a deep reviewer the reasoning. Keep spec.md readable on its own; give each detail file a heading and a backlink so it stands alone too.
 
-THE SECTION SET IS THE SCHEMA: every canonical section below must exist in its fixed home file, under its canonical heading; or, for a folded block (Coverage exceptions, Worked case, Contingencies), its canonical `**bold**` key. A detail section with nothing to say gets a justified `N/A — reason`, never silence; only the brief subsections marked as omittable may be dropped. Cite a section by its heading or bold key, never by a number or a position. THE ONE EXCEPTION is the light profile below, where the trivial lane genuinely drops the reasoning-and-contract split.
+THE SECTION SET IS THE SCHEMA: every canonical section below must exist in its fixed home file, under its canonical heading; or, for a folded block (Coverage exceptions, Artifacts to author, Gates to pass, Worked case, Contingencies), its canonical `**bold**` key. A detail section with nothing to say gets a justified `N/A — reason`, never silence; only the brief subsections marked as omittable may be dropped. Cite a section by its heading or bold key, never by a number or a position. THE ONE EXCEPTION is the light profile below, where the trivial lane genuinely drops the reasoning-and-contract split.
 
 THE LIGHT PROFILE (the trivial lane). running-lifecycle triages a small-but-signable item — one obvious approach, no live failure modes, no new shared fact, a build a reviewer reads in a glance — onto a light contract, so it can be light instead of the full schema hollowed out with `N/A`:
 
   - Set `profile: light` in the frontmatter (the default, omitted, is `full`). This is the machine-readable flag that says the reduced schema is deliberate; the linter checks a light spec against the reduced set, not the full one.
   - ONE file: `spec.md`. No `detail/contract.md`, no `detail/design.md` — the split earns its keep only when a reviewer and an implementer want different slices, and a trivial slice has none. The FR/SC contract lives directly in `spec.md`.
-  - REQUIRED even when light: the frontmatter (including a real gate record once approved), a `## Goal`, `## The request`, a `## Requirements & success criteria` block with at least one FR and its SC beside it, and `## Verification approach & commands` with a worked case and the commands. A light spec is still signed and still grounds on the project spec (set `parent`, cite its `INV-NNN`).
+  - REQUIRED even when light: the frontmatter (including a real gate record once approved), a `## Goal`, `## The request`, a `## Requirements & success criteria` block with at least one FR and its SC beside it, and `## Verification approach & commands` with its *Artifacts to author*, *Gates to pass*, and a worked case (usually one line each — light doesn't exempt a spec from naming the test to author). A light spec is still signed and still grounds on the project spec (set `parent`, cite its `INV-NNN`).
   - DROPPED, not stubbed: the design-file sections (What's true today, Failure modes, Who & what this touches, Open questions & assumptions), the Contents reading contract, and any brief section that has genuinely nothing to say (Decisions to sign off, Blocking open questions, Blast radius, Rollout gate). Drop them by leaving them out — do NOT write `N/A` for them; that is the full ceremony with hollow answers, the thing the light profile exists to avoid.
   - When in doubt, take the full profile. The light lane is for the item whose whole contract fits on one screen; the moment there is a real failure mode to reason about or a second seam, it is not trivial. See examples/clf-pipeline/docs/specs/run-summary-log/spec.md for a worked light spec.
 
@@ -34,7 +34,7 @@ Two interviews feed a spec. shaping-specs/references/interview-questions.md work
 <!-- ===================== FILE: spec.md ===================== -->
 
 ---
-spec_monkey: "1.6.0"             # spec-monkey format version; also marks this as a spec-monkey spec
+spec_monkey: "1.7.0"             # spec-monkey format version; also marks this as a spec-monkey spec
 id: SPEC-NNN                     # stable handle; commits and other specs reference this
 kind: work-item                  # work-item (this template) | project (grounding-specs' project-template.md)
 profile: full                    # full (this template, the default — omit it) | light (the trivial lane:
@@ -97,7 +97,9 @@ supersedes: []                   # SPEC-NNN this replaces (delta lineage)
 # The contract
 > Part of [spec.md](../spec.md) — <title>
 
-<!-- The build contract is everything that binds: what the implementer builds against and the auditor checks against. Review-time reasoning goes in design.md, not here. This file is loaded whole into an implementing agent's context. -->
+<!-- The build contract is everything that binds: what the implementer builds against and the auditor checks against. Review-time reasoning goes in design.md, not here. This file is loaded whole into an implementing agent's context.
+
+WRITE IT AS A DRY INSTRUCTION SHEET. An agent executes this document without inferring, so every obligation is explicit, singular, and impossible to skim past: one instruction per line, imperative, no rhetoric, no "why it matters" (that lives in design.md), no bullet a reader can defer to "someone, later." State what must be true and what must be produced — nothing else. -->
 
 ## Requirements & success criteria
 
@@ -148,19 +150,24 @@ supersedes: []                   # SPEC-NNN this replaces (delta lineage)
 - <admitted gap or accepted risk>: <what it leaves unproven, and what (if anything) covers it>
 
 **Coverage exceptions**
-<!-- The final-sweep artifact. Every FR has an SC beside it under *Requirements & success criteria*, or is listed here as a declared gap with a reason. A behavior an FR marks "must preserve" gets its own SC. List only the exceptions; no silent blanks. -->
-- <FR-0xx: untested — reason>
+<!-- The final-sweep artifact, two-sided. (a) Every FR has an SC beside it under *Requirements & success criteria*, or is listed here with a reason. (b) Every SC is proven by an artifact under *Verification approach & commands*, or is listed here with the reason it has none. A behavior an FR marks "must preserve" gets its own SC. List only the exceptions; no silent blanks. -->
+- <FR-0xx: no SC — reason>  /  <SC-0xx: no authored artifact — reason>
 
 ## Verification approach & commands
 
-<!-- What evidence would convince a skeptic the requirements hold, and which SC/FR each piece covers. Any behavior that crosses a real boundary (a database, an HTTP call, a queue, a contract between two modules) MUST be proven end-to-end across that boundary, not only in isolation; a pure rename / refactor / docs edit says so and why. -->
-- <what evidence convinces a skeptic, and which SC/FR it covers>
+<!-- Two obligations, kept apart on purpose: the test ARTIFACTS you must author, and the GATES that must pass. Authoring is due this build and never optional — a test that needs infrastructure to RUN is still a file you write NOW; only its execution may defer. This is the one place the contract names concrete HOW (the commands); everything above stays WHAT/WHEN. Any behavior that crosses a real boundary (a database, an HTTP call, a queue, a module-to-module contract) gets its OWN artifact here, not a line folded inside "unit tests"; a pure rename / refactor / docs edit says so and why. -->
+
+**Artifacts to author.** Each MUST exist in the diff at the end of the build. A missing artifact is a FAIL, never a deferred item. Every SC is proven by at least one artifact here, or is named under *Coverage exceptions* with a reason.
+<!-- One imperative line per artifact. Fold routine per-SC unit tests into one line; give every boundary-crossing or infra-dependent test its OWN line so it can't hide inside "unit tests". Tag each: "Runs here", or "NEEDS INFRA: <what>, author now and run via `<command>`". -->
+- [ ] Author <the test, by what it exercises and asserts> — proves <SC-NNN[, SC-NNN]>. <Runs here | NEEDS INFRA: <what>, author now and run via `<command>`>.
+
+**Gates to pass.** Run every "runs here" gate in this build session, and read the output before trusting it.
+- Runs here: `<command>` — covers <SC-NNN…>.
+- Needs infra (<name>): `<command>` — its artifact is authored above; run it in <env>. Unrunnable here is an OPEN item for a human, never a substitute for authoring the artifact.
 
 **Worked case**
 <!-- One concrete end-to-end example, with real values, not "the correct result". -->
 - **Given:** <real starting state> · **When:** <action> · **Then:** <exact expected values>
-
-**Commands:** <the exact commands to run to verify success, so anyone can reproduce the result>
 
 <!-- detail/design.md is shaping-specs' output; its format is in shaping-specs/references/design-template.md. writing-specs reads it as input and does not create it. -->
 

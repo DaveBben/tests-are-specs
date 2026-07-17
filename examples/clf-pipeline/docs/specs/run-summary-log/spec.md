@@ -1,5 +1,5 @@
 ---
-spec_monkey: "1.6.0"
+spec_monkey: "1.7.0"
 id: SPEC-002
 kind: work-item
 parent: SPEC-000
@@ -57,13 +57,15 @@ from the SplitManifest the loader (SPEC-001) already writes.
 
 ## Verification approach & commands
 
-- One test runs the loader over the worked fixture and asserts the summary line's exact text, then
-  asserts no fixture `text` value appears in the captured log — covering SC-001 and the INV-004 bound.
+**Artifacts to author.** Must exist in the diff; proves every SC below.
+- [ ] Author one test: run the loader over the worked fixture, assert the summary line's exact text, and
+      assert no fixture `text` value appears in the captured log. Proves SC-001 and the INV-004 bound. Runs here.
+
+**Gates to pass.**
+- Runs here: `uv run pytest tests/test_loader.py -k summary_line` — covers SC-001 and the INV-004 bound.
 
 **Worked case**
 
 - **Given:** the 11-row fixture from SPEC-001 (10 valid, 1 dropped) with `seed=42`. · **When:** the
   loader completes. · **Then:** the final log line reads `run complete: dropped=1 train=8 val=1 test=1`
   and contains none of the fixture's example text.
-
-**Commands:** `uv run pytest tests/test_loader.py -k summary_line`

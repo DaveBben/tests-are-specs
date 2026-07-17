@@ -1,6 +1,6 @@
 ---
 name: writing-specs
-version: "1.12.0"
+version: "1.13.0"
 description: "Compose the formal FR/SC contract of a work-item spec from shaped reasoning. Use after shaping-specs, or when the user wants the spec written for a single work item already thought through. Turns the design into the binding sections: requirements and success criteria, the data and interface contract, when it happens, and the verification commands, grounded on the project spec. Do NOT use to establish the project/architecture spec (that is grounding-specs), and do NOT trigger for trivial one-line fixes or when the user just wants to start coding."
 license: MIT
 compatibility: any-agent

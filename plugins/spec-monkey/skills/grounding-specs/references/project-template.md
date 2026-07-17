@@ -9,7 +9,7 @@ SINGLE SOURCE OF TRUTH: each shared fact lives here once, with an ID (INV-NNN, o
 -->
 
 ---
-spec_monkey: "1.6.0"             # spec-monkey format version; also marks this as a spec-monkey spec
+spec_monkey: "1.7.0"             # spec-monkey format version; also marks this as a spec-monkey spec
 id: SPEC-000                     # the project spec's stable handle; work items set parent to it.
                                  # SPEC-000 is the convention for a single project spec; a monorepo
                                  # with several gives each a distinct id.

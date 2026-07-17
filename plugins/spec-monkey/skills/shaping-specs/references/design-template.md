@@ -18,7 +18,7 @@ to say gets a justified "N/A — reason", never silence.
 -->
 
 ---
-spec_monkey: "1.6.0"             # spec-monkey format version; also marks this as a spec-monkey artifact
+spec_monkey: "1.7.0"             # spec-monkey format version; also marks this as a spec-monkey artifact
 id: SPEC-NNN                     # the work item's handle; the design and the spec.md it feeds share it
 kind: design                     # this file (shaping's output). The spec.md it feeds is kind: work-item.
 parent: SPEC-000                 # the project spec this grounds on; cite its INV-NNN, never restate them.

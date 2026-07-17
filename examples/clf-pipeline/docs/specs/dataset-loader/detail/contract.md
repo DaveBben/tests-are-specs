@@ -88,17 +88,24 @@ a ModelArtifact trains on it, since INV-002 pins that provenance.
 
 **Coverage exceptions**
 
-- None — every FR-001 through FR-006 has an SC beside it.
+- None — every FR-001 through FR-006 has an SC, and every SC is proven by an authored artifact below.
 
 ## Verification approach & commands
 
-- Unit tests cover each FR against its SC: drop-and-count (FR-001), provenance recording (FR-002), abort with
-  the source mocked to fail (FR-003), split coverage and disjointness (FR-004), determinism across two runs
-  (FR-005), and per-label balance on a 1,000-row synthetic set (FR-006). One integration test runs the real
-  loader end-to-end on a small on-disk fixture, crossing the fetch-and-write boundary, and asserts the
-  SplitManifest — this proves SC-001, SC-002, and SC-004 across the real seam, not just in isolation. A
-  separate test asserts no raw example `text` appears in any emitted log line or in the SplitManifest,
-  covering the INV-004 bound.
+**Artifacts to author.** Each must exist in the diff; every SC below is proven by one, none is under *Coverage exceptions*.
+- [ ] Author unit tests, one per FR against its SC: drop-and-count (SC-001), provenance recording (SC-002),
+      abort on a source mocked to fail every attempt (SC-003), split coverage and disjointness (SC-004),
+      determinism across two `seed=42` runs (SC-005), per-label balance on a 1,000-row synthetic set (SC-006).
+      Runs here.
+- [ ] Author an integration test: the real loader end-to-end on a small on-disk fixture, crossing the
+      fetch-and-write boundary, asserting the SplitManifest. Proves SC-001, SC-002, SC-004 across the real
+      seam, not just in isolation. Runs here.
+- [ ] Author a no-leak test: assert no raw example `text` appears in any emitted log line or in the
+      SplitManifest. Proves the INV-004 bound. Runs here.
+
+**Gates to pass.**
+- Runs here: `uv run pytest tests/test_loader.py` — covers SC-001..006 and the INV-004 bound.
+- Runs here: `uv run python -m clf.loader --dataset <id> --revision abc123 --seed 42 --out data/v1 && uv run python -m clf.check_splits data/v1` — the end-to-end gate for SC-001, SC-002, SC-004.
 
 **Worked case**
 
@@ -106,6 +113,3 @@ a ModelArtifact trains on it, since INV-002 pins that provenance.
   with `seed=42`. · **When:** the loader runs against revision `abc123`. · **Then:** `dropped_row_count` = 1,
   split sizes are train=8 / val=1 / test=1, the three split id-sets are pairwise disjoint, and the
   SplitManifest records `source_revision: abc123`.
-
-**Commands:** `uv run pytest tests/test_loader.py`; then end-to-end
-`uv run python -m clf.loader --dataset <id> --revision abc123 --seed 42 --out data/v1 && uv run python -m clf.check_splits data/v1`.

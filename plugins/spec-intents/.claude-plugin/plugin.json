@@ -1,6 +1,6 @@
 {
   "name": "spec-intents",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Intent-first agentic coding: the human authors intent, the agent never invents requirements. Ships scoping (interview the human to uncover requirements, surface edge cases, emit a one-page intent to the PR body plus a why-receipt to the decision log), build (implement in thin slices, each check written before the code and proven against real behavior, on an isolated branch), and check (an independent fresh-context Gate B that audits the diff against the intent, PASS/FAIL). No generated prose spec, no lifecycle. The code and its tests are the only source of truth.",
   "license": "MIT",
   "author": {

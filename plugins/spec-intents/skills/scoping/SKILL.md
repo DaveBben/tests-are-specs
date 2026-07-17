@@ -1,6 +1,6 @@
 ---
 name: scoping
-version: "0.1.0"
+version: "0.2.0"
 description: "Scope a change before any code exists — interview the human to uncover requirements (you never invent them), surface edge cases, and emit a one-page intent plus a decision-log receipt. Use for expensive-to-change work: crossing a seam, a data shape or migration, an external contract, a trust boundary, or anything needing sign-off. Do NOT fire on trivial changes (typo, null check, copy tweak, version bump) — those go straight to build."
 license: MIT
 compatibility: any-agent
@@ -19,6 +19,7 @@ State the lane and why, in one line, before anything else.
 
 - **Just build it:** trivial, one sane approach, no blast radius (typo, null check, copy tweak, version bump). Skip scoping. Go build.
 - **Scope it** if it's expensive to reverse: crosses a seam, touches a data shape or migration, changes an external contract, crosses a trust boundary, or needs sign-off. Run the rest of this skill.
+- **Too big to scope as one thing:** the ask is really several changes with different reviewers or ship dates ("build our auth system"). Don't scope it as one. Name the smaller independently shippable parts and the order between them, then scope only the first.
 
 Don't manufacture ceremony to look careful.
 
@@ -67,7 +68,7 @@ A one-page intent, max. It holds:
 - **Verification plan:** the tests or observation script from step 5.
 - **Out-of-scope:** what you're deliberately not doing.
 
-The intent is disposable; it dies at merge.
+If it grows past a page, the change is probably two changes; go back to triage. The intent is disposable; it dies at merge.
 
 ## 7. Log the why, then ratify
 

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "tests-are-specs",
+  "owner": {
+    "name": "DaveBben"
+  },
+  "description": "tests-are-specs: the tests are the spec. Three skills, scoping, building-from-plans, and verifying-work.",
+  "plugins": [
+    {
+      "name": "tests-are-specs",
+      "source": "./plugins/tests-are-specs",
+      "description": "tests-are-specs: the tests are the spec, so there is no prose spec to rot. The human's intent becomes a contract of failing test stubs, each pinning a concrete expected outcome; the build makes them pass; an independent fresh-context review checks the diff against them. Ships scoping (explore the change, interview the human, author a failing stub per requirement, write a short plan and an ADR receipt), building-from-plans (wire each stub into a real assertion and pass it in thin slices, proving each against real behavior, conventional commits), and verifying-work (audit the diff against the plan and its contract, PASS/FAIL). The code and its tests are the only source of truth.",
+      "version": "1.0.0",
+      "license": "MIT",
+      "skills": [
+        "./skills/scoping",
+        "./skills/building-from-plans",
+        "./skills/verifying-work"
+      ],
+      "author": {
+        "name": "DaveBben"
+      }
+    }
+  ]
+}

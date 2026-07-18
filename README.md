@@ -22,7 +22,7 @@ We already have specs. Those are tests. They are deterministic pass/fail results
 ## How to use
 Once installed, the following workflow happens:
 
-1. When you ask your AI agent for a non-trivial code change, it will start a scoping interview with you to understand the NFRs, FRs, edge cases and constraints. These immediately get turned into failing test stubs during the interview. The output of the interview are two file:
+1. When you ask your AI agent for a non-trivial code change, it will start a scoping interview with you to understand the NFRs, FRs, edge cases and constraints. It also reads past ADRs (architecture decisions) to ground its context. These immediately get turned into failing test stubs during the interview. The output of the interview are two file:
   * A tiny **ADR File** (architecture decision record) which **should** be committed and optionally **reviewed** by your team before implementation.
   * A **plan.md** which **should not** be committed. It's only there to hand to the build agent. Very similair to Claude Code's planning mechnaism. 
 

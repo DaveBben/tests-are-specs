@@ -1,11 +1,10 @@
 ---
 name: scoping
-version: "1.0.0"
-description: "Use at the start of a non-trivial code change, before code exists, when the user describes something they want to build. Fire on conversational intent, not only the word scope: 'I want to build/add/implement X', 'let's add a feature', 'I need to change how X works', 'we're going to migrate/rework/refactor X', 'help me plan or think through X'. Scope work that crosses a seam, moves a data shape or migration, touches an external contract or trust boundary, or needs sign-off. It explores blast radius and prior decisions, interviews the human to uncover requirements (never inventing them), walks edge cases, and authors failing test stubs that become the binding contract, plus a short plan. Not for trivial changes (typo, null check, copy tweak, version bump); those go straight to build."
+version: "1.0.1"
+description: "Use at the start of a non-trivial code change, before touching the code, when the user wants to build, change, or remove something. Fire on conversational intent, not only the word scope: 'build/add/implement X', 'let's add a feature', 'change how X works', 'migrate/rework/refactor X', 'remove/rip out/deprecate feature Y', 'turn this into a spec'. Tearing out a whole feature is scope work when it spans stored data, callers, or endpoints, not a quick delete. Scope work that crosses a seam, moves a data shape or migration, touches an external contract or trust boundary, or needs sign-off. It explores blast radius and prior decisions, interviews the human to uncover requirements (never inventing them), walks edge cases, and authors failing test stubs that become the binding contract, plus a short plan. Not for trivial changes (typo, null check, copy tweak, version bump, deleting dead code); those go straight to build."
 license: MIT
 compatibility: any-agent
 metadata:
-  effort: interview, then author the failing tests that bind the build; keep the intent short
   namespaced-as: "tests-are-specs:scoping"
 ---
 

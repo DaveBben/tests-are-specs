@@ -1,7 +1,7 @@
 {
   "name": "tests-are-specs",
-  "version": "1.0.1",
-  "description": "tests-are-specs: the failing tests are the spec, so there is no prose spec to rot. The human's intent becomes a contract of failing test stubs, each pinning a concrete expected outcome; the build makes them pass; an independent fresh-context review checks the diff against them. Ships scoping (explore the change, interview the human, author a failing stub per requirement, write a short plan and an ADR receipt), building-from-plans (wire each stub into a real assertion and pass it in thin slices, proving each against real behavior, conventional commits), and verifying-work (audit the diff against the plan and its contract, PASS/FAIL). The code and its tests are the only source of truth.",
+  "version": "1.1.0",
+  "description": "tests-are-specs: the tests are the spec, so there is no prose spec to rot. The human's intent becomes a contract of complete tests marked expected-failure, each asserting an independently derived outcome, so CI stays green while the contract is reviewed; the build removes markers and makes them pass; an independent fresh-context review checks that the contract diff is marker-removal only. Ships scoping (explore the change, interview the human, author a contract test per requirement, write a short plan and an ADR receipt), building-from-plans (make each contract test pass in turn-efficient tasks, refactor on green, prove each against real behavior, conventional commits), and verifying-work (audit the diff against the plan and its contract, PASS/FAIL). The code and its tests are the only source of truth.",
   "license": "MIT",
   "author": {
     "name": "DaveBben"

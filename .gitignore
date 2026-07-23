@@ -1,7 +1,4 @@
 .DS_Store
 
-# tests-are-specs: task list and plans/ stay local (gitignored); config, plan template, and the ADR files are committed
-.tests-are-specs/*
-!.tests-are-specs/config.json
-!.tests-are-specs/plan-template.md
-!.tests-are-specs/adrs/
+# tests-are-specs: the task list is per-change scratch, never committed
+docs/plans/.build-intents/**/task-list.md

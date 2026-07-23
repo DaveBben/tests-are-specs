@@ -1,6 +1,6 @@
 # Interview questions
 
-Prompts to pull requirements out of the user, never a script to read aloud, and never a source of requirements you author yourself. Skip what doesn't apply, reword to the user's context, and let each answer reshape the next question. Split the ask into **functional** requirements (what the system does) and **non-functional** requirements (how well it does it).
+Prompts to pull requirements out of the user, never a script to read aloud, and never a source of requirements you author yourself. Walk every category; skip a whole category only out loud, with why. Within a category, skip or reword individual questions freely, and let each answer reshape the next question. Split the ask into **functional** requirements (what the system does) and **non-functional** requirements (how well it does it).
 
 ## Functional requirements
 
@@ -33,4 +33,4 @@ Prompts to pull requirements out of the user, never a script to read aloud, and 
 - **Use concrete numbers:** "fast" is useless; "under 200ms at p95" is testable.
 - **Probe with scenarios:** "What if 10,000 users hit this at once?" surfaces unstated NFRs.
 - **Ask what breaks:** "What would make you consider this a failure?"
-- **Confirm by playing back:** restate requirements in your own words and get agreement.
+- **Confirm by playing back a concrete example:** "a cart of $80 with a coupon that expired yesterday charges the full $80, right?" An example forces the numbers a restatement lets slide, and a ratified example becomes a contract test body almost verbatim.

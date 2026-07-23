@@ -19,22 +19,31 @@ A lot of people point out this is just waterfall in disguise. While I don't 100%
 
 We already have specs. Those are tests. They are deterministic pass/fail results. They don't lie. The thing tests/code doesn't tell us is the **why**. This can be documented by short ADR decisions.
 
+The contract is written as **complete tests marked expected-failure** (`xfail` in pytest, `test.failing` in Jest, `@wip` in Cucumber), not as empty stubs or red tests. That buys three things:
+
+- The contract-review MR has a green pipeline, and trunk-based teams can commit the contract straight to main. CI can tell "agreed but unbuilt" apart from "broken".
+- The runner executes the marked test, proving it fails for the right reason (behavior absent, not a typo), and reports an unexpected pass the moment the behavior lands.
+- Verification becomes mechanical: the build's only legal edit to a contract test is removing the marker, so `verifying-work` just diffs the test file. Any edited assertion is a caught goalpost move.
+
+An empty stub with the outcome in prose ("expired link should 400") would hand the real decision to the builder, and prose is ambiguous; the full test body pins the inputs and the outcome in code. A pinned-outcome stub remains only as a flagged fallback for the rare case where no stable boundary exists yet to call.
+
 ## How to use
 Once installed, the following workflow happens:
 
-1. When you ask your AI agent for a non-trivial code change, it will start a scoping interview with you to understand the NFRs, FRs, edge cases and constraints. It also reads past ADRs (architecture decisions) to ground its context. These immediately get turned into failing test stubs during the interview. The output of the interview are two file:
-  * A tiny **ADR File** (architecture decision record) which **should** be committed and optionally **reviewed** by your team before implementation.
-  * A **plan.md** which **should not** be committed. It's only there to hand to the build agent. Very similair to Claude Code's planning mechnaism. 
+1. When you ask your AI agent for a non-trivial code change, it will start a scoping interview with you to understand the NFRs, FRs, edge cases and constraints, playing each answer back as a concrete example. It also reads past ADRs (architecture decisions) to ground its context. The ratified examples get turned into complete tests marked expected-failure during the interview. The output of the interview are two file:
+  * A tiny **ADR File** (architecture decision record) in `docs/adrs/`, committed, and optionally **reviewed** by your team before implementation.
+  * A **plan.md** in `docs/plans/.build-intents/<slug>/`, committed with the contract in a conventional commit and deleted in a final chore commit once verification passes, so git history keeps the intent without a stale file in the tree. The agent asks whether to open an MR for the direction before building.
 
-2. After scoping, depending on your harness, the `building-from-plans` skill  will automatically be invoked (otherwise do it yourself) with a path to the `plan.md`. It builds, one slice at a time in a subagent.
-3. Post implementation, again depending on your harness, the `verifying-work` skill will automatically be invoked with a subagent. It will verify the work matches the contract.
+2. After scoping, clear your context (or start a fresh session) and run the `building-from-plans` skill with the plan's slug. It decomposes the plan into turn-efficient tasks and builds one task at a time, each in a fresh subagent whose context is the task entry, on the cheapest model tier the task allows, with a review after each task and a refactor pass on green.
+3. Post implementation, the agent offers a choice: launch a fresh subagent running `verifying-work` and report its verdict, or you clear context and run it yourself with the same slug. Either way the reviewer starts fresh and verifies the work matches the contract.
 
 You will notice that this workflow almost matches Claude Code's default plan feature with just a few extra bells and whistles:
 
 - Automatic ADR caption when needed
-- Writing test stubs first to match NFRs and FRs and Constrinats
+- Writing complete expected-failure tests first to match NFRs and FRs and Constrinats
 - Running full implementation to actually test each feature rather than relying on tests
-- A step to review plans before implementation gets underway
+- A step to review plans before implementation gets underway, with a green pipeline
+- Per-task subagents with explicit model tiers, and a refactor pass on every green task
 
 
 
@@ -44,36 +53,19 @@ Three portable Markdown skills, chained by hand-off. Each is independently launc
 
 | Skill | Input | What it does |
 |---|---|---|
-| `scoping` | a change request | Explore the blast radius and past decisions, interview the human to uncover requirements (never inventing them), walk the edge cases, and author a failing test stub for each. Emit a short plan and an ADR receipt. |
-| `building-from-plans` | a plan | Wire each stub into a real assertion and make it pass, in thin vertical slices on a branch. Never weaken a pinned outcome. After every slice, drive the real feature and watch it, not just a green suite. Commit with conventional commits. |
-| `verifying-work` | a plan and a diff | From a fresh context, audit the diff against the plan: every requirement built, the contract intact and biting, no faked tests, the trust boundary checked, nothing crept in. Report-only, PASS/FAIL. |
+| `scoping` | a change request | Explore the blast radius and past decisions, interview the human to uncover requirements (never inventing them), walk the edge cases, and author a complete expected-failure test for each. Emit a short plan and an ADR receipt. |
+| `building-from-plans` | a plan | Remove each contract test's marker and make it pass, decomposed into turn-efficient tasks on a branch, refactoring on green. Never edit a contract test body. Dispatch a fresh subagent per task where the harness allows. After every task, drive the real feature and watch it, not just a green suite. Commit with conventional commits. |
+| `verifying-work` | a plan and a diff | From a fresh context, audit the diff against the plan: every requirement built, the contract diff marker-removal only, no faked tests, the trust boundary checked, nothing crept in. Report-only, PASS/FAIL. |
 
-The flow is `scoping → building-from-plans → verifying-work`. Trivial changes skip `scoping` and go straight to building. After scoping, the human decides whether the team reviews the direction before code. A subagent-capable harness can then dispatch each step; otherwise the human drives them.
+The flow is `scoping → building-from-plans → verifying-work`. Trivial changes get scoping's one-minute blast-radius glance, then skip the rest and go straight to building; the glance is what catches the "trivial" change that is secretly load-bearing. After scoping, the human decides whether the team reviews the direction before code. Each hand-off is the same move: clear context, run the next skill with the plan's slug. The plan on disk carries everything a fresh context needs, which is what keeps every stage independent of the last one's blind spots.
 
 ## Artifacts
 
-- **Plan** (`.tests-are-specs/plans/<slug>/plan.md`): goal, the verification contract, out-of-scope. Gitignored
-- **ADRs** (`.tests-are-specs/adrs/`): one file per decision, the durable *why*, the rejected alternatives, the tradeoffs. Committed.
-- **Task list** (`.tests-are-specs/task-list.md`): the build's slice checklist. Gitignored; Optionally created
+- **Plan** (`docs/plans/.build-intents/<slug>/plan.md`): goal, the verification contract, out-of-scope. Committed at scoping, deleted in a chore commit once verification passes; history keeps it.
+- **ADRs** (`docs/adrs/`): one file per decision, the durable *why*, the rejected alternatives, the tradeoffs. Committed.
+- **Task list** (`docs/plans/.build-intents/<slug>/task-list.md`): the build's task checklist, one turn-efficient task per dispatch with files, tests, model tier, and status. Never committed; optionally created.
 
-## Configuration
-
-Team settings live in a committed `.tests-are-specs/config.json`:
-
-```json
-{
-  "task_list": ".tests-are-specs/task-list.md",
-  "plan_dir": ".tests-are-specs/plans",
-  "plan_template": ".tests-are-specs/plan-template.md",
-  "adr_dir": ".tests-are-specs/adrs"
-}
-```
-
-- **`plan_dir`** / **`plan_template`**: where per-change plans live, and the template `scoping` fills.
-- **`adr_dir`**: directory of committed ADR files, one per decision (rebase-friendly). `scoping` reads them before interviewing and adds one after.
-- **`task_list`**: the build's ephemeral slice checklist.
-
-Each skill reads this file first, then falls back to a value in `CLAUDE.md` / `AGENTS.md`, then a built-in default.
+There is no config file. These paths are the defaults; tell the agent if your repo keeps plans or ADRs elsewhere.
 
 ## Installing
 
